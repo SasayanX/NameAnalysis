@@ -71,27 +71,37 @@ export function NameAnalysisResult({
   const getStrokeCount = (categoryName: string): string => {
     console.log(`=== ${categoryName} 画数取得開始 ===`)
     console.log("results全体:", results)
+    console.log("results.tenFormat:", results?.tenFormat)
+    console.log("results.jinFormat:", results?.jinFormat)
+    console.log("results.chiFormat:", results?.chiFormat)
+    console.log("results.gaiFormat:", results?.gaiFormat)
+    console.log("results.totalFormat:", results?.totalFormat)
 
     // 直接resultsから取得
     if (results) {
       // 天格
       if (categoryName === "天格" && results.tenFormat) {
+        console.log(`✅ 天格: ${results.tenFormat}画`)
         return `${results.tenFormat}画`
       }
       // 人格
       if (categoryName === "人格" && results.jinFormat) {
+        console.log(`✅ 人格: ${results.jinFormat}画`)
         return `${results.jinFormat}画`
       }
       // 地格
       if (categoryName === "地格" && results.chiFormat) {
+        console.log(`✅ 地格: ${results.chiFormat}画`)
         return `${results.chiFormat}画`
       }
       // 外格
       if (categoryName === "外格" && results.gaiFormat) {
+        console.log(`✅ 外格: ${results.gaiFormat}画`)
         return `${results.gaiFormat}画`
       }
       // 総格
       if (categoryName === "総格" && results.totalFormat) {
+        console.log(`✅ 総格: ${results.totalFormat}画`)
         return `${results.totalFormat}画`
       }
     }
@@ -99,12 +109,23 @@ export function NameAnalysisResult({
     // categoriesから取得（フォールバック）
     if (results && results.categories) {
       const category = results.categories.find((cat: any) => cat.name === categoryName)
-      if (category && category.value) {
-        const match = category.value.toString().match(/(\d+)画/)
-        if (match) {
-          const strokeCount = `${match[1]}画`
-          console.log(`✅ ${categoryName}: フォールバック値 ${strokeCount}`)
-          return strokeCount
+      console.log(`${categoryName}のcategory:`, category)
+      
+      if (category) {
+        // strokeCountプロパティから直接取得
+        if (category.strokeCount) {
+          console.log(`✅ ${categoryName}: categoriesからstrokeCount ${category.strokeCount}画`)
+          return `${category.strokeCount}画`
+        }
+        
+        // valueプロパティから取得
+        if (category.value) {
+          const match = category.value.toString().match(/(\d+)画/)
+          if (match) {
+            const strokeCount = `${match[1]}画`
+            console.log(`✅ ${categoryName}: categoriesからvalue ${strokeCount}`)
+            return strokeCount
+          }
         }
       }
     }
