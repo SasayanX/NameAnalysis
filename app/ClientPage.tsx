@@ -476,7 +476,7 @@ export default function ClientPage() {
         {/* ヘッダー */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">まいにち姓名判断</h1>
+            <h1 className="text-3xl font-bold mb-2">まいにちAI姓名判断</h1>
             <p className="text-muted-foreground">旧字体による正確な画数計算で、あなたの運命を詳しく鑑定</p>
           </div>
           <div className="flex items-center gap-2">

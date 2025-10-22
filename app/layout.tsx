@@ -33,9 +33,9 @@ export const metadata: Metadata = {
   description:
     "【無料で始める本格姓名判断】旧字体による正確な画数計算で、あなたの運命を詳しく鑑定。毎日の運勢、五行思想、六星占術、相性診断まで。プロ級の開運アドバイスで人生をより良い方向へ導きます。今すぐ無料で姓名判断を体験してください。",
   keywords: ["姓名判断", "占い", "運勢", "六星占術", "陰陽五行", "相性診断", "無料占い", "旧字体", "画数", "名前占い"],
-  authors: [{ name: "まいにち姓名判断" }],
-  creator: "まいにち姓名判断",
-  publisher: "まいにち姓名判断",
+  authors: [{ name: "まいにちAI姓名判断" }],
+  creator: "まいにちAI姓名判断",
+  publisher: "まいにちAI姓名判断",
   alternates: {
     canonical: "https://seimei.kanau-kiryu.com",
   },
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ja_JP",
     url: "https://seimei.kanau-kiryu.com",
-    siteName: "まいにち姓名判断",
-    title: "まいにち姓名判断 - 旧字体による正確な画数計算で運命鑑定",
+    siteName: "まいにちAI姓名判断",
+    title: "まいにちAI姓名判断 - 旧字体による正確な画数計算で運命鑑定",
     description:
       "【無料で始める本格姓名判断】旧字体による正確な画数計算で、あなたの運命を詳しく鑑定。毎日の運勢、五行思想、六星占術、相性診断まで対応。",
     images: [
@@ -52,13 +52,13 @@ export const metadata: Metadata = {
         url: "/images/og-image.png",
         width: 1200,
         height: 630,
-        alt: "まいにち姓名判断",
+        alt: "まいにちAI姓名判断",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "まいにち姓名判断 - 旧字体による正確な画数計算で運命鑑定",
+    title: "まいにちAI姓名判断 - 旧字体による正確な画数計算で運命鑑定",
     description:
       "【無料で始める本格姓名判断】旧字体による正確な画数計算で、あなたの運命を詳しく鑑定。毎日の運勢、五行思想、六星占術、相性診断まで対応。",
     images: ["/images/og-image.png"],

@@ -4,7 +4,7 @@ import { seoConfig } from "@/lib/seo-config"
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: seoConfig.siteName,
-    short_name: "まいにち姓名判断",
+    short_name: "まいにちAI姓名判断",
     description: seoConfig.description,
     start_url: "/",
     display: "standalone",
