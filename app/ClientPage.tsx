@@ -224,12 +224,11 @@ export default function ClientPage() {
 
   const handleCompanyAnalysis = useCallback(() => {
     try {
-      const mockResult = {
-        totalStrokes: 25,
-        fortune: "吉",
-        description: "成功運に恵まれた会社名です",
-      }
-      setCompanyResults(mockResult)
+      // 実際の社名鑑定を実行
+      const { analyzeNameFortune } = require("@/lib/name-data-simple-fixed")
+      const analysisResult = analyzeNameFortune(companyName, "", "male")
+      console.log("社名分析結果:", analysisResult)
+      setCompanyResults(analysisResult)
 
       if (usageTracker.incrementUsage("companyAnalysis")) {
         setUsageStatus(usageTracker.getUsageStatus())
@@ -827,6 +826,18 @@ export default function ClientPage() {
                   </CardHeader>
                   <CardContent>
                     <MemoizedVerticalNameDisplay lastName={lastName} firstName={firstName} />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 社名鑑定の縦書き表示 */}
+              {companyName && nameType === "company" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>縦書き表示</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <MemoizedVerticalNameDisplay name={companyName} />
                   </CardContent>
                 </Card>
               )}

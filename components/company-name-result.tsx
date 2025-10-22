@@ -3,7 +3,6 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
-import { VerticalNameDisplay } from "@/components/vertical-name-display"
 
 interface CompanyNameResultProps {
   result: any
@@ -30,11 +29,6 @@ export function CompanyNameResult({ result, companyName, useCustomData = false }
       <div className="text-center">
         <h2 className="text-2xl font-bold">{companyName}の会社名分析結果</h2>
         {useCustomData && <p className="text-sm text-muted-foreground mt-1">(カスタム吉凶データを使用)</p>}
-      </div>
-      
-      {/* 縦書き表示を追加 */}
-      <div className="flex justify-center mb-6">
-        <VerticalNameDisplay name={companyName} />
       </div>
       <Card>
         <CardHeader>
