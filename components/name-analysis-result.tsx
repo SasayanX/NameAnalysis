@@ -67,28 +67,36 @@ export function NameAnalysisResult({
     }
   }
 
-  // 画数を取得する関数（簡素化版）
+  // 画数を取得する関数（修正版）
   const getStrokeCount = (categoryName: string): string => {
     console.log(`=== ${categoryName} 画数取得開始 ===`)
     console.log("results全体:", results)
-    console.log("results.details:", results.details)
 
-    // detailsから直接取得
-    if (results.details) {
-      const detailItem = results.details.find((detail: any) => detail.name === categoryName)
-      console.log(`${categoryName}のdetailItem:`, detailItem)
-
-      if (detailItem && detailItem.value) {
-        const match = detailItem.value.toString().match(/(\d+)画/)
-        if (match) {
-          const strokeCount = `${match[1]}画`
-          console.log(`✅ ${categoryName}: ${strokeCount}`)
-          return strokeCount
-        }
+    // 直接resultsから取得
+    if (results) {
+      // 天格
+      if (categoryName === "天格" && results.tenFormat) {
+        return `${results.tenFormat}画`
+      }
+      // 人格
+      if (categoryName === "人格" && results.jinFormat) {
+        return `${results.jinFormat}画`
+      }
+      // 地格
+      if (categoryName === "地格" && results.chiFormat) {
+        return `${results.chiFormat}画`
+      }
+      // 外格
+      if (categoryName === "外格" && results.gaiFormat) {
+        return `${results.gaiFormat}画`
+      }
+      // 総格
+      if (categoryName === "総格" && results.totalFormat) {
+        return `${results.totalFormat}画`
       }
     }
 
-    // フォールバック: 実際の姓名判断結果から計算
+    // categoriesから取得（フォールバック）
     if (results && results.categories) {
       const category = results.categories.find((cat: any) => cat.name === categoryName)
       if (category && category.value) {
