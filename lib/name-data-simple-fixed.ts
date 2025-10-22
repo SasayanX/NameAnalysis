@@ -430,54 +430,61 @@ export function analyzeNameFortune(
   const lastNameCount = lastNameStrokes.reduce((sum, stroke) => sum + stroke, 0)
   const firstNameCount = firstNameStrokes.reduce((sum, stroke) => sum + stroke, 0)
 
-  // 各格の計算（霊数ルール修正版）
-  // 天格 = 姓の画数の合計（霊数含む）
+  // 各格の計算（ExcalVBAプログラム準拠）
+  // 天格（先祖・姓運）= 姓の画数の合計（霊数含む）
   const tenFormat = lastNameCount
 
-  // 地格 = 名の画数の合計（霊数含む）
+  // 地格（基礎運）= 名の画数の合計（霊数含む）
   const chiFormat = firstNameCount
 
-  // 総格 = 実際の文字の画数のみ（霊数は含めない）
-  const actualLastNameStrokes = Array.from(lastName).reduce((sum, char, i) => {
-    const { stroke } = getCharStrokeWithContext(char, lastName, i)
-    return sum + stroke
-  }, 0)
-  const actualFirstNameStrokes = Array.from(firstName).reduce((sum, char, i) => {
-    const { stroke } = getCharStrokeWithContext(char, firstName, i)
-    return sum + stroke
-  }, 0)
-  const totalFormat = actualLastNameStrokes + actualFirstNameStrokes
+  // 総格（一生・晩年運）= 天格 + 地格
+  const totalFormat = tenFormat + chiFormat
 
-  // 人格 = 姓の最後の文字と名の最初の文字の画数の合計（霊数除外）
+  // 人格（社会運）= の最後の文字 + 名の最初の文字（霊数除外）
   const lastCharOfLastName = lastName.charAt(lastName.length - 1)
   const firstCharOfFirstName = firstName.charAt(0)
-  const { stroke: lastCharStroke } = getCharStrokeWithContext(lastCharOfLastName, lastName, lastName.length - 1)
+  const { stroke: lastCharStroke } = getCharStrokeWithContext(lastCharOfLastName, lastName, firstName.length - 1)
   const { stroke: firstCharStroke } = getCharStrokeWithContext(firstCharOfFirstName, firstName, 0)
   const jinFormat = lastCharStroke + firstCharStroke
 
-  // 外格の計算（完全修正版）
+  // 外格（仕事・周囲運）の計算（ExcalVBAプログラム準拠）
   let gaiFormat: number
 
   if (hasReisuuInLastName && hasReisuuInFirstName) {
-    // 両方とも一字の場合：外格 = 霊数 + 霊数 = 2画
+    // 両方とも1文字の場合：外格 = 霊数 + 霊数 = 2画
     gaiFormat = 2
   } else if (hasReisuuInLastName && !hasReisuuInFirstName) {
-    // 一字姓・複数字名の場合：外格 = 霊数 + 名の最後の文字（実際の画数）
-    const lastNameChar = Array.from(firstName)[Array.from(firstName).length - 1]
-    const { stroke: lastCharStrokeInFirstName } = getCharStrokeWithContext(
-      lastNameChar,
-      firstName,
-      Array.from(firstName).length - 1,
-    )
-    gaiFormat = 1 + lastCharStrokeInFirstName
+    // 姓1文字・名複数文字の場合：外格 = 霊数 + 名の最初の文字を除外した残り
+    const nameWithoutFirst = Array.from(firstName).slice(1)
+    const remainingStrokes = nameWithoutFirst.reduce((sum, char, i) => {
+      const { stroke } = getCharStrokeWithContext(char, firstName, i + 1)
+      return sum + stroke
+    }, 0)
+    gaiFormat = 1 + remainingStrokes
   } else if (!hasReisuuInLastName && hasReisuuInFirstName) {
-    // 複数字姓・一字名の場合：外格 = 姓の最初の文字（実際の画数） + 霊数
-    const firstNameChar = Array.from(lastName)[0]
-    const { stroke: firstCharStrokeInLastName } = getCharStrokeWithContext(firstNameChar, lastName, 0)
-    gaiFormat = firstCharStrokeInLastName + 1
+    // 姓複数文字・名1文字の場合：外格 = 姓の最後の文字を除外した残り + 霊数
+    const lastNameWithoutLast = Array.from(lastName).slice(0, -1)
+    const remainingStrokes = lastNameWithoutLast.reduce((sum, char, i) => {
+      const { stroke } = getCharStrokeWithContext(char, lastName, i)
+      return sum + stroke
+    }, 0)
+    gaiFormat = remainingStrokes + 1
   } else {
-    // 通常の場合（複数字姓・複数字名）：外格 = 天格 + 地格 - 人格
-    gaiFormat = tenFormat + chiFormat - jinFormat
+    // 通常の場合（複数字姓・複数字名）：外格 = 姓の最初の文字を除外 + 名の最初の文字を除外
+    const lastNameWithoutFirst = Array.from(lastName).slice(1)
+    const firstNameWithoutFirst = Array.from(firstName).slice(1)
+    
+    const lastNameRemainingStrokes = lastNameWithoutFirst.reduce((sum, char, i) => {
+      const { stroke } = getCharStrokeWithContext(char, lastName, i + 1)
+      return sum + stroke
+    }, 0)
+    
+    const firstNameRemainingStrokes = firstNameWithoutFirst.reduce((sum, char, i) => {
+      const { stroke } = getCharStrokeWithContext(char, firstName, i + 1)
+      return sum + stroke
+    }, 0)
+    
+    gaiFormat = lastNameRemainingStrokes + firstNameRemainingStrokes
   }
 
   // 外格が0以下になった場合の安全チェック
