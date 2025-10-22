@@ -224,11 +224,13 @@ export default function ClientPage() {
 
   const handleCompanyAnalysis = useCallback(() => {
     try {
-      // 実際の社名鑑定を実行
-      const { analyzeNameFortune } = require("@/lib/name-data-simple-fixed")
-      const analysisResult = analyzeNameFortune(companyName, "", "male")
-      console.log("社名分析結果:", analysisResult)
-      setCompanyResults(analysisResult)
+      // 社名鑑定専用の計算を実行
+      const { analyzeCompanyName } = require("@/lib/company-name-analysis")
+      
+      const companyResult = analyzeCompanyName(companyName)
+      
+      console.log("社名分析結果:", companyResult)
+      setCompanyResults(companyResult)
 
       if (usageTracker.incrementUsage("companyAnalysis")) {
         setUsageStatus(usageTracker.getUsageStatus())
