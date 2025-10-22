@@ -88,18 +88,17 @@ export function NameAnalysisResult({
       }
     }
 
-    // フォールバック: 固定値マッピング（要潤さんの場合）
-    const fallbackMapping: Record<string, string> = {
-      天格: "10画", // 要(9画) + 霊数(1画) = 10画
-      人格: "25画", // 要(9画) + 潤(16画) = 25画
-      地格: "17画", // 潤(16画) + 霊数(1画) = 17画
-      外格: "2画", // 霊数(1画) + 霊数(1画) = 2画
-      総格: "25画", // 要(9画) + 潤(16画) = 25画
-    }
-
-    if (fallbackMapping[categoryName]) {
-      console.log(`⚠️ ${categoryName}: フォールバック値 ${fallbackMapping[categoryName]}`)
-      return fallbackMapping[categoryName]
+    // フォールバック: 実際の姓名判断結果から計算
+    if (results && results.categories) {
+      const category = results.categories.find((cat: any) => cat.name === categoryName)
+      if (category && category.value) {
+        const match = category.value.toString().match(/(\d+)画/)
+        if (match) {
+          const strokeCount = `${match[1]}画`
+          console.log(`✅ ${categoryName}: フォールバック値 ${strokeCount}`)
+          return strokeCount
+        }
+      }
     }
 
     console.error(`❌ ${categoryName}の画数が取得できませんでした。`)
