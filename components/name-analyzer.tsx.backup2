@@ -1,0 +1,263 @@
+"use client"
+
+import { useState, useMemo, useCallback } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { useNameAnalysis } from "@/hooks/use-name-analysis"
+import { useCompanyAnalysis } from "@/hooks/use-company-analysis"
+import { useUIState } from "@/hooks/use-ui-state"
+import { NameAnalysisResult } from "./name-analysis-result"
+import { CompanyNameResult } from "./company-name-result"
+import { StarTypeSelector } from "./star-type-selector"
+import { FortuneFlowDisplay } from "./fortune-flow-display"
+import { PDFExportButton } from "./pdf-export-button"
+
+export function NameAnalyzer() {
+  const [activeTab, setActiveTab] = useState("personal")
+  const [premiumLevel, setPremiumLevel] = useState(1)
+
+  // useNameAnalysisフックから正しいプロパティを取得
+  const {
+    lastName,
+    firstName,
+    gender,
+    birthdate,
+    birthdateString,
+    results,
+    isLoading,
+    error,
+    updateField,
+    handleBirthdateChange,
+    analyzePersonName,
+    hasValidInput,
+  } = useNameAnalysis()
+
+  // useCompanyAnalysisフックから正しいプロパティを取得
+  const {
+    companyName,
+    results: companyResults,
+    isLoading: isLoadingCompany,
+    error: companyError,
+    updateCompanyName,
+    analyzeCompany,
+    hasValidInput: hasValidCompanyInput,
+  } = useCompanyAnalysis()
+
+  const { selectedStarType, setSelectedStarType, showFortuneFlow, setShowFortuneFlow } = useUIState()
+
+  // メモ化されたイベントハンドラー
+  const cyclePremiumLevel = useCallback(() => {
+    setPremiumLevel((prev) => (prev >= 3 ? 1 : prev + 1))
+  }, [])
+
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value)
+  }, [])
+
+  const handleFortuneFlowToggle = useCallback(() => {
+    setShowFortuneFlow(!showFortuneFlow)
+  }, [showFortuneFlow, setShowFortuneFlow])
+
+  // メモ化された計算値
+  const premiumLevelText = useMemo(() => {
+    switch (premiumLevel) {
+      case 1:
+        return "シンプル"
+      case 2:
+        return "詳細"
+      case 3:
+        return "高度"
+      default:
+        return "シンプル"
+    }
+  }, [premiumLevel])
+
+  const personalPDFData = useMemo(
+    () => ({
+      type: "personal" as const,
+      name: `${lastName} ${firstName}`,
+      result: results,
+      premiumLevel,
+      starType: selectedStarType,
+      birthdate: birthdateString,
+    }),
+    [lastName, firstName, results, premiumLevel, selectedStarType, birthdateString],
+  )
+
+  const companyPDFData = useMemo(
+    () => ({
+      type: "company" as const,
+      name: companyName,
+      result: companyResults,
+      premiumLevel,
+    }),
+    [companyName, companyResults, premiumLevel],
+  )
+
+  const birthYear = useMemo(() => {
+    return birthdateString ? new Date(birthdateString).getFullYear() : 0
+  }, [birthdateString])
+
+  return (
+    <div className="w-full max-w-4xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            名前分析ツール
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                onClick={cyclePremiumLevel}
+              >
+                {premiumLevelText}分析
+              </Badge>
+            </div>
+          </CardTitle>
+          <CardDescription>
+            名前の画数や運勢を分析します。プレミアムレベルをクリックして分析の詳細度を変更できます。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="personal">個人名分析</TabsTrigger>
+              <TabsTrigger value="company">社名・商品名分析</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="personal" className="space-y-4">
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">姓</Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      value={lastName}
+                      onChange={(e) => updateField("lastName", e.target.value)}
+                      placeholder="山田"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">名</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      value={firstName}
+                      onChange={(e) => updateField("firstName", e.target.value)}
+                      placeholder="太郎"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="birthdate">生年月日（六星占術用）</Label>
+                  <Input
+                    id="birthdate"
+                    name="birthdate"
+                    type="date"
+                    value={birthdateString}
+                    onChange={(e) => handleBirthdateChange(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>性別</Label>
+                  <RadioGroup
+                    value={gender}
+                    onValueChange={(value) => updateField("gender", value as "male" | "female")}
+                    className="flex flex-row space-x-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="male" id="gender-male" />
+                      <Label htmlFor="gender-male">男性</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="female" id="gender-female" />
+                      <Label htmlFor="gender-female">女性</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {error && <div className="text-red-500 text-sm bg-red-50 p-2 rounded">{error}</div>}
+
+                <Button onClick={analyzePersonName} disabled={isLoading || !hasValidInput} className="w-full">
+                  {isLoading ? "分析中..." : "名前を分析"}
+                </Button>
+              </div>
+
+              {results && (
+                <div className="space-y-4">
+                  <NameAnalysisResult result={results} premiumLevel={premiumLevel} />
+
+                  {birthdate && (
+                    <div className="space-y-4">
+                      <StarTypeSelector
+                        selectedStarType={selectedStarType}
+                        onStarTypeChange={setSelectedStarType}
+                        birthdate={birthdateString}
+                        gender={gender}
+                      />
+
+                      {selectedStarType && (
+                        <div className="space-y-4">
+                          <Button onClick={handleFortuneFlowToggle} variant="outline" className="w-full">
+                            {showFortuneFlow ? "運勢表を隠す" : "運勢表を表示"}
+                          </Button>
+
+                          {showFortuneFlow && <FortuneFlowDisplay starType={selectedStarType} birthYear={birthYear} />}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <PDFExportButton data={personalPDFData} />
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="company" className="space-y-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">会社名・商品名</Label>
+                  <Input
+                    id="companyName"
+                    name="companyName"
+                    value={companyName}
+                    onChange={(e) => updateCompanyName(e.target.value)}
+                    placeholder="例：株式会社ABC, 新商品α"
+                  />
+                </div>
+
+                {companyError && <div className="text-red-500 text-sm bg-red-50 p-2 rounded">{companyError}</div>}
+
+                <Button
+                  onClick={analyzeCompany}
+                  disabled={isLoadingCompany || !hasValidCompanyInput}
+                  className="w-full"
+                >
+                  {isLoadingCompany ? "分析中..." : "会社名・商品名を分析"}
+                </Button>
+              </div>
+
+              {companyResults && (
+                <div className="space-y-4">
+                  <CompanyNameResult result={companyResults} premiumLevel={premiumLevel} />
+                  <PDFExportButton data={companyPDFData} />
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// デフォルトエクスポートも追加
+export default NameAnalyzer

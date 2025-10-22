@@ -1,0 +1,278 @@
+import type { Metadata } from "next"
+import Link from "next/link"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Calendar, Clock, Star, TrendingUp, Heart, Users, Baby, Sparkles, Calculator } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "姓名判断コラム・記事一覧 | まいにち姓名判断",
+  description:
+    "姓名判断に関する専門記事やコラムを掲載。旧字体の重要性、五行相性診断、赤ちゃんの名前ランキングなど、実用的な情報をお届けします。",
+  keywords: "姓名判断,コラム,記事,旧字体,五行,相性診断,赤ちゃん名前,ランキング",
+  openGraph: {
+    title: "姓名判断コラム・記事一覧 | まいにち姓名判断",
+    description: "姓名判断の専門知識や実用的な情報を分かりやすく解説した記事一覧です。",
+    type: "website",
+  },
+}
+
+export default function ArticlesPage() {
+  const featuredArticles = [
+    {
+      title: "画数でわかる姓名判断の基本と使い方",
+      description:
+        "姓名判断の画数計算方法から五格の意味まで、初心者でもわかりやすく解説。天格・人格・地格・外格・総格の計算手順と吉凶判断を具体例で学べます。",
+      href: "/articles/gakusuu-seimeihandan-kihon",
+      date: "2025年1月2日",
+      readTime: "12分",
+      category: "基礎知識",
+      icon: Calculator,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      isNew: true,
+      tags: ["画数", "五格", "基本", "初心者"],
+    },
+    {
+      title: "五行相性診断の完全ガイド",
+      description: "恋愛・ビジネス・友人関係で活用する古代中国の智慧。木火土金水の相生・相克関係を詳しく解説します。",
+      href: "/articles/gogyo-aishou-shindan",
+      date: "2025年6月28日",
+      readTime: "15分",
+      category: "相性診断",
+      icon: Heart,
+      color: "text-pink-600",
+      bgColor: "bg-pink-50",
+      borderColor: "border-pink-200",
+      isNew: true,
+      tags: ["五行", "相性", "恋愛", "ビジネス"],
+    },
+    {
+      title: "2025年人気の赤ちゃん名前ランキング",
+      description: "最新の赤ちゃん名前トレンドと姓名判断による運勢分析。人気の名前の特徴や注意点も詳しく解説します。",
+      href: "/articles/2025-baby-names-ranking",
+      date: "2025年6月27日",
+      readTime: "12分",
+      category: "赤ちゃん名前",
+      icon: Baby,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      isNew: true,
+      tags: ["赤ちゃん", "名前", "ランキング", "2025年"],
+    },
+    {
+      title: "天格強数の苗字を持つ人の対処法",
+      description: "強すぎる苗字の画数による影響と、それを和らげる具体的な方法を詳しく解説します。",
+      href: "/articles/tengaku-kyousuu-myouji",
+      date: "2025年6月26日",
+      readTime: "10分",
+      category: "姓名判断",
+      icon: TrendingUp,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      tags: ["天格", "強数", "苗字", "対処法"],
+    },
+    {
+      title: "旧字体で行う本格姓名判断の理由",
+      description: "なぜ姓名判断では旧字体を使うのか？その歴史的背景と現代における意義を詳しく解説します。",
+      href: "/articles/kyujitai-seimeihandan",
+      date: "2025年6月15日",
+      readTime: "8分",
+      category: "基礎知識",
+      icon: Star,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
+      tags: ["旧字体", "基礎", "歴史", "画数"],
+    },
+  ]
+
+  const allArticles = [
+    {
+      title: "画数でわかる姓名判断の基本と使い方",
+      description: "姓名判断の画数計算方法から五格の意味まで、初心者でもわかりやすく解説。",
+      href: "/articles/gakusuu-seimeihandan-kihon",
+      date: "2025年1月2日",
+      readTime: "12分",
+      category: "基礎知識",
+      icon: Calculator,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      isNew: true,
+      tags: ["画数", "五格", "基本", "初心者"],
+    },
+    ...featuredArticles,
+    {
+      title: "五行思想と姓名判断の関係",
+      description: "古代中国の五行思想が現代の姓名判断にどのように活用されているかを解説します。",
+      href: "/articles/gogyo-five-elements",
+      date: "2025年6月18日",
+      readTime: "7分",
+      category: "五行思想",
+      icon: Sparkles,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+      tags: ["五行", "思想", "基礎理論"],
+    },
+    {
+      title: "六星占術と姓名判断の組み合わせ",
+      description: "六星占術の運命星と姓名判断を組み合わせた、より詳細な運勢分析方法をご紹介します。",
+      href: "/articles/rokuseisensei-fortune",
+      date: "2025年6月20日",
+      readTime: "9分",
+      category: "六星占術",
+      icon: Users,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      tags: ["六星占術", "運命星", "組み合わせ"],
+    },
+  ]
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* ヘッダー */}
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          姓名判断コラム・記事一覧
+        </h1>
+        <p className="text-xl text-gray-600 mb-6">姓名判断の専門知識と実用的な情報をお届けします</p>
+        <div className="flex justify-center gap-2 flex-wrap">
+          <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+            専門知識
+          </Badge>
+          <Badge variant="secondary" className="bg-green-100 text-green-700">
+            実用情報
+          </Badge>
+          <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+            最新トレンド
+          </Badge>
+        </div>
+      </div>
+
+      {/* 注目記事セクション */}
+      <div className="mb-12">
+        <div className="flex items-center gap-2 mb-6">
+          <Star className="h-6 w-6 text-yellow-500" />
+          <h2 className="text-2xl font-bold">注目記事</h2>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {featuredArticles.slice(0, 2).map((article, index) => {
+            const IconComponent = article.icon
+            return (
+              <Link key={index} href={article.href} className="block group">
+                <Card className={`h-full hover:shadow-xl transition-all duration-300 ${article.borderColor} border-2`}>
+                  <CardHeader className={article.bgColor}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <IconComponent className={`h-5 w-5 ${article.color}`} />
+                        <Badge variant="secondary" className="text-xs">
+                          {article.category}
+                        </Badge>
+                        {article.isNew && <Badge className="bg-red-500 text-white text-xs">NEW</Badge>}
+                      </div>
+                    </div>
+                    <CardTitle className="group-hover:text-blue-600 transition-colors">{article.title}</CardTitle>
+                    <CardDescription className="text-gray-600">{article.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {article.date}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {article.readTime}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {article.tags.map((tag, tagIndex) => (
+                        <Badge key={tagIndex} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 全記事一覧 */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">全記事一覧</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {allArticles.map((article, index) => {
+            const IconComponent = article.icon
+            return (
+              <Link key={index} href={article.href} className="block group">
+                <Card className="h-full hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <IconComponent className={`h-4 w-4 ${article.color}`} />
+                      <Badge variant="secondary" className="text-xs">
+                        {article.category}
+                      </Badge>
+                      {article.isNew && <Badge className="bg-red-500 text-white text-xs">NEW</Badge>}
+                    </div>
+                    <CardTitle className="text-lg group-hover:text-blue-600 transition-colors line-clamp-2">
+                      {article.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-sm text-gray-600 mb-4 line-clamp-3">
+                      {article.description}
+                    </CardDescription>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {article.date}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {article.readTime}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {article.tags.slice(0, 3).map((tag, tagIndex) => (
+                        <Badge key={tagIndex} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <CardContent className="p-8 text-center">
+          <h3 className="text-2xl font-bold mb-4">あなたの名前を詳しく分析</h3>
+          <p className="mb-6 opacity-90">
+            記事で学んだ知識を活用して、実際にあなたの名前を姓名判断で分析してみませんか？
+          </p>
+          <Link href="/name-analyzer">
+            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+              <Star className="h-4 w-4 mr-2" />
+              無料で姓名判断を始める
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

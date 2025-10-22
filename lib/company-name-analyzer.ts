@@ -1,0 +1,129 @@
+import { getCharStrokeWithContext } from "./name-data-simple"
+
+export interface CompanyAnalysisResult {
+  companyNameCount: number
+  fortune: string
+  explanation: string
+  totalScore: number
+  advice: string
+  kanjiInfo?: {
+    hasChanged: boolean
+    oldLastName?: string
+  }
+}
+
+export function analyzeCompanyName(
+  companyName: string,
+  customFortuneData: Record<string, { 運勢: string; 説明: string }>,
+): CompanyAnalysisResult {
+  // 会社名の総画数を計算
+  let totalStrokes = 0
+  const hasKanjiChanged = false
+  const originalName = companyName
+
+  // 各文字の画数を計算
+  for (let i = 0; i < companyName.length; i++) {
+    const char = companyName[i]
+    const strokeResult = getCharStrokeWithContext(char, companyName, i)
+
+    // strokeResultがオブジェクトの場合はstrokeプロパティを取得
+    const strokeCount =
+      typeof strokeResult === "object" && strokeResult !== null
+        ? strokeResult.stroke || strokeResult.strokes || 0
+        : typeof strokeResult === "number"
+          ? strokeResult
+          : 0
+
+    console.log("文字「" + char + "」の画数: " + strokeCount)
+    totalStrokes += strokeCount
+  }
+
+  console.log(companyName + "の総画数計算結果: " + totalStrokes + "画")
+
+  // 運勢データを取得
+  const fortuneInfo = customFortuneData[totalStrokes.toString()]
+  const fortune = fortuneInfo?.運勢 || "不明"
+  const explanation = fortuneInfo?.説明 || "この画数の詳細な説明はありません。"
+
+  // スコア計算（運勢に基づく）
+  let score = 50 // 基本スコア
+  switch (fortune) {
+    case "大吉":
+      score = 85 + Math.floor(Math.random() * 15)
+      break
+    case "吉":
+      score = 70 + Math.floor(Math.random() * 15)
+      break
+    case "中吉":
+      score = 60 + Math.floor(Math.random() * 15)
+      break
+    case "凶":
+      score = 30 + Math.floor(Math.random() * 15)
+      break
+    case "大凶":
+      score = 10 + Math.floor(Math.random() * 15)
+      break
+    case "中凶":
+      score = 25 + Math.floor(Math.random() * 15)
+      break
+    default:
+      score = 50
+  }
+
+  // ビジネスアドバイス生成
+  const advice = generateBusinessAdvice(fortune, totalStrokes, companyName)
+
+  return {
+    companyNameCount: totalStrokes,
+    fortune,
+    explanation,
+    totalScore: score,
+    advice,
+    kanjiInfo: hasKanjiChanged
+      ? {
+          hasChanged: true,
+          oldLastName: originalName,
+        }
+      : undefined,
+  }
+}
+
+function generateBusinessAdvice(fortune: string, strokes: number, companyName: string): string {
+  const baseAdvices = {
+    大吉: [
+      "この社名は非常に縁起が良く、事業の成功と繁栄が期待できます。",
+      "積極的な事業展開と新しい挑戦を恐れずに進むことで、大きな成果を得られるでしょう。",
+      "リーダーシップを発揮し、業界をリードする存在になる可能性があります。",
+    ],
+    吉: [
+      "この社名は安定した成長と着実な発展を示しています。",
+      "堅実な経営方針を貫くことで、長期的な成功を収めることができるでしょう。",
+      "顧客との信頼関係を大切にし、品質重視の経営を心がけましょう。",
+    ],
+    中吉: [
+      "この社名はバランスの取れた運勢を示しています。",
+      "計画的な事業運営と着実な成長を目指すことで、安定した発展が期待できます。",
+      "チームワークを重視し、従業員との協力関係を築くことが成功の鍵です。",
+    ],
+    凶: [
+      "この社名は注意が必要な運勢を示しています。",
+      "慎重な経営判断と リスク管理を徹底することで、困難を乗り越えることができます。",
+      "短期的な利益よりも長期的な安定を重視した経営方針を採用しましょう。",
+    ],
+    大凶: [
+      "この社名は大きな困難を示していますが、適切な対策で改善可能です。",
+      "経営方針の見直しや事業戦略の再構築を検討することをお勧めします。",
+      "専門家のアドバイスを求め、慎重な事業運営を心がけましょう。",
+    ],
+    中凶: [
+      "この社名は課題があることを示していますが、努力次第で改善できます。",
+      "市場調査を徹底し、顧客ニーズに合った商品・サービスの提供を心がけましょう。",
+      "財務管理を厳格に行い、無駄な支出を削減することが重要です。",
+    ],
+  }
+
+  const adviceList = baseAdvices[fortune as keyof typeof baseAdvices] || baseAdvices["中吉"]
+  const randomAdvice = adviceList[Math.floor(Math.random() * adviceList.length)]
+
+  return `${randomAdvice} 総画数${strokes}画の「${companyName}」は、${fortune}の運勢を持っています。`
+}
