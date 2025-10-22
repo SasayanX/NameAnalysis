@@ -111,7 +111,7 @@ export default function ClientPage() {
   const handlePersonalAnalysis = useCallback(() => {
     try {
       // 実際の姓名判断分析を実行
-      const { analyzeNameFortune } = require("@/lib/name-data-simple")
+      const { analyzeNameFortune } = require("@/lib/name-data-simple-fixed")
       const analysisResult = analyzeNameFortune(lastName, firstName, gender)
       console.log("分析結果:", analysisResult)
       setResults(analysisResult)
