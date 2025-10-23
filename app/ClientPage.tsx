@@ -109,11 +109,14 @@ export default function ClientPage() {
   }, [])
 
   const handlePersonalAnalysis = useCallback(() => {
+    console.log("🔍 ClientPage: handlePersonalAnalysis関数が呼び出されました")
     try {
       // 実際の姓名判断分析を実行
       console.log("🔍 ClientPage: 分析開始前")
       const { analyzeNameFortune } = require("@/lib/name-data-simple-fixed")
       console.log("🔍 ClientPage: analyzeNameFortune関数取得完了")
+      console.log("🔍 ClientPage: analyzeNameFortune関数の型:", typeof analyzeNameFortune)
+      console.log("🔍 ClientPage: analyzeNameFortune関数の名前:", analyzeNameFortune.name)
       const { customFortuneData } = require("@/lib/fortune-data-custom")
       console.log("🔍 ClientPage: customFortuneData取得状況:", !!customFortuneData)
       if (customFortuneData) {
