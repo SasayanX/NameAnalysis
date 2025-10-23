@@ -3,6 +3,7 @@ import { calculateNameElements } from "./five-elements"
 import { getYinYangArray } from "@/components/vertical-name-display"
 import { analyzeSansaiConfiguration } from "./gogyo-sansai"
 import { getInyoDetailedAnalysis } from "./inyo-analysis"
+import { calculateGogyo } from "./advanced-gogyo"
 
 // 名前の格付けポイントを計算する関数
 export function calculateNameRankingPoints(
@@ -44,8 +45,38 @@ export function calculateNameRankingPoints(
     }
   }
 
-  // 五行要素を計算
+  // 五行要素を計算（生年月日も含める）
   const elements = calculateNameElements(lastName, firstName)
+  
+  // 生年月日から算出される要素も追加（9点の分布を完成させるため）
+  let birthElements = null
+  
+  // 生年月日が提供されていない場合は、デフォルトの生年月日を使用
+  const birthDate = basicResult.birthDate || new Date(1990, 0, 1) // デフォルト: 1990年1月1日
+  
+  try {
+    // 生年月日から4つの要素を算出
+    const gogyoResult = calculateGogyo(lastName, firstName, birthDate)
+    
+    // 生年月日から算出された要素を追加
+    birthElements = {
+      woodCount: elements.woodCount + (gogyoResult.birthStars?.filter(star => star.includes('木')).length || 0),
+      fireCount: elements.fireCount + (gogyoResult.birthStars?.filter(star => star.includes('火')).length || 0),
+      earthCount: elements.earthCount + (gogyoResult.birthStars?.filter(star => star.includes('土')).length || 0),
+      metalCount: elements.metalCount + (gogyoResult.birthStars?.filter(star => star.includes('金')).length || 0),
+      waterCount: elements.waterCount + (gogyoResult.birthStars?.filter(star => star.includes('水')).length || 0),
+      dominantElement: elements.dominantElement
+    }
+    
+    console.log("=== 生年月日要素追加 ===")
+    console.log("使用した生年月日:", birthDate)
+    console.log("基本要素（5格）:", elements)
+    console.log("生年月日要素:", gogyoResult.birthStars)
+    console.log("合計要素（9点分布）:", birthElements)
+  } catch (error) {
+    console.error("生年月日要素計算エラー:", error)
+    birthElements = elements // エラーの場合は基本要素のみ使用
+  }
 
   // 陰陽配列を取得・分析
   const yinYangArray = getYinYangArray(lastName, firstName)
@@ -80,10 +111,16 @@ export function calculateNameRankingPoints(
     description: "名前の画数と各格の吉凶から算出されるパワーポイントです",
   }
 
+  // 生年月日の要素が計算できているか確認
+  const finalElements = birthElements || elements
+  console.log("=== 最終要素確認 ===")
+  console.log("使用する要素データ:", finalElements)
+  console.log("要素の合計:", (finalElements.woodCount + finalElements.fireCount + finalElements.earthCount + finalElements.metalCount + finalElements.waterCount))
+
   const elementPoints = {
     category: "五行パワー",
-    points: calculateElementPoints(elements),
-    description: "名前に含まれる五行要素のバランスと強さを数値化したポイントです",
+    points: calculateElementPoints(finalElements),
+    description: "名前に含まれる五行要素のバランスと強さを数値化したポイントです（生年月日含む）",
   }
 
   const balancePoints = {
@@ -134,31 +171,53 @@ export function calculateNameRankingPoints(
   }
 }
 
-// 運勢パワーを計算する関数 - 総合運勢スコアをそのまま返す
+// 運勢パワーを計算する関数 - 各格の吉凶から直接計算
 export function calculateFortunePoints(result: any, gender = "male"): number {
   console.log("=== 運勢パワー計算詳細デバッグ ===")
-  console.log("入力データ全体:", JSON.stringify(result, null, 2))
+  console.log("入力データ全体:", result)
   console.log("result.totalScore:", result.totalScore)
-  console.log("typeof result.totalScore:", typeof result.totalScore)
+  console.log("result.categories:", result.categories)
   console.log("性別:", gender)
 
-  if (!result) {
-    console.error("結果データがnullまたはundefinedです")
+  if (!result || !result.categories) {
+    console.error("結果データが無効です")
     return 0
   }
 
-  if (typeof result.totalScore !== "number") {
-    console.error("totalScoreが数値ではありません:", result.totalScore)
-    return 0
+  // 各格の吉凶から直接運勢パワーを計算
+  const fortunePoints = {
+    大吉: 25,
+    中吉: 20,
+    吉: 15,
+    凶: 5,
+    中凶: 2,
+    大凶: 0,
   }
 
-  // 詳細鑑定の総合運勢スコアをそのまま運勢パワーとして使用
-  const fortunePoints = result.totalScore
+  let totalFortunePoints = 0
+  let categoryCount = 0
 
-  console.log("詳細鑑定の総合運勢スコア:", result.totalScore, "点")
-  console.log("運勢パワー（そのまま代入）:", fortunePoints, "点")
+  result.categories.forEach((category: any) => {
+    console.log(`${category.name}: ${category.fortune}`)
+    categoryCount++
+    
+    // 各格の運勢を判定
+    for (const [fortune, pointValue] of Object.entries(fortunePoints)) {
+      if (category.fortune && category.fortune.includes(fortune)) {
+        totalFortunePoints += pointValue as number
+        console.log(`${category.name}で${fortune}: +${pointValue}ポイント`)
+        break
+      }
+    }
+  })
 
-  return fortunePoints
+  // 5格の平均点を計算
+  const averagePoints = categoryCount > 0 ? totalFortunePoints / categoryCount : 0
+  
+  console.log(`運勢パワー計算結果: 合計${totalFortunePoints}点, 平均${averagePoints}点`)
+  console.log("最終運勢パワー:", Math.round(averagePoints), "点")
+
+  return Math.round(averagePoints)
 }
 
 // 画数ポイントを計算する関数を大幅に修正
@@ -169,14 +228,14 @@ function calculateStrokePoints(result: any) {
   let points = 30 // 基本点を50から30に下げる
   console.log("基本点:", points)
 
-  // 各格の吉凶に基づくポイント配分を厳しく調整
+  // 各格の吉凶に基づくポイント配分を適正に調整
   const fortunePoints = {
-    大吉: 8,
-    中吉: 5,
-    吉: 3,
-    凶: -15, // -4から-15に大幅強化
-    中凶: -20, // -6から-20に大幅強化
-    大凶: -25, // -8から-25に大幅強化
+    大吉: 15,
+    中吉: 10,
+    吉: 5,
+    凶: -5, // 適正な減点に調整
+    中凶: -8, // 適正な減点に調整
+    大凶: -12, // 適正な減点に調整
   }
 
   // 各格の吉凶を評価してポイントを加算
@@ -194,7 +253,7 @@ function calculateStrokePoints(result: any) {
   })
 
   // 5格の吉凶ポイントを基本点に加算（スケーリングを調整）
-  points += totalFortunePoints * 3 // 5から3に調整
+  points += totalFortunePoints * 2 // 適正なスケーリングに調整
 
   // 低スコア格がある場合の追加減点を画数パワーにも適用（大幅強化）
   const lowScoreCategories = result.categories.filter((category: any) => {
@@ -203,7 +262,7 @@ function calculateStrokePoints(result: any) {
   })
 
   if (lowScoreCategories.length > 0) {
-    const lowScorePenalty = lowScoreCategories.length * 20 // 8から20に大幅強化
+    const lowScorePenalty = lowScoreCategories.length * 8 // 適正な減点に調整
     points -= lowScorePenalty
     console.log(
       "画数パワー: 低スコア格" + lowScoreCategories.length + "個による追加減点: -" + lowScorePenalty + "ポイント",
@@ -227,7 +286,7 @@ function calculateStrokePoints(result: any) {
   if (totalStroke > 0) {
     // 強い画数の場合はボーナス（ただし凶数がある場合は半減）
     if (powerfulStrokes.includes(totalStroke)) {
-      const bonus = lowScoreCategories.length > 0 ? 3 : 6 // 10から6/3に削減
+      const bonus = lowScoreCategories.length > 0 ? 5 : 10 // 適正なボーナスに調整
       points += bonus
       console.log("強い画数ボーナス: +" + bonus + "ポイント")
     }
@@ -245,33 +304,48 @@ function calculateStrokePoints(result: any) {
 
 // 五行要素ポイントを計算
 function calculateElementPoints(elements: any) {
-  let points = 50 // 基本点
-
-  // 優勢な要素が「火」または「木」の場合はボーナス
-  if (elements.dominantElement === "火" || elements.dominantElement === "木") {
-    points += 15
-  }
+  console.log("=== 五行要素ポイント計算詳細 ===")
+  console.log("elements:", elements)
+  
+  let points = 0 // 基本点を0に変更
 
   // 要素のバランスを評価
   const totalElements =
     elements.woodCount + elements.fireCount + elements.earthCount + elements.metalCount + elements.waterCount
 
-  // 最も多い要素の割合が高すぎる場合は減点
-  const maxElementCount = Math.max(
-    elements.woodCount,
-    elements.fireCount,
-    elements.earthCount,
-    elements.metalCount,
-    elements.waterCount,
-  )
-  const maxElementRatio = maxElementCount / totalElements
+  console.log("totalElements:", totalElements)
 
-  if (maxElementRatio > 0.5) {
-    points -= Math.floor((maxElementRatio - 0.5) * 100)
+  // 各要素の存在ボーナス（各要素1点ずつ）
+  if (elements.woodCount > 0) {
+    points += 1
+    console.log("木要素ボーナス: +1点")
+  }
+  if (elements.fireCount > 0) {
+    points += 1
+    console.log("火要素ボーナス: +1点")
+  }
+  if (elements.earthCount > 0) {
+    points += 1
+    console.log("土要素ボーナス: +1点")
+  }
+  if (elements.metalCount > 0) {
+    points += 1
+    console.log("金要素ボーナス: +1点")
+  }
+  if (elements.waterCount > 0) {
+    points += 1
+    console.log("水要素ボーナス: +1点")
   }
 
-  // 要素の総数が多いほどボーナス（上限を35に増加）
-  points += Math.min(35, totalElements * 2)
+  // 要素の総数ボーナス（1要素につき1点）
+  points += totalElements
+  console.log("要素総数ボーナス: +" + totalElements + "点")
+
+  // 優勢な要素が「火」または「木」の場合は追加ボーナス
+  if (elements.dominantElement === "火" || elements.dominantElement === "木") {
+    points += 2
+    console.log("火・木優勢ボーナス: +2点")
+  }
 
   // 完璧なバランス（各要素が均等）の場合は特別ボーナス
   const elementCounts = [
@@ -288,10 +362,12 @@ function calculateElementPoints(elements: any) {
     const variance = calculateVariance(nonZeroCounts)
     if (variance <= 1) {
       // 分散が小さい（バランスが良い）場合
-      points += 15 // 完璧バランスボーナス
+      points += 3 // 完璧バランスボーナス
+      console.log("完璧バランスボーナス: +3点")
     }
   }
 
+  console.log("五行要素ポイント最終計算: " + points + "点")
   return Math.max(0, Math.min(100, points))
 }
 
@@ -383,30 +459,30 @@ function calculateRarityPoints(lastName: string, firstName: string) {
   return Math.max(0, Math.min(100, points))
 }
 
-// パワーランクを決定する関数（三才パワー追加により上限を調整）
+// パワーランクを決定する関数（適正な閾値に調整）
 function determinePowerRank(totalPoints: number): string {
-  if (totalPoints >= 600) return "SSS" // 上限を100ポイント上げる
-  if (totalPoints >= 550) return "SS"
-  if (totalPoints >= 500) return "S"
-  if (totalPoints >= 450) return "A+"
-  if (totalPoints >= 400) return "A"
-  if (totalPoints >= 350) return "B+"
-  if (totalPoints >= 300) return "B"
-  if (totalPoints >= 250) return "C"
+  if (totalPoints >= 450) return "SSS" // 閾値を下げて適正に調整
+  if (totalPoints >= 400) return "SS"
+  if (totalPoints >= 350) return "S"
+  if (totalPoints >= 300) return "A+"
+  if (totalPoints >= 250) return "A"
+  if (totalPoints >= 200) return "B+"
+  if (totalPoints >= 150) return "B"
+  if (totalPoints >= 100) return "C"
   return "D"
 }
 
 // パワーレベルを決定する関数（1〜10のスケール）
 function determinePowerLevel(totalPoints: number): number {
-  if (totalPoints >= 600) return 10 // 天下無双
-  if (totalPoints >= 550) return 9 // 無敵
-  if (totalPoints >= 500) return 8 // 最強
-  if (totalPoints >= 450) return 7 // 一流
-  if (totalPoints >= 400) return 6 // 優秀
-  if (totalPoints >= 350) return 5 // 良好
-  if (totalPoints >= 300) return 4 // 普通
-  if (totalPoints >= 250) return 3 // 平凡
-  if (totalPoints >= 200) return 2 // 苦労
+  if (totalPoints >= 450) return 10 // 天下無双
+  if (totalPoints >= 400) return 9 // 無敵
+  if (totalPoints >= 350) return 8 // 最強
+  if (totalPoints >= 300) return 7 // 一流
+  if (totalPoints >= 250) return 6 // 優秀
+  if (totalPoints >= 200) return 5 // 良好
+  if (totalPoints >= 150) return 4 // 普通
+  if (totalPoints >= 100) return 3 // 平凡
+  if (totalPoints >= 50) return 2 // 苦労
   return 1 // 困難
 }
 

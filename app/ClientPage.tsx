@@ -288,15 +288,24 @@ export default function ClientPage() {
     return isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground hover:bg-muted"
   }, [])
 
-  // 安全な使用状況取得
-  const getTodayUsage = useCallback(() => {
+  // 使用状況の状態管理（Hydrationエラー対策）
+  const [todayUsage, setTodayUsage] = useState(DEFAULT_USAGE)
+  
+  // クライアントサイドでのみ使用状況を更新
+  useEffect(() => {
     try {
-      return usageStatus?.todayUsage || DEFAULT_USAGE
+      if (usageStatus?.todayUsage) {
+        setTodayUsage(usageStatus.todayUsage)
+      }
     } catch (error) {
-      console.error("Error getting today usage:", error)
-      return DEFAULT_USAGE
+      console.error("Error setting today usage:", error)
     }
   }, [usageStatus])
+
+  // 安全な使用状況取得
+  const getTodayUsage = useCallback(() => {
+    return todayUsage
+  }, [todayUsage])
 
   // 六星占術の結果が更新されたときの処理 - 依存配列を最小限に
   useEffect(() => {
@@ -552,7 +561,10 @@ export default function ClientPage() {
               </div>
               <div className="mt-2">
                 <strong>今日の使用回数:</strong>
-                個人名分析: {getTodayUsage().personalAnalysis}, 会社名分析: {getTodayUsage().companyAnalysis}
+                <span className="ml-2">
+                  個人名分析: {getTodayUsage().personalAnalysis}, 
+                  会社名分析: {getTodayUsage().companyAnalysis}
+                </span>
               </div>
             </div>
           </div>
@@ -612,22 +624,14 @@ export default function ClientPage() {
                 ? results && (
                     <Tabs value={activeTab} onValueChange={setActiveTab} key={tabsKey.toString()}>
                       <div className="mb-4">
-                        <TabsList className="grid w-full grid-cols-6">
+                        <TabsList className="grid w-full grid-cols-4">
                           <TabsTrigger value="simple">かんたん鑑定</TabsTrigger>
                           <TabsTrigger value="detailed" onClick={handleTabClick("detailed", "basic")}>
                             {currentPlan === "free" && <LockIcon className="h-3 w-3 mr-1" />}
                             詳細鑑定
                           </TabsTrigger>
                           <TabsTrigger value="advanced">総合分析</TabsTrigger>
-                          <TabsTrigger value="ranking">格付け</TabsTrigger>
-                          <TabsTrigger value="numerology" onClick={handleTabClick("numerology", "basic")}>
-                            {currentPlan === "free" && <LockIcon className="h-3 w-3 mr-1" />}
-                            数秘術
-                          </TabsTrigger>
-                          <TabsTrigger value="fortune-flow" onClick={handleTabClick("fortune-flow", "premium")}>
-                            {currentPlan !== "premium" && <LockIcon className="h-3 w-3 mr-1" />}
-                            運気運行表
-                          </TabsTrigger>
+                          <TabsTrigger value="others">その他</TabsTrigger>
                         </TabsList>
                       </div>
 
@@ -675,7 +679,118 @@ export default function ClientPage() {
                           )}
                         </TabsContent>
 
-                        <TabsContent value="ranking">
+                        <TabsContent value="others">
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>その他の機能</CardTitle>
+                              <CardDescription>プレミアム機能をご利用いただけます</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* 格付け */}
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ranking")}>
+                                  <CardContent className="pt-6">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="font-semibold">格付け</h3>
+                                        <p className="text-sm text-muted-foreground">名前の総合評価</p>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {currentPlan === "free" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">ベーシック</span>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* 数秘術 */}
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("numerology")}>
+                                  <CardContent className="pt-6">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="font-semibold">数秘術</h3>
+                                        <p className="text-sm text-muted-foreground">数字による運命分析</p>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {currentPlan === "free" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">ベーシック</span>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* 運気運行表 */}
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("fortune-flow")}>
+                                  <CardContent className="pt-6">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="font-semibold">運気運行表</h3>
+                                        <p className="text-sm text-muted-foreground">年間の運気の流れ</p>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">プレミアム</span>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* AI心理分析 */}
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ai-personality")}>
+                                  <CardContent className="pt-6">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="font-semibold">AI心理分析</h3>
+                                        <p className="text-sm text-muted-foreground">AIによる深層心理鑑定</p>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <Sparkles className="h-4 w-4 text-purple-600" />
+                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">プレミアム</span>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* AI相性診断 */}
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ai-compatibility")}>
+                                  <CardContent className="pt-6">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="font-semibold">AI相性診断</h3>
+                                        <p className="text-sm text-muted-foreground">AIによる相性分析</p>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <Sparkles className="h-4 w-4 text-pink-600" />
+                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">プレミアム</span>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* アップグレード案内 */}
+                                {currentPlan === "free" && (
+                                  <Card className="md:col-span-2 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+                                    <CardContent className="pt-6 text-center">
+                                      <h3 className="font-semibold text-purple-800 mb-2">プレミアム機能をすべてお試しください</h3>
+                                      <p className="text-sm text-purple-600 mb-4">3日間無料トライアルで全機能をご利用いただけます</p>
+                                      <Button 
+                                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                        onClick={() => handleStartTrial()}
+                                      >
+                                        無料で始める
+                                      </Button>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+
+                        {/* プレミアム機能のTabsContent（隠しタブとして保持） */}
+                        <TabsContent value="ranking" style={{ display: activeTab === "ranking" ? "block" : "none" }}>
                           <NameRankingCard
                             lastName={lastName}
                             firstName={firstName}
@@ -685,7 +800,7 @@ export default function ClientPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="numerology">
+                        <TabsContent value="numerology" style={{ display: activeTab === "numerology" ? "block" : "none" }}>
                           {(() => {
                             // birthdateが文字列の場合、Dateオブジェクトに変換
                             let birthdateObj: Date | undefined = undefined
@@ -709,12 +824,105 @@ export default function ClientPage() {
                           })()}
                         </TabsContent>
 
-                        <TabsContent value="fortune-flow">
+                        <TabsContent value="fortune-flow" style={{ display: activeTab === "fortune-flow" ? "block" : "none" }}>
                           <FortuneFlowTable
                             starPerson={starPersonForFortuneFlow}
                             isPremium={currentPlan === "premium"}
                             key={forceUpdateKey}
                           />
+                        </TabsContent>
+
+                        {/* AI機能のTabsContent */}
+                        <TabsContent value="ai-personality" style={{ display: activeTab === "ai-personality" ? "block" : "none" }}>
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-purple-600" />
+                                AI深層心理鑑定
+                              </CardTitle>
+                              <CardDescription>
+                                AIがあなたの名前から深層心理を分析します
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-center py-8">
+                                <div className="text-6xl mb-4">🤖</div>
+                                <h3 className="text-xl font-semibold mb-2">AI深層心理鑑定</h3>
+                                <p className="text-muted-foreground mb-6">
+                                  OpenAI GPT-4を使用した高度な心理分析機能です
+                                </p>
+                                {currentPlan !== "premium" ? (
+                                  <div className="space-y-4">
+                                    <div className="p-4 bg-purple-50 rounded-lg">
+                                      <p className="text-purple-800">プレミアムプランでご利用いただけます</p>
+                                    </div>
+                                    <Button 
+                                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                      onClick={() => handleStartTrial()}
+                                    >
+                                      3日間無料で始める
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button 
+                                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                                    onClick={() => {
+                                      // AI分析の実行処理（後で実装）
+                                      alert("AI深層心理鑑定機能は準備中です")
+                                    }}
+                                  >
+                                    AI分析を実行
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+
+                        <TabsContent value="ai-compatibility" style={{ display: activeTab === "ai-compatibility" ? "block" : "none" }}>
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-pink-600" />
+                                AI相性診断
+                              </CardTitle>
+                              <CardDescription>
+                                AIがあなたとパートナーの相性を分析します
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-center py-8">
+                                <div className="text-6xl mb-4">💕</div>
+                                <h3 className="text-xl font-semibold mb-2">AI相性診断</h3>
+                                <p className="text-muted-foreground mb-6">
+                                  OpenAI GPT-4を使用した高度な相性分析機能です
+                                </p>
+                                {currentPlan !== "premium" ? (
+                                  <div className="space-y-4">
+                                    <div className="p-4 bg-pink-50 rounded-lg">
+                                      <p className="text-pink-800">プレミアムプランでご利用いただけます</p>
+                                    </div>
+                                    <Button 
+                                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                      onClick={() => handleStartTrial()}
+                                    >
+                                      3日間無料で始める
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button 
+                                    className="bg-pink-600 hover:bg-pink-700 text-white"
+                                    onClick={() => {
+                                      // AI分析の実行処理（後で実装）
+                                      alert("AI相性診断機能は準備中です")
+                                    }}
+                                  >
+                                    AI分析を実行
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
                         </TabsContent>
                       </div>
                     </Tabs>

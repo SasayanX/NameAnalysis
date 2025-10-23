@@ -74,7 +74,7 @@ export default function ClientLayout({
           <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
 
           {/* Preload critical resources */}
-          <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+          {/* フォントプリロードを削除 - 実際に使用されていないため */}
 
           {/* DNS prefetch */}
           <link rel="dns-prefetch" href="//fonts.googleapis.com" />

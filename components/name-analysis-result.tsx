@@ -358,58 +358,6 @@ ${gender === "female" ? "女性らしい強さと優しさ" : "男性らしい�
           </div>
         )}
 
-        {/* 🏆 格付けランク表示（プレミアム限定） */}
-        {canViewRanking ? (
-          <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-            <div className="flex items-center gap-2 mb-3">
-              <Trophy className="h-5 w-5 text-purple-600" />
-              <h3 className="font-semibold text-purple-900">おなまえ格付けランク</h3>
-              <Badge className="bg-purple-600 text-white">プレミアム限定</Badge>
-            </div>
-            <div className="grid grid-cols-5 gap-2 mb-4">
-              {["S", "A", "B", "C", "D"].map((rank, index) => (
-                <div
-                  key={rank}
-                  className={`text-center p-2 rounded ${
-                    index === 1 // Aランクを例として選択
-                      ? "bg-blue-500 text-white font-bold"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {rank}ランク
-                </div>
-              ))}
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-1">Aランク</div>
-              <div className="text-sm text-gray-600">全国上位10%の優秀な名前です</div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-center gap-2 mb-3">
-              <Lock className="h-5 w-5 text-gray-400" />
-              <h3 className="font-semibold text-gray-700">おなまえ格付けランク</h3>
-              <Badge variant="outline" className="border-purple-200 text-purple-600">
-                プレミアム限定
-              </Badge>
-            </div>
-            <div className="text-center py-4">
-              <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600 mb-4">
-                あなたの名前をS・A・B・C・Dの5段階で格付け！
-                <br />
-                全国ランキングと比較した詳細な評価をご覧いただけます。
-              </p>
-              <Link href="/pricing">
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                  <Crown className="h-4 w-4 mr-2" />
-                  プレミアムで格付けランクを見る
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* 五格表示 */}
         {displayCategories.length > 0 ? (

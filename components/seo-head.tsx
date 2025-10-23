@@ -29,7 +29,7 @@ export function SEOHead({ structuredData = [], noIndex = false }: SEOHeadProps) 
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
       {/* プリロード重要リソース */}
-      <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      {/* フォントプリロードを削除 - 実際に使用されていないため */}
 
       {/* DNS プリフェッチ */}
       <link rel="dns-prefetch" href="//fonts.googleapis.com" />
