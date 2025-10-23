@@ -141,8 +141,13 @@ export function NameAnalyzer() {
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       if (analysisType === "person") {
-        console.log("姓名判断開始: 姓=" + lastName + ", 名=" + firstName + ", 性別=" + gender)
+        console.log("🔍 name-analyzer: 姓名判断開始: 姓=" + lastName + ", 名=" + firstName + ", 性別=" + gender)
+        console.log("🔍 name-analyzer: fortuneData提供状況:", !!fortuneData)
+        if (fortuneData) {
+            console.log("🔍 name-analyzer: fortuneData件数:", Object.keys(fortuneData).length)
+        }
         const analysisResult = analyzeNameFortune(lastName, firstName, gender, fortuneData)
+        console.log("🔍 name-analyzer: 分析結果取得完了")
         setResult(analysisResult)
 
         // 生年月日が入力されている場合は詳細分析を実行
