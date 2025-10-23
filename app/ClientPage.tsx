@@ -111,13 +111,17 @@ export default function ClientPage() {
   const handlePersonalAnalysis = useCallback(() => {
     try {
       // 実際の姓名判断分析を実行
+      console.log("🔍 ClientPage: 分析開始前")
       const { analyzeNameFortune } = require("@/lib/name-data-simple-fixed")
+      console.log("🔍 ClientPage: analyzeNameFortune関数取得完了")
       const { customFortuneData } = require("@/lib/fortune-data-custom")
       console.log("🔍 ClientPage: customFortuneData取得状況:", !!customFortuneData)
       if (customFortuneData) {
         console.log("🔍 ClientPage: customFortuneData件数:", Object.keys(customFortuneData).length)
       }
+      console.log("🔍 ClientPage: analyzeNameFortune関数呼び出し開始")
       const analysisResult = analyzeNameFortune(lastName, firstName, gender, customFortuneData)
+      console.log("🔍 ClientPage: analyzeNameFortune関数呼び出し完了")
       console.log("分析結果:", analysisResult)
       setResults(analysisResult)
 
