@@ -113,6 +113,10 @@ export default function ClientPage() {
       // 実際の姓名判断分析を実行
       const { analyzeNameFortune } = require("@/lib/name-data-simple-fixed")
       const { customFortuneData } = require("@/lib/fortune-data-custom")
+      console.log("🔍 ClientPage: customFortuneData取得状況:", !!customFortuneData)
+      if (customFortuneData) {
+        console.log("🔍 ClientPage: customFortuneData件数:", Object.keys(customFortuneData).length)
+      }
       const analysisResult = analyzeNameFortune(lastName, firstName, gender, customFortuneData)
       console.log("分析結果:", analysisResult)
       setResults(analysisResult)

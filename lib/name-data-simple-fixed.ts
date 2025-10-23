@@ -392,8 +392,12 @@ export function analyzeNameFortune(
 ): any {
   console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
   console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
+  console.log(`🔍 customFortuneData型:`, typeof customFortuneData)
   if (customFortuneData) {
     console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
+    console.log(`🔍 customFortuneData先頭5件:`, Object.keys(customFortuneData).slice(0, 5))
+  } else {
+    console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
   }
 
   // customFortuneDataが提供されていない場合、カスタムデータをインポート
