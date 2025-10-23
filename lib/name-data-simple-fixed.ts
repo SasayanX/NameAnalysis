@@ -22,6 +22,7 @@ const REGEX_PATTERNS = {
 
 // デバッグモードを一時的に有効化して問題を特定
 const DEBUG_MODE = true // デバッグモードを有効化
+console.log("🔍 DEBUG_MODE設定:", DEBUG_MODE)
 
 // 全ての画数データを統合（優先順位：後から読み込まれるものが優先）
 export const strokeCountData: Record<string, number> = {
@@ -390,18 +391,19 @@ export function analyzeNameFortune(
   gender = "male",
   customFortuneData?: Record<string, any>, // オプショナルに変更
 ): any {
+  console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
+  console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
+  console.log(`🔍 customFortuneData型:`, typeof customFortuneData)
+  if (customFortuneData) {
+    console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
+    console.log(`🔍 customFortuneData先頭5件:`, Object.keys(customFortuneData).slice(0, 5))
+  } else {
+    console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
+  }
+  
+  console.log(`🔍 関数実行開始: 霊数計算前`)
+  
   try {
-    console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
-    console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
-    console.log(`🔍 customFortuneData型:`, typeof customFortuneData)
-    if (customFortuneData) {
-      console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
-      console.log(`🔍 customFortuneData先頭5件:`, Object.keys(customFortuneData).slice(0, 5))
-    } else {
-      console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
-    }
-    
-    console.log(`🔍 関数実行開始: 霊数計算前`)
 
   // customFortuneDataが提供されていない場合、カスタムデータをインポート
   if (!customFortuneData) {
