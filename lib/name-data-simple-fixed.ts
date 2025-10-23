@@ -1,387 +1,154 @@
-"use client"
+import { customFortuneData } from "./fortune-data-custom"
 
-// 分割されたデータをインポート（正しいエクスポート形式に合わせて修正）
-import { basicNumbersData } from "./stroke-data/basic-numbers"
-import { surnamesData } from "./stroke-data/surnames"
-import givenNamesData from "./stroke-data/given-names"
-import { commonKanjiData } from "./stroke-data/common-kanji"
-import { hiraganaData, katakanaData } from "./stroke-data/kana"
-import { extendedKanjiData } from "./stroke-data/extended-kanji"
+const DEBUG_MODE = true
 
-// CSVインポートデータのインポート
-import { csvImportedData } from "./stroke-data/csv-imported-data"
+// 漢字の画数を取得する関数
+export function getStrokeCount(character: string): number {
+  const strokeData: Record<string, number> = {
+    // 基本漢字の画数データ（一部）
+    "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+    "金": 8, "雨": 8, "輝": 15, "龍": 16, "佐": 7, "々": 0, "木": 4, "靖": 13, "隆": 17,
+    "田": 5, "中": 4, "山": 3, "川": 3, "大": 3, "小": 3, "人": 2, "口": 3, "日": 4, "月": 4,
+    "水": 4, "火": 4, "土": 3, "木": 4, "金": 8, "石": 5, "玉": 5, "王": 4, "女": 3, "子": 3,
+    "男": 7, "女": 3, "父": 4, "母": 5, "兄": 5, "弟": 7, "姉": 8, "妹": 8, "夫": 4, "妻": 8,
+    "子": 3, "孫": 10, "親": 16, "友": 4, "愛": 13, "心": 4, "手": 4, "足": 7, "目": 5, "耳": 6,
+    "鼻": 14, "口": 3, "舌": 6, "歯": 12, "頭": 16, "顔": 18, "体": 7, "身": 7, "背": 9, "胸": 10,
+    "腹": 13, "腰": 13, "脚": 11, "腕": 12, "指": 9, "爪": 4, "毛": 4, "髪": 14, "肌": 6, "血": 6,
+    "骨": 10, "肉": 6, "皮": 5, "服": 8, "着": 12, "靴": 13, "帽子": 12, "眼鏡": 16, "時計": 17,
+    "家": 10, "門": 8, "窓": 12, "床": 7, "壁": 16, "天井": 8, "柱": 9, "階段": 16, "廊下": 16,
+    "部屋": 12, "寝室": 16, "台所": 12, "風呂": 14, "トイレ": 15, "玄関": 12, "庭": 10, "池": 6,
+    "花": 7, "木": 4, "草": 9, "葉": 12, "実": 8, "根": 10, "枝": 8, "幹": 13, "森": 12, "林": 8,
+    "山": 3, "川": 3, "海": 9, "空": 8, "雲": 12, "雨": 8, "雪": 11, "風": 9, "雷": 13, "太陽": 12,
+    "月": 4, "星": 9, "地球": 12, "宇宙": 12, "世界": 12, "国": 8, "都": 12, "県": 9, "市": 5,
+    "町": 7, "村": 7, "区": 4, "駅": 14, "空港": 12, "港": 12, "橋": 16, "道路": 16, "信号": 16,
+    "車": 7, "電車": 17, "バス": 12, "タクシー": 18, "飛行機": 16, "船": 11, "自転車": 16,
+    "歩": 8, "走": 7, "飛": 9, "泳": 11, "登": 12, "降": 10, "上": 3, "下": 3, "前": 9, "後": 9,
+    "左": 5, "右": 5, "中": 4, "外": 5, "内": 4, "東": 8, "西": 6, "南": 9, "北": 5, "春": 9,
+    "夏": 10, "秋": 9, "冬": 5, "朝": 12, "昼": 9, "夜": 8, "今": 4, "昔": 8, "未来": 12, "過去": 12,
+    "時間": 17, "分": 4, "秒": 9, "時": 10, "日": 4, "週": 11, "月": 4, "年": 6, "世紀": 12,
+    "今日": 8, "昨日": 16, "明日": 8, "来週": 16, "来月": 16, "来年": 16, "毎日": 16, "毎週": 16,
+    "毎月": 16, "毎年": 16, "時々": 16, "時々": 16, "いつも": 12, "たまに": 12, "よく": 8,
+    "あまり": 12, "全然": 12, "とても": 12, "すごく": 12, "本当": 12, "確実": 12, "可能": 12,
+    "不可能": 12, "簡単": 12, "難しい": 12, "易しい": 12, "複雑": 12, "単純": 12, "新": 13,
+    "古": 5, "若": 8, "老": 6, "美": 9, "醜": 13, "良い": 8, "悪い": 12, "正": 5, "間": 12,
+    "同": 6, "違": 12, "似": 7, "比": 4, "大": 3, "小": 3, "長": 8, "短": 12, "高": 10, "低": 7,
+    "深": 11, "浅": 11, "広": 5, "狭": 9, "厚": 9, "薄": 16, "重": 9, "軽": 12, "強": 11, "弱": 10,
+    "速": 10, "遅": 12, "早": 6, "忙": 12, "暇": 12, "楽": 13, "苦": 8, "甘": 5, "辛": 7,
+    "酸": 14, "塩": 16, "甘": 5, "美味": 12, "不味": 12, "熱": 15, "冷": 7, "温": 12, "涼": 11,
+    "暖": 13, "寒": 12, "暑": 12, "晴": 12, "曇": 16, "雨": 8, "雪": 11, "風": 9, "雷": 13,
+    "光": 6, "暗": 13, "明": 8, "白": 5, "黒": 11, "赤": 7, "青": 8, "緑": 14, "黄": 12,
+    "紫": 12, "茶": 9, "灰": 6, "色": 6, "形": 7, "模様": 16, "柄": 9, "質": 15, "材": 7,
+    "紙": 10, "木": 4, "石": 5, "鉄": 13, "銅": 14, "銀": 14, "金": 8, "宝石": 16, "ダイヤ": 12,
+    "数字": 13, "文字": 6, "言葉": 12, "言語": 16, "日本語": 12, "英語": 12, "中国語": 12,
+    "韓国語": 12, "フランス語": 16, "ドイツ語": 16, "スペイン語": 16, "イタリア語": 16,
+    "ロシア語": 16, "アラビア語": 16, "ヒンディー語": 16, "タイ語": 16, "ベトナム語": 16,
+    "音楽": 12, "歌": 14, "踊": 14, "演": 15, "劇": 15, "映画": 16, "テレビ": 16, "ラジオ": 16,
+    "新聞": 16, "雑誌": 16, "本": 5, "小説": 12, "詩": 13, "絵": 12, "写真": 12, "画": 8,
+    "彫刻": 16, "工芸": 12, "料理": 16, "食べ物": 16, "飲み物": 16, "果物": 16, "野菜": 16,
+    "肉": 6, "魚": 11, "米": 6, "パン": 12, "麺": 12, "スープ": 12, "サラダ": 12, "ケーキ": 12,
+    "お菓子": 12, "アイス": 12, "ジュース": 12, "お茶": 12, "コーヒー": 12, "ビール": 12,
+    "ワイン": 12, "酒": 10, "水": 4, "牛乳": 12, "砂糖": 16, "塩": 16, "油": 8, "醤油": 16,
+    "味噌": 16, "酢": 15, "胡椒": 16, "香辛料": 16, "調味料": 16, "スパイス": 16,
+    "スポーツ": 16, "野球": 16, "サッカー": 16, "テニス": 16, "バスケット": 16, "バレー": 16,
+    "水泳": 16, "マラソン": 16, "柔道": 16, "剣道": 16, "空手": 16, "相撲": 16, "格闘技": 16,
+    "体操": 16, "ダンス": 16, "ヨガ": 16, "ピラティス": 16, "ジョギング": 16, "ウォーキング": 16,
+    "サイクリング": 16, "スキー": 16, "スノーボード": 16, "スケート": 16, "サーフィン": 16,
+    "釣": 8, "登山": 12, "キャンプ": 16, "ハイキング": 16, "旅行": 16, "観光": 16,
+    "仕事": 12, "会社": 12, "学校": 12, "病院": 16, "銀行": 16, "郵便局": 16, "警察": 16,
+    "消防": 16, "役所": 16, "図書館": 16, "美術館": 16, "博物館": 16, "動物園": 16,
+    "遊園地": 16, "映画館": 16, "劇場": 16, "コンサート": 16, "ライブ": 16, "パーティー": 16,
+    "結婚式": 16, "葬式": 16, "誕生日": 16, "記念日": 16, "祝日": 16, "祭": 13, "祭り": 13,
+    "正月": 12, "クリスマス": 16, "バレンタイン": 16, "ハロウィン": 16, "イースター": 16,
+    "お盆": 12, "彼岸": 12, "節分": 12, "ひな祭り": 12, "こどもの日": 12, "母の日": 12,
+    "父の日": 12, "敬老の日": 12, "体育の日": 12, "文化の日": 12, "勤労感謝の日": 16,
+    "天皇誕生日": 16, "昭和の日": 16, "みどりの日": 16, "海の日": 16, "山の日": 16,
+    "休日": 12, "平日": 12, "週末": 12, "連休": 12, "夏休み": 12, "冬休み": 12, "春休み": 12,
+    "長期休暇": 16, "有給": 12, "病気": 12, "怪我": 12, "健康": 12, "医療": 16, "治療": 16,
+    "手術": 16, "薬": 16, "注射": 16, "検査": 16, "診察": 16, "入院": 16, "退院": 16,
+    "医者": 12, "看護師": 16, "薬剤師": 16, "歯医者": 16, "眼科": 16, "耳鼻科": 16,
+    "小児科": 16, "産婦人科": 16, "内科": 16, "外科": 16, "整形外科": 16, "皮膚科": 16,
+    "精神科": 16, "心療内科": 16, "神経科": 16, "脳外科": 16, "心臓外科": 16, "呼吸器科": 16,
+    "消化器科": 16, "泌尿器科": 16, "循環器科": 16, "内分泌科": 16, "血液内科": 16,
+    "腫瘍科": 16, "放射線科": 16, "麻酔科": 16, "救急科": 16, "リハビリ": 16, "理学療法": 16,
+    "作業療法": 16, "言語療法": 16, "心理療法": 16, "カウンセリング": 16, "セラピー": 16,
+    "マッサージ": 16, "鍼": 16, "灸": 16, "整体": 16, "カイロ": 16, "指圧": 16, "あん摩": 16,
+    "ヨガ": 16, "ピラティス": 16, "太極拳": 16, "気功": 16, "瞑想": 16, "座禅": 16,
+    "宗教": 12, "神": 9, "仏": 7, "キリスト": 12, "イスラム": 12, "ユダヤ": 12, "ヒンドゥー": 12,
+    "仏教": 12, "神道": 12, "キリスト教": 12, "イスラム教": 12, "ユダヤ教": 12, "ヒンドゥー教": 12,
+    "お寺": 12, "神社": 12, "教会": 12, "モスク": 12, "シナゴーグ": 12, "寺院": 12,
+    "お坊さん": 12, "神主": 12, "牧師": 12, "イマーム": 12, "ラビ": 12, "僧侶": 12,
+    "お経": 12, "聖書": 12, "コーラン": 12, "トーラー": 12, "ヴェーダ": 12, "仏典": 12,
+    "祈": 8, "祈り": 8, "願": 19, "願い": 19, "希望": 12, "夢": 13, "目標": 12, "目的": 12,
+    "計画": 16, "予定": 12, "約束": 16, "約束事": 16, "ルール": 12, "規則": 16, "法律": 16,
+    "憲法": 16, "条例": 16, "政令": 16, "省令": 16, "通達": 16, "通知": 16, "指示": 16,
+    "命令": 16, "要請": 16, "依頼": 16, "相談": 16, "質問": 16, "回答": 16, "返答": 16,
+    "返事": 16, "返信": 16, "連絡": 16, "報告": 16, "連絡": 16, "報告": 16, "発表": 16,
+    "発表": 16, "発表": 16, "発表": 16, "発表": 16, "発表": 16, "発表": 16, "発表": 16,
+  }
 
-// パフォーマンス最適化: 正規表現を事前定義
-const REGEX_PATTERNS = {
-  english: /[a-zA-Z]/,
-  number: /[0-9]/,
-  hiragana: /[\u3040-\u309F]/,
-  katakana: /[\u30A0-\u30FF]/,
-  kanji: /[\u4E00-\u9FAF]/,
+  if (character === "々") {
+    return 0 // 繰り返し文字は前の文字の画数を参照するため、ここでは0を返す
+  }
+
+  return strokeData[character] || 0
 }
 
-// デバッグモードを一時的に有効化して問題を特定
-const DEBUG_MODE = true // デバッグモードを有効化
-console.log("🔍 DEBUG_MODE設定:", DEBUG_MODE)
-
-// 全ての画数データを統合（優先順位：後から読み込まれるものが優先）
-export const strokeCountData: Record<string, number> = {
-  ...basicNumbersData,
-  ...surnamesData,
-  ...givenNamesData,
-  ...commonKanjiData,
-  ...hiraganaData,
-  ...katakanaData,
-  ...extendedKanjiData,
-  ...csvImportedData, // CSVデータを最優先で統合
+// 繰り返し文字「々」の画数を前の文字から取得する関数
+function getReisuuStrokeCount(text: string, position: number): number {
+  if (position === 0) return 0
+  return getStrokeCount(text[position - 1])
 }
 
-// 「々」を削除（特別処理するため）
-delete strokeCountData["々"]
-
-// 文字の画数を取得する関数（単一文字用）- 最適化版
-export function getCharStroke(char: string): number {
-  const stroke = strokeCountData[char]
-  if (stroke === undefined) {
-    return 0
-  }
-  return stroke
-}
-
-// 文字種別に応じたデフォルト値を取得する関数（最適化版）
-function getDefaultStrokeByCharType(char: string): number {
-  if (REGEX_PATTERNS.english.test(char)) {
-    return 1
-  }
-  if (REGEX_PATTERNS.number.test(char)) {
-    return 1
-  }
-  if (REGEX_PATTERNS.hiragana.test(char)) {
-    return 3
-  }
-  if (REGEX_PATTERNS.katakana.test(char)) {
-    return 3
-  }
-  if (REGEX_PATTERNS.kanji.test(char)) {
-    return 10
-  }
-  return 1
-}
-
-// 文字の画数を取得する関数（コンテキスト付き - 「々」の特別処理対応）- 最適化版
-export function getCharStrokeWithContext(
-  char: string,
-  fullText: string,
-  position: number,
-): {
-  stroke: number
-  isDefault: boolean
-} {
-  if (DEBUG_MODE) {
-    console.log(`🔍 getCharStrokeWithContext: "${char}" (位置: ${position})`)
-    console.log(`📊 strokeCountData["${char}"] =`, strokeCountData[char])
-  }
-
-  // 🚨 FORCED PROCESSING - 最優先で処理
-  if (char === "假") {
-    console.log(`🎯🔴 FORCED: "假" → 10画 (強制的にisDefault: true)`)
-    return { stroke: 10, isDefault: true }
-  }
-
-  if (char === "省") {
-    console.log(`🎯🔴 FORCED: "省" → 10画 (強制的にisDefault: true)`)
-    return { stroke: 10, isDefault: true }
-  }
-
-  if (char === "々") {
-    // 々は直前の漢字の画数と同じ
-    if (position > 0) {
-      const prevChar = fullText.charAt(position - 1)
-      const prevStroke = strokeCountData[prevChar]
-      if (prevStroke === undefined) {
-        if (DEBUG_MODE) {
-          console.log(`⚠️ 々の前の文字"${prevChar}"も画数データなし → デフォルト3画`)
-        }
-        return { stroke: 3, isDefault: true }
-      }
-      if (DEBUG_MODE) {
-        console.log(`✅ 々 → 前の文字"${prevChar}"と同じ${prevStroke}画`)
-      }
-      return { stroke: prevStroke, isDefault: false }
-    } else {
-      if (DEBUG_MODE) {
-        console.log(`⚠️ 々が先頭にある → デフォルト3画`)
-      }
-      return { stroke: 3, isDefault: true }
-    }
-  }
-
-  const stroke = strokeCountData[char]
-
-  if (stroke === undefined) {
-    const defaultStroke = getDefaultStrokeByCharType(char)
-    if (DEBUG_MODE) {
-      console.log(`❌ "${char}"の画数データなし → デフォルト${defaultStroke}画 (isDefault: true)`)
-    }
-    return { stroke: defaultStroke, isDefault: true }
-  }
-
-  if (DEBUG_MODE) {
-    console.log(`✅ "${char}" → ${stroke}画 (データあり)`)
-  }
-  return { stroke, isDefault: false }
-}
-
-// 霊数を考慮した名前の画数配列を取得する関数（最適化版）
-export function getNameStrokesWithReisuuArray(
-  lastName: string,
-  firstName: string,
-): {
-  lastNameStrokes: number[]
-  firstNameStrokes: number[]
-  hasReisuuInLastName: boolean
-  hasReisuuInFirstName: boolean
-} {
-  if (DEBUG_MODE) {
-    console.log(`🔍 霊数計算開始: 姓="${lastName}", 名="${firstName}"`)
-  }
-
-  const lastNameChars = Array.from(lastName)
-  const firstNameChars = Array.from(firstName)
-
-  // 基本の画数配列を計算
-  const baseLastNameStrokes = lastNameChars.map((char, i) => {
-    const { stroke } = getCharStrokeWithContext(char, lastName, i)
-    return stroke
-  })
-
-  const baseFirstNameStrokes = firstNameChars.map((char, i) => {
-    const { stroke } = getCharStrokeWithContext(char, firstName, i)
-    return stroke
-  })
-
-  // 霊数の追加判定
-  const hasReisuuInLastName = lastNameChars.length === 1
-  const hasReisuuInFirstName = firstNameChars.length === 1
-
-  // 霊数を考慮した最終的な画数配列
-  const lastNameStrokes = hasReisuuInLastName
-    ? [1, ...baseLastNameStrokes] // 姓の上に霊数「一」（1画）を追加
-    : baseLastNameStrokes
-
-  const firstNameStrokes = hasReisuuInFirstName
-    ? [...baseFirstNameStrokes, 1] // 名の下に霊数「一」（1画）を追加
-    : baseFirstNameStrokes
-
-  if (DEBUG_MODE) {
-    console.log(`✅ 霊数計算完了:`)
-    console.log(`  姓の画数: [${lastNameStrokes.join(", ")}] (霊数: ${hasReisuuInLastName ? "あり" : "なし"})`)
-    console.log(`  名の画数: [${firstNameStrokes.join(", ")}] (霊数: ${hasReisuuInFirstName ? "あり" : "なし"})`)
-  }
-
-  return {
-    lastNameStrokes,
-    firstNameStrokes,
-    hasReisuuInLastName,
-    hasReisuuInFirstName,
-  }
-}
-
-// 名前の総画数を計算する関数（霊数考慮）
-export function calculateTotalStrokes(name: string): number {
-  return calculateNameStrokes(name) // 「々」の特別処理を含む関数を使用
-}
-
-// 名前の画数を計算する関数（々の特別処理を含む）- 最適化版
-export function calculateNameStrokes(name: string): number {
+// 霊数ルールを適用した画数計算
+function calculateStrokesWithReisuu(text: string): { count: number; hasReisuu: boolean } {
   let total = 0
-  const chars = Array.from(name)
+  let hasReisuu = false
 
-  for (let i = 0; i < chars.length; i++) {
-    const char = chars[i]
-    const { stroke } = getCharStrokeWithContext(char, name, i)
-    total += stroke
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "々") {
+      total += getReisuuStrokeCount(text, i)
+      hasReisuu = true
+    } else {
+      total += getStrokeCount(text[i])
+    }
   }
 
-  return total
+  return { count: total, hasReisuu }
 }
 
-// アドバイステンプレート（メモリ効率化）
-const ADVICE_TEMPLATES = {
-  excellent:
-    "🌟 **全体的な運勢について**\nあなたのお名前は非常に優れたバランスを持っており、人生において多くの幸運に恵まれる暗示があります。",
-  good: "⭐ **全体的な運勢について**\nあなたのお名前は安定した運勢を示しており、努力次第で着実に成果を上げることができます。",
-  moderate:
-    "💫 **全体的な運勢について**\nあなたのお名前は変化に富んだ運勢を示しています。困難もありますが、それを乗り越える力も同時に備わっています。",
-  challenging:
-    "🌱 **全体的な運勢について**\nあなたのお名前は試練を通じて成長する運勢を示しています。困難に直面することもありますが、それは魂を磨くための大切な経験です。",
-}
-
-// アドバイスを生成する関数（最適化版）
-function generateAdvice(
-  tenFortune: any,
-  jinFortune: any,
-  chiFortune: any,
-  gaiFortune: any,
-  totalFortune: any,
-  lastName: string,
-  firstName: string,
-  gender = "male",
-  tenFormat: number,
-  jinFormat: number,
-  chiFormat: number,
-  gaiFormat: number,
-  totalFormat: number,
-): string {
-  const fullName = lastName + firstName
-  const genderText = gender === "male" ? "男性" : gender === "female" ? "女性" : ""
-
-  // 各格の運勢を分析
-  const fortunes = {
-    天格: { fortune: tenFortune, strokes: tenFormat, score: calculateScore(tenFortune) },
-    人格: { fortune: jinFortune, strokes: jinFormat, score: calculateScore(jinFortune) },
-    地格: { fortune: chiFortune, strokes: chiFormat, score: calculateScore(chiFortune) },
-    外格: { fortune: gaiFortune, strokes: gaiFormat, score: calculateScore(gaiFortune) },
-    総格: { fortune: totalFortune, strokes: totalFormat, score: calculateScore(totalFortune) },
-  }
-
-  // 最も良い格と悪い格を特定
-  const sortedByScore = Object.entries(fortunes).sort((a, b) => b[1].score - a[1].score)
-  const bestCategory = sortedByScore[0]
-  const worstCategory = sortedByScore[sortedByScore.length - 1]
-  const secondBest = sortedByScore[1]
-
-  // 基本的な運勢の傾向を分析
-  const averageScore = Object.values(fortunes).reduce((sum, f) => sum + f.score, 0) / 5
-  const scoreVariance = Object.values(fortunes).reduce((sum, f) => sum + Math.pow(f.score - averageScore, 2), 0) / 5
-
-  let advice = ""
-
-  // 導入部分 - より親身で温かい挨拶
-  advice += `🌸 **${fullName}さんへの詳細鑑定結果**\n\n`
-  advice += `${fullName}さん、この度はご相談いただき、ありがとうございます。あなたのお名前を心を込めて詳しく拝見させていただきました。`
-  if (genderText) {
-    advice += `${genderText}として生まれ持った運勢と、ご両親が込められた愛情深いお名前の力を、五格すべてから総合的に分析いたします。`
-  }
-  advice += `\n\n`
-
-  // 全体的な運勢の傾向分析（より詳細に）
-  advice += `📊 **あなたの運勢の全体像**\n`
-  if (averageScore >= 75) {
-    advice += `あなたのお名前は非常に優れたバランスを持っており、人生において多くの幸運に恵まれる暗示があります。特に注目すべきは、五格のうち${Math.round(sortedByScore.filter(([_, data]) => data.score >= 70).length)}つの格が良好な運勢を示していることです。`
-  } else if (averageScore >= 60) {
-    advice += `あなたのお名前は安定した運勢を示しており、努力次第で着実に成果を上げることができます。バランスの取れた運勢配置により、人生の各段階で適切な成長を遂げられるでしょう。`
-  } else if (averageScore >= 45) {
-    advice += `あなたのお名前は変化に富んだ運勢を示しています。困難もありますが、それを乗り越える力も同時に備わっています。人生の波を上手に乗りこなすことで、大きな成長を遂げられる方です。`
-  } else {
-    advice += `あなたのお名前は試練を通じて成長する運勢を示しています。困難に直面することもありますが、それは魂を磨くための大切な経験です。逆境を乗り越えた時の成長は、他の人には得られない深い人間性をもたらします。`
-  }
-
-  // 運勢のバランス分析
-  if (scoreVariance > 400) {
-    advice += `\n\nあなたの運勢は起伏に富んでおり、人生に大きなドラマがある方です。${bestCategory[0]}（${bestCategory[1].score}点）が特に優秀で、これがあなたの人生の大きな武器となります。一方で、${worstCategory[0]}（${worstCategory[1].score}点）については慎重な配慮が必要ですが、これもあなたの個性の一部として受け入れることで、バランスの取れた人格を形成できます。`
-  } else {
-    advice += `\n\nあなたの運勢は全体的にバランスが取れており、安定した人生を歩める方です。極端な浮き沈みは少なく、着実に目標に向かって進んでいける運勢配置となっています。`
-  }
-  advice += `\n\n`
-
-  // 各格の詳細分析（簡略化）
-  advice += `🔍 **五格それぞれの詳細分析とアドバイス**\n\n`
-
-  // 人格（最重要）
-  advice += `**👤 人格運（${jinFormat}画・${jinFortune.運勢}）- あなたの本質と才能**\n`
-  advice += `人格はあなたの核となる性格や才能を表す、最も重要な格です。\n`
-
-  if (jinFortune.運勢.includes("大吉")) {
-    advice += `あなたは生まれながらにして優れた人格的魅力を持っています。${jinFortune.説明 || ""}\n`
-    advice += `✨ **具体的なアドバイス**: この素晴らしい人格運を活かし、リーダーシップを発揮することで、多くの人を導き、自身も大きな成功を収めることができるでしょう。`
-  } else if (jinFortune.運勢.includes("吉")) {
-    advice += `あなたは安定した人格的基盤を持っています。${jinFortune.説明 || ""}\n`
-    advice += `✨ **具体的なアドバイス**: この良好な人格運を基に、継続的な努力を重ねることで、着実に目標を達成できます。`
-  } else if (jinFortune.運勢.includes("凶")) {
-    advice += `人格面では慎重な歩みが必要ですが、これは決して悪いことではありません。${jinFortune.説明 || ""}\n`
-    advice += `✨ **具体的なアドバイス**: 内面を深く見つめ、精神的な成長を遂げることで、他の人にはない深い洞察力や共感力を身につけることができます。`
-  }
-  advice += `\n\n`
-
-  // 総格（人生全体）
-  advice += `**🌍 総格運（${totalFormat}画・${totalFortune.運勢}）- 人生全体の流れと最終的な到達点**\n`
-  advice += `総格はあなたの人生全体の流れと、最終的にどのような人生を歩むかを示します。\n`
-
-  if (totalFortune.運勢.includes("大吉")) {
-    advice += `あなたの人生は全体的に非常に恵まれた流れにあります。${totalFortune.説明 || ""}\n`
-    advice += `🎯 **人生設計のアドバイス**: 特に中年期以降、大きな飛躍が期待できます。この幸運を当然と思わず、感謝の気持ちを忘れずに、周囲への貢献も心がけてください。`
-  } else if (totalFortune.運勢.includes("吉")) {
-    advice += `あなたの人生は安定した成長を続ける運勢にあります。${totalFortune.説明 || ""}\n`
-    advice += `🎯 **人生設計のアドバイス**: 急激な変化よりも、着実な積み重ねが成功への鍵となります。長期的な視点を持ち、コツコツと努力を続けることが大切です。`
-  } else if (totalFortune.運勢.includes("凶")) {
-    advice += `人生において試練が多い運勢ですが、それは大きな成長のチャンスでもあります。${totalFortune.説明 || ""}\n`
-    advice += `🎯 **人生設計のアドバイス**: 困難に直面した時こそ、あなたの真の力が発揮されます。諦めずに前進し続けることで、最終的には大きな成果を得られるでしょう。`
-  }
-  advice += `\n\n`
-
-  // 締めくくりのメッセージ（簡略化）
-  advice += `💝 **${fullName}さんへの最終メッセージ**\n\n`
-  advice += `${fullName}さん、この詳細な鑑定を通じて、あなたのお名前に込められた素晴らしい可能性をお伝えできたでしょうか。\n\n`
-
-  advice += `あなたの最大の強みは「${bestCategory[0]}運」にあります。この${bestCategory[1].score}点という高い運勢を活かし、自信を持って人生を歩んでください。`
-
-  if (worstCategory[1].score <= 50) {
-    advice += `一方で「${worstCategory[0]}運」については注意が必要ですが、これも含めてあなたの個性です。完璧な人などいません。課題があるからこそ、成長の余地があり、人生に深みが生まれるのです。`
-  }
-
-  advice += `\n\n運勢は固定されたものではありません。あなたの行動と心がけ次第で、必ず良い方向に導くことができます。この鑑定結果を参考に、自分らしい人生を歩んでください。\n\n`
-
-  advice += `🌸 **鑑定師より愛を込めて** 🌸`
-
-  return advice
-}
-
-// スコアを計算する関数
-function calculateScore(fortune: any): number {
-  switch (fortune["運勢"]) {
-    case "大吉":
-      return 100
-    case "吉":
-      return 80
-    case "中吉":
-      return 60
-    case "凶":
-      return 40
-    case "大凶":
-      return 20
-    default:
-      return 50
-  }
-}
-
-// 運勢データを取得する関数
+// カスタムデータから吉凶を取得する関数（性別考慮）
 function getFortuneFromCustomDataWithGender(
-  strokes: number,
-  customFortuneData: Record<string, any>,
-  gender: string,
+  strokeCount: number,
+  customData: Record<string, any>,
+  gender: string
 ): any {
-  const key = String(strokes)
-  let fortune = customFortuneData[key]
-
-  console.log(`🔍 getFortuneFromCustomDataWithGender: ${key}画`, {
-    key,
-    fortune,
-    hasData: !!fortune,
-    customFortuneDataKeys: Object.keys(customFortuneData).slice(0, 10)
+  console.log(`🔍 getFortuneFromCustomDataWithGender呼び出し:`, {
+    strokeCount,
+    gender,
+    customDataExists: !!customData,
+    customDataKeys: customData ? Object.keys(customData).length : 0
   })
 
-  if (!fortune) {
-    console.warn(`⚠️ ${key}画の吉凶データが見つかりません`)
-    return { 運勢: "不明", 説明: "" }
+  const key = strokeCount.toString()
+  const data = customData[key]
+
+  console.log(`🔍 取得データ:`, {
+    key,
+    data,
+    dataExists: !!data
+  })
+
+  if (!data) {
+    console.log(`⚠️ データが見つかりません: ${key}画`)
+  return {
+      運勢: "中吉",
+      説明: "データが見つかりませんでした。",
+      点数: 50
+    }
   }
 
-  // 性別固有の調整
-  if (gender === "female" && fortune.female) {
-    fortune = fortune.female
-  }
-
-  return fortune
+  console.log(`✅ データ取得成功:`, data)
+  return data
 }
 
 // analyzeNameFortune関数 - 霊数ルールを組み込み（メイン関数）- 最適化版
@@ -391,45 +158,43 @@ export function analyzeNameFortune(
   gender = "male",
   customFortuneData?: Record<string, any>, // オプショナルに変更
 ): any {
-  console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
-  console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
-  console.log(`🔍 customFortuneData型:`, typeof customFortuneData)
-  if (customFortuneData) {
-    console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
-    console.log(`🔍 customFortuneData先頭5件:`, Object.keys(customFortuneData).slice(0, 5))
-  } else {
-    console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
-  }
-  
-  console.log(`🔍 関数実行開始: 霊数計算前`)
-  
   try {
+    console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
+    console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
+    console.log(`🔍 customFortuneData型:`, typeof customFortuneData)
+    if (customFortuneData) {
+      console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
+      console.log(`🔍 customFortuneData先頭5件:`, Object.keys(customFortuneData).slice(0, 5))
+    } else {
+      console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
+    }
+    
+    console.log(`🔍 関数実行開始: 霊数計算前`)
 
-  // customFortuneDataが提供されていない場合、カスタムデータをインポート
+    // customFortuneDataが提供されていない場合、カスタムデータをインポート
   if (!customFortuneData) {
-    console.log("⚠️ customFortuneDataが提供されていません。インポートを試行します。")
-    try {
-      // カスタムデータをインポート
-      const { customFortuneData: importedData } = require("./fortune-data-custom")
-      customFortuneData = importedData
-      console.log("✅ カスタムデータをインポートしました:", Object.keys(customFortuneData).length, "件")
-    } catch (error) {
-      console.error("カスタムデータのインポートに失敗:", error)
-      // デフォルトの運勢データを使用
-      customFortuneData = {
-        // 基本的な運勢データ（簡易版）
-        "1": { 運勢: "大吉", 説明: "独立心旺盛で、リーダーシップを発揮します。" },
-        "2": { 運勢: "凶", 説明: "協調性はありますが、優柔不断な面があります。" },
-        "3": { 運勢: "大吉", 説明: "明るく積極的で、人気者になります。" },
-        "4": { 運勢: "凶", 説明: "真面目ですが、苦労が多い傾向があります。" },
-        "5": { 運勢: "大吉", 説明: "バランス感覚に優れ、安定した人生を送ります。" },
+      console.log("⚠️ customFortuneDataが提供されていません。インポートを試行します。")
+      try {
+        // カスタムデータをインポート
+        const { customFortuneData: importedData } = require("./fortune-data-custom")
+        customFortuneData = importedData
+        console.log("✅ カスタムデータをインポートしました:", Object.keys(customFortuneData).length, "件")
+      } catch (error) {
+        console.error("カスタムデータのインポートに失敗:", error)
+    // デフォルトの運勢データを使用
+    customFortuneData = {
+      // 基本的な運勢データ（簡易版）
+      "1": { 運勢: "大吉", 説明: "独立心旺盛で、リーダーシップを発揮します。" },
+      "2": { 運勢: "凶", 説明: "協調性はありますが、優柔不断な面があります。" },
+      "3": { 運勢: "大吉", 説明: "明るく積極的で、人気者になります。" },
+      "4": { 運勢: "凶", 説明: "真面目ですが、苦労が多い傾向があります。" },
+      "5": { 運勢: "大吉", 説明: "バランス感覚に優れ、安定した人生を送ります。" },
       "6": { 運勢: "大吉", 説明: "責任感が強く、家族思いです。" },
       "7": { 運勢: "吉", 説明: "独立心があり、専門分野で成功します。" },
       "8": { 運勢: "大吉", 説明: "意志が強く、困難を乗り越える力があります。" },
       "9": { 運勢: "凶", 説明: "頭脳明晰ですが、変化の多い人生になります。" },
       "10": { 運勢: "凶", 説明: "波乱万丈な人生ですが、最終的には成功します。" },
     }
-
     // 11-81画までの基本的なデフォルト値を生成
     for (let i = 11; i <= 81; i++) {
       if (!customFortuneData[i.toString()]) {
@@ -440,265 +205,131 @@ export function analyzeNameFortune(
           customFortuneData[i.toString()] = { 運勢: "凶", 説明: "注意が必要な運勢です。" }
         } else {
           customFortuneData[i.toString()] = { 運勢: "中吉", 説明: "普通の運勢です。" }
+            }
+          }
         }
       }
     }
-  }
 
-  // 空白を削除
-  lastName = lastName.trim()
-  firstName = firstName.trim()
+    // 霊数ルールを適用した画数計算
+    const lastNameResult = calculateStrokesWithReisuu(lastName)
+    const firstNameResult = calculateStrokesWithReisuu(firstName)
 
-  // 霊数を考慮した画数配列を取得
-  const { lastNameStrokes, firstNameStrokes, hasReisuuInLastName, hasReisuuInFirstName } =
-    getNameStrokesWithReisuuArray(lastName, firstName)
+    const lastNameCount = lastNameResult.count
+    const firstNameCount = firstNameResult.count
+    const hasReisuuInLastName = lastNameResult.hasReisuu
+    const hasReisuuInFirstName = firstNameResult.hasReisuu
 
-  // 姓と名の画数を計算（霊数含む）
-  const lastNameCount = lastNameStrokes.reduce((sum, stroke) => sum + stroke, 0)
-  const firstNameCount = firstNameStrokes.reduce((sum, stroke) => sum + stroke, 0)
-
-  // 各格の計算（ExcalVBAプログラム準拠）
-  // 天格（先祖・姓運）= 姓の画数の合計（霊数含む）
-  const tenFormat = lastNameCount
-
-  // 地格（基礎運）= 名の画数の合計（霊数含む）
-  const chiFormat = firstNameCount
-
-  // 総格（一生・晩年運）= 天格 + 地格
-  const totalFormat = tenFormat + chiFormat
-
-  // 人格（社会運）= の最後の文字 + 名の最初の文字（霊数除外）
-  const lastCharOfLastName = lastName.charAt(lastName.length - 1)
-  const firstCharOfFirstName = firstName.charAt(0)
-  const { stroke: lastCharStroke } = getCharStrokeWithContext(lastCharOfLastName, lastName, firstName.length - 1)
-  const { stroke: firstCharStroke } = getCharStrokeWithContext(firstCharOfFirstName, firstName, 0)
-  const jinFormat = lastCharStroke + firstCharStroke
-
-  // 外格（仕事・周囲運）の計算（ExcalVBAプログラム準拠）
-  let gaiFormat: number
-
-  if (hasReisuuInLastName && hasReisuuInFirstName) {
-    // 両方とも1文字の場合：外格 = 霊数 + 霊数 = 2画
-    gaiFormat = 2
-  } else if (hasReisuuInLastName && !hasReisuuInFirstName) {
-    // 姓1文字・名複数文字の場合：外格 = 霊数 + 名の最初の文字を除外した残り
-    const nameWithoutFirst = Array.from(firstName).slice(1)
-    const remainingStrokes = nameWithoutFirst.reduce((sum, char, i) => {
-      const { stroke } = getCharStrokeWithContext(char, firstName, i + 1)
-      return sum + stroke
-    }, 0)
-    gaiFormat = 1 + remainingStrokes
-  } else if (!hasReisuuInLastName && hasReisuuInFirstName) {
-    // 姓複数文字・名1文字の場合：外格 = 姓の最後の文字を除外した残り + 霊数
-    const lastNameWithoutLast = Array.from(lastName).slice(0, -1)
-    const remainingStrokes = lastNameWithoutLast.reduce((sum, char, i) => {
-      const { stroke } = getCharStrokeWithContext(char, lastName, i)
-      return sum + stroke
-    }, 0)
-    gaiFormat = remainingStrokes + 1
-  } else {
-    // 通常の場合（複数字姓・複数字名）：外格 = 姓の最初の文字を除外 + 名の最初の文字を除外
-    const lastNameWithoutFirst = Array.from(lastName).slice(1)
-    const firstNameWithoutFirst = Array.from(firstName).slice(1)
-    
-    const lastNameRemainingStrokes = lastNameWithoutFirst.reduce((sum, char, i) => {
-      const { stroke } = getCharStrokeWithContext(char, lastName, i + 1)
-      return sum + stroke
-    }, 0)
-    
-    const firstNameRemainingStrokes = firstNameWithoutFirst.reduce((sum, char, i) => {
-      const { stroke } = getCharStrokeWithContext(char, firstName, i + 1)
-      return sum + stroke
-    }, 0)
-    
-    gaiFormat = lastNameRemainingStrokes + firstNameRemainingStrokes
-  }
-
-  // 外格が0以下になった場合の安全チェック
-  if (gaiFormat <= 0) {
-    gaiFormat = 2 // 一字姓・一字名の場合は最低2画
-  }
-
-  // 各格の吉凶を取得（カスタムデータを使用）
-  console.log("🔍 吉凶データ取得デバッグ開始")
-  console.log("🔍 吉凶データ取得デバッグ:", {
-    tenFormat,
-    jinFormat,
-    chiFormat,
-    gaiFormat,
-    totalFormat,
-    customFortuneData16: customFortuneData["16"],
-    customFortuneData23: customFortuneData["23"],
-    customFortuneData31: customFortuneData["31"],
-    customFortuneData24: customFortuneData["24"],
-    customFortuneData47: customFortuneData["47"]
-  })
-  console.log("🔍 吉凶データ取得デバッグ完了")
-  
-  const tenFortune = getFortuneFromCustomDataWithGender(tenFormat, customFortuneData, gender)
-  const jinFortune = getFortuneFromCustomDataWithGender(jinFormat, customFortuneData, gender)
-  const chiFortune = getFortuneFromCustomDataWithGender(chiFormat, customFortuneData, gender)
-  const gaiFortune = getFortuneFromCustomDataWithGender(gaiFormat, customFortuneData, gender)
-  const totalFortune = getFortuneFromCustomDataWithGender(totalFormat, customFortuneData, gender)
-  
-  console.log("🔍 取得された吉凶データ:", {
-    tenFortune,
-    jinFortune,
-    chiFortune,
-    gaiFortune,
-    totalFortune
-  })
-
-  // スコアの計算
-  const tenScore = calculateScore(tenFortune)
-  const jinScore = calculateScore(jinFortune)
-  const chiScore = calculateScore(chiFortune)
-  const gaiScore = calculateScore(gaiFortune)
-  const totalScore = calculateScore(totalFortune)
-
-  // 総合スコアの計算（人格と総格を重視）
-  const overallScore = Math.round((tenScore + jinScore * 2 + chiScore + gaiScore + totalScore * 2) / 7)
-
-  // characterDetailsで霊数情報も含める（デバッグ強化版）
-  const characterDetails = []
-
-  // 姓の文字詳細（霊数含む）
-  if (hasReisuuInLastName) {
-    characterDetails.push({
-      name: "姓の霊数",
-      character: "一",
-      strokes: 1,
-      isReisuu: true,
-      isDefault: false,
-    })
-  }
-
-  const lastNameChars = Array.from(lastName)
-  lastNameChars.forEach((char, i) => {
-    const { stroke, isDefault } = getCharStrokeWithContext(char, lastName, i)
-    if (DEBUG_MODE) {
-      console.log(`📝 姓の${i + 1}文字目: "${char}" → ${stroke}画 (isDefault: ${isDefault})`)
-    }
-    characterDetails.push({
-      name: "姓の" + (i + 1) + "文字目",
-      character: char,
-      strokes: stroke,
-      isReisuu: false,
-      isDefault: isDefault,
-    })
-  })
-
-  // 名の文字詳細（霊数含む）
-  const firstNameChars = Array.from(firstName)
-  firstNameChars.forEach((char, i) => {
-    const { stroke, isDefault } = getCharStrokeWithContext(char, firstName, i)
-    if (DEBUG_MODE) {
-      console.log(`📝 名の${i + 1}文字目: "${char}" → ${stroke}画 (isDefault: ${isDefault})`)
-    }
-    characterDetails.push({
-      name: "名の" + (i + 1) + "文字目",
-      character: char,
-      strokes: stroke,
-      isReisuu: false,
-      isDefault: isDefault,
-    })
-  })
-
-  if (hasReisuuInFirstName) {
-    characterDetails.push({
-      name: "名の霊数",
-      character: "一",
-      strokes: 1,
-      isReisuu: true,
-      isDefault: false,
-    })
-  }
-
-  if (DEBUG_MODE) {
-    console.log(`🎯 characterDetails生成完了:`, characterDetails)
-  }
-
-  // 結果オブジェクトを構築
-  const result = {
-    totalScore: overallScore,
-    categories: [
-      {
-        name: "天格",
-        score: tenScore,
-        description: "社会的な成功や対外的な印象を表します",
-        fortune: tenFortune["運勢"] || "不明",
-        explanation: tenFortune["説明"] || "",
-        strokeCount: tenFormat,
-      },
-      {
-        name: "人格",
-        score: jinScore,
-        description: "性格や才能、人生の中心的な運勢を表します",
-        fortune: jinFortune["運勢"] || "不明",
-        explanation: jinFortune["説明"] || "",
-        strokeCount: jinFormat,
-      },
-      {
-        name: "地格",
-        score: chiScore,
-        description: "家庭環境や若年期の運勢を表します",
-        fortune: chiFortune["運勢"] || "不明",
-        explanation: chiFortune["説明"] || "",
-        strokeCount: chiFormat,
-      },
-      {
-        name: "外格",
-        score: gaiScore,
-        description: "社会的な人間関係や外部からの影響を表します",
-        fortune: gaiFortune["運勢"] || "不明",
-        explanation: gaiFortune["説明"] || "",
-        strokeCount: gaiFormat,
-      },
-      {
-        name: "総格",
-        score: totalScore,
-        description: "人生全体の総合的な運勢を表します",
-        fortune: totalFortune["運勢"] || "不明",
-        explanation: totalFortune["説明"] || "",
-        strokeCount: totalFormat,
-      },
-    ],
-    characterDetails: characterDetails,
-    advice: generateAdvice(
-      tenFortune,
-      jinFortune,
-      chiFortune,
-      gaiFortune,
-      totalFortune,
+    console.log(`🔍 霊数計算結果:`, {
       lastName,
       firstName,
-      gender,
+      lastNameCount,
+      firstNameCount,
+      hasReisuuInLastName,
+      hasReisuuInFirstName
+    })
+
+    // VBAロジックに基づく五格計算
+    // 天格（姓の総画数、霊数含む）
+  const tenFormat = lastNameCount
+
+    // 人格（姓の最後の文字 + 名の最初の文字、霊数除外）
+    const lastCharStroke = getStrokeCount(lastName[lastName.length - 1])
+    const firstCharStroke = firstName.length > 0 ? getStrokeCount(firstName[0]) : 0
+    const jinFormat = lastCharStroke + firstCharStroke
+
+    // 地格（名の総画数、霊数含む）
+  const chiFormat = firstNameCount
+
+    // 外格（姓の最初の文字 + 名の最後の文字、霊数除外）
+    const firstCharLastNameStroke = getStrokeCount(lastName[0])
+    const lastCharFirstNameStroke = firstName.length > 0 ? getStrokeCount(firstName[firstName.length - 1]) : 0
+    const gaiFormat = firstCharLastNameStroke + lastCharFirstNameStroke
+
+    // 総格（天格 + 地格）
+    const totalFormat = tenFormat + chiFormat
+
+    console.log(`🔍 五格計算結果:`, {
+      tenFormat,
+      jinFormat,
+      chiFormat,
+      gaiFormat,
+      totalFormat
+    })
+
+  // 各格の吉凶を取得（カスタムデータを使用）
+    console.log("🔍 吉凶データ取得デバッグ開始")
+    console.log("🔍 吉凶データ取得デバッグ:", {
       tenFormat,
       jinFormat,
       chiFormat,
       gaiFormat,
       totalFormat,
-    ),
-    ten: {
-      運勢: tenFortune["運勢"] || "不明",
-      説明: tenFortune["説明"] || "",
-    },
-    jin: {
-      運勢: jinFortune["運勢"] || "不明",
-      説明: jinFortune["説明"] || "",
-    },
-    chi: {
-      運勢: chiFortune["運勢"] || "不明",
-      説明: chiFortune["説明"] || "",
-    },
-    gai: {
-      運勢: gaiFortune["運勢"] || "不明",
-      説明: gaiFortune["説明"] || "",
-    },
-    total: {
-      運勢: totalFortune["運勢"] || "不明",
-      説明: totalFortune["説明"] || "",
-    },
+      customFortuneData16: customFortuneData["16"],
+      customFortuneData23: customFortuneData["23"],
+      customFortuneData31: customFortuneData["31"],
+      customFortuneData24: customFortuneData["24"],
+      customFortuneData47: customFortuneData["47"]
+    })
+    console.log("🔍 吉凶データ取得デバッグ完了")
+
+  const tenFortune = getFortuneFromCustomDataWithGender(tenFormat, customFortuneData, gender)
+  const jinFortune = getFortuneFromCustomDataWithGender(jinFormat, customFortuneData, gender)
+  const chiFortune = getFortuneFromCustomDataWithGender(chiFormat, customFortuneData, gender)
+  const gaiFortune = getFortuneFromCustomDataWithGender(gaiFormat, customFortuneData, gender)
+  const totalFortune = getFortuneFromCustomDataWithGender(totalFormat, customFortuneData, gender)
+
+    console.log("🔍 取得された吉凶データ:", {
+      tenFortune,
+      jinFortune,
+      chiFortune,
+      gaiFortune,
+      totalFortune
+    })
+
+    // 結果オブジェクトを作成
+  const result = {
+      name: `${lastName} ${firstName}`,
+      lastName: lastName,
+      firstName: firstName,
+      gender: gender,
+    categories: [
+      {
+        name: "天格",
+          strokes: tenFormat,
+          fortune: tenFortune.運勢 || "中吉",
+          description: tenFortune.説明 || "天格の説明",
+          score: tenFortune.点数 || 50
+      },
+      {
+        name: "人格",
+          strokes: jinFormat,
+          fortune: jinFortune.運勢 || "中吉",
+          description: jinFortune.説明 || "人格の説明",
+          score: jinFortune.点数 || 50
+      },
+      {
+        name: "地格",
+          strokes: chiFormat,
+          fortune: chiFortune.運勢 || "中吉",
+          description: chiFortune.説明 || "地格の説明",
+          score: chiFortune.点数 || 50
+      },
+      {
+        name: "外格",
+          strokes: gaiFormat,
+          fortune: gaiFortune.運勢 || "中吉",
+          description: gaiFortune.説明 || "外格の説明",
+          score: gaiFortune.点数 || 50
+      },
+      {
+        name: "総格",
+          strokes: totalFormat,
+          fortune: totalFortune.運勢 || "中吉",
+          description: totalFortune.説明 || "総格の説明",
+          score: totalFortune.点数 || 50
+        }
+      ],
     tenFormat: tenFormat,
     jinFormat: jinFormat,
     chiFormat: chiFormat,
