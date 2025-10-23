@@ -516,8 +516,11 @@ export function analyzeNameFortune(
     chiFormat,
     gaiFormat,
     totalFormat,
-    customFortuneData32: customFortuneData["32"],
-    customFortuneData48: customFortuneData["48"]
+    customFortuneData16: customFortuneData["16"],
+    customFortuneData23: customFortuneData["23"],
+    customFortuneData31: customFortuneData["31"],
+    customFortuneData24: customFortuneData["24"],
+    customFortuneData47: customFortuneData["47"]
   })
   
   const tenFortune = getFortuneFromCustomDataWithGender(tenFormat, customFortuneData, gender)
