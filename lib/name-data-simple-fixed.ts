@@ -363,7 +363,15 @@ function getFortuneFromCustomDataWithGender(
   const key = String(strokes)
   let fortune = customFortuneData[key]
 
+  console.log(`🔍 getFortuneFromCustomDataWithGender: ${key}画`, {
+    key,
+    fortune,
+    hasData: !!fortune,
+    customFortuneDataKeys: Object.keys(customFortuneData).slice(0, 10)
+  })
+
   if (!fortune) {
+    console.warn(`⚠️ ${key}画の吉凶データが見つかりません`)
     return { 運勢: "不明", 説明: "" }
   }
 
@@ -502,11 +510,29 @@ export function analyzeNameFortune(
   }
 
   // 各格の吉凶を取得（カスタムデータを使用）
+  console.log("🔍 吉凶データ取得デバッグ:", {
+    tenFormat,
+    jinFormat,
+    chiFormat,
+    gaiFormat,
+    totalFormat,
+    customFortuneData32: customFortuneData["32"],
+    customFortuneData48: customFortuneData["48"]
+  })
+  
   const tenFortune = getFortuneFromCustomDataWithGender(tenFormat, customFortuneData, gender)
   const jinFortune = getFortuneFromCustomDataWithGender(jinFormat, customFortuneData, gender)
   const chiFortune = getFortuneFromCustomDataWithGender(chiFormat, customFortuneData, gender)
   const gaiFortune = getFortuneFromCustomDataWithGender(gaiFormat, customFortuneData, gender)
   const totalFortune = getFortuneFromCustomDataWithGender(totalFormat, customFortuneData, gender)
+  
+  console.log("🔍 取得された吉凶データ:", {
+    tenFortune,
+    jinFortune,
+    chiFortune,
+    gaiFortune,
+    totalFortune
+  })
 
   // スコアの計算
   const tenScore = calculateScore(tenFortune)
