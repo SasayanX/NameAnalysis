@@ -400,6 +400,8 @@ export function analyzeNameFortune(
     } else {
       console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
     }
+    
+    console.log(`🔍 関数実行開始: 霊数計算前`)
 
   // customFortuneDataが提供されていない場合、カスタムデータをインポート
   if (!customFortuneData) {
@@ -516,6 +518,7 @@ export function analyzeNameFortune(
   }
 
   // 各格の吉凶を取得（カスタムデータを使用）
+  console.log("🔍 吉凶データ取得デバッグ開始")
   console.log("🔍 吉凶データ取得デバッグ:", {
     tenFormat,
     jinFormat,
@@ -528,6 +531,7 @@ export function analyzeNameFortune(
     customFortuneData24: customFortuneData["24"],
     customFortuneData47: customFortuneData["47"]
   })
+  console.log("🔍 吉凶データ取得デバッグ完了")
   
   const tenFortune = getFortuneFromCustomDataWithGender(tenFormat, customFortuneData, gender)
   const jinFortune = getFortuneFromCustomDataWithGender(jinFormat, customFortuneData, gender)
