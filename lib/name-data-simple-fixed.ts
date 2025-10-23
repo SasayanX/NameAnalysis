@@ -390,15 +390,16 @@ export function analyzeNameFortune(
   gender = "male",
   customFortuneData?: Record<string, any>, // オプショナルに変更
 ): any {
-  console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
-  console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
-  console.log(`🔍 customFortuneData型:`, typeof customFortuneData)
-  if (customFortuneData) {
-    console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
-    console.log(`🔍 customFortuneData先頭5件:`, Object.keys(customFortuneData).slice(0, 5))
-  } else {
-    console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
-  }
+  try {
+    console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
+    console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
+    console.log(`🔍 customFortuneData型:`, typeof customFortuneData)
+    if (customFortuneData) {
+      console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
+      console.log(`🔍 customFortuneData先頭5件:`, Object.keys(customFortuneData).slice(0, 5))
+    } else {
+      console.log(`⚠️ customFortuneDataがundefinedまたはnullです`)
+    }
 
   // customFortuneDataが提供されていない場合、カスタムデータをインポート
   if (!customFortuneData) {
@@ -704,4 +705,16 @@ export function analyzeNameFortune(
   }
 
   return result
+  } catch (error) {
+    console.error("❌ analyzeNameFortune関数でエラーが発生しました:", error)
+    console.error("❌ エラーの詳細:", {
+      lastName,
+      firstName,
+      gender,
+      customFortuneDataProvided: !!customFortuneData,
+      errorMessage: error.message,
+      errorStack: error.stack
+    })
+    throw error
+  }
 }
