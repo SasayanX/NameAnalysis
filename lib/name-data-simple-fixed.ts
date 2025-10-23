@@ -390,19 +390,20 @@ export function analyzeNameFortune(
   gender = "male",
   customFortuneData?: Record<string, any>, // オプショナルに変更
 ): any {
-  if (DEBUG_MODE) {
-    console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
+  console.log(`🎯 analyzeNameFortune開始: "${lastName} ${firstName}" (${gender})`)
+  console.log(`🔍 customFortuneData提供状況:`, !!customFortuneData)
+  if (customFortuneData) {
+    console.log(`🔍 customFortuneData件数:`, Object.keys(customFortuneData).length)
   }
 
   // customFortuneDataが提供されていない場合、カスタムデータをインポート
   if (!customFortuneData) {
+    console.log("⚠️ customFortuneDataが提供されていません。インポートを試行します。")
     try {
       // カスタムデータをインポート
       const { customFortuneData: importedData } = require("./fortune-data-custom")
       customFortuneData = importedData
-      if (DEBUG_MODE) {
-        console.log("✅ カスタムデータをインポートしました")
-      }
+      console.log("✅ カスタムデータをインポートしました:", Object.keys(customFortuneData).length, "件")
     } catch (error) {
       console.error("カスタムデータのインポートに失敗:", error)
       // デフォルトの運勢データを使用
