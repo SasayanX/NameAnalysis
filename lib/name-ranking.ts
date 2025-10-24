@@ -1,4 +1,4 @@
-import { analyzeNameFortune } from "./name-data-simple"
+import { analyzeNameFortune } from "./name-data-simple-fixed"
 import { calculateNameElements } from "./five-elements"
 import { getYinYangArray } from "@/components/vertical-name-display"
 import { analyzeSansaiConfiguration } from "./gogyo-sansai"
