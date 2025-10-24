@@ -68,19 +68,30 @@ export function calculateGogyo(lastName: string, firstName: string, birthdate?: 
     monthDayStarsUsed = monthDayStarsForNineStar
     tenunStarsUsed = tenunStars
 
+    console.log("=== calculateGogyo 生年月日要素デバッグ ===")
+    console.log("生年月日:", birthdate)
+    console.log("生年月日から導出した星:", birthStars)
+
     // 生年月日から導出した星を五行要素にカウント
     for (const star of birthStars) {
       countElementFromStar(star, elements)
     }
+    
+    console.log("生年月日要素カウント後:", elements)
   }
 
   // 名前から星を導出
   const { nameStars, nameCharsDebug } = calculateNameElements(lastName, firstName)
 
+  console.log("=== calculateGogyo 名前要素デバッグ ===")
+  console.log("名前から導出した星:", nameStars)
+
   // 名前から導出した星を五行要素にカウント
   for (const star of nameStars) {
     countElementFromStar(star, elements)
   }
+  
+  console.log("名前要素カウント後:", elements)
 
   // 優勢な要素と弱い要素を特定
   const elementArray = [
@@ -108,6 +119,13 @@ export function calculateGogyo(lastName: string, firstName: string, birthdate?: 
   const externalLuck = strokes.lastName + socialLuck // 外運 = 姓の上の文字 + 社会運
   const internalLuck = socialLuck + strokes.firstName // 内運 = 社会運 + 名前の下の文字
   const lifeLuck = strokes.lastName + strokes.firstName + socialLuck // 一生・晩年運
+
+  console.log("=== calculateGogyo 最終結果 ===")
+  console.log("最終要素:", elements)
+  console.log("生年月日要素:", birthStars)
+  console.log("名前要素:", nameStars)
+  console.log("優勢要素:", dominantElement)
+  console.log("弱い要素:", weakElement)
 
   return {
     elements,

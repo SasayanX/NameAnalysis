@@ -184,13 +184,13 @@ export function calculateFortunePoints(result: any, gender = "male"): number {
     return 0
   }
 
-  // 各格の吉凶から直接運勢パワーを計算
+  // 各格の吉凶から直接運勢パワーを計算（全部大吉なら100点）
   const fortunePoints = {
-    大吉: 25,
-    中吉: 20,
-    吉: 15,
-    凶: 5,
-    中凶: 2,
+    大吉: 100,
+    中吉: 80,
+    吉: 60,
+    凶: 20,
+    中凶: 8,
     大凶: 0,
   }
 
@@ -202,12 +202,19 @@ export function calculateFortunePoints(result: any, gender = "male"): number {
     categoryCount++
     
     // 各格の運勢を判定
+    let foundFortune = false
     for (const [fortune, pointValue] of Object.entries(fortunePoints)) {
       if (category.fortune && category.fortune.includes(fortune)) {
         totalFortunePoints += pointValue as number
         console.log(`${category.name}で${fortune}: +${pointValue}ポイント`)
+        foundFortune = true
         break
       }
+    }
+    
+    // 運勢が見つからない場合のデバッグ
+    if (!foundFortune) {
+      console.warn(`${category.name}の運勢が見つかりません: ${category.fortune}`)
     }
   })
 
@@ -215,7 +222,15 @@ export function calculateFortunePoints(result: any, gender = "male"): number {
   const averagePoints = categoryCount > 0 ? totalFortunePoints / categoryCount : 0
   
   console.log(`運勢パワー計算結果: 合計${totalFortunePoints}点, 平均${averagePoints}点`)
+  console.log(`計算詳細: ${totalFortunePoints} ÷ ${categoryCount} = ${averagePoints}`)
   console.log("最終運勢パワー:", Math.round(averagePoints), "点")
+  
+  // 全格大吉の場合の検証
+  if (totalFortunePoints === 500) { // 5格 × 100点 = 500点
+    console.log("✅ 全格大吉確認: 500点 ÷ 5 = 100点")
+  } else {
+    console.log(`❌ 全格大吉ではない: ${totalFortunePoints}点 (期待値: 500点)`)
+  }
 
   return Math.round(averagePoints)
 }

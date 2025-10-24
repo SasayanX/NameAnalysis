@@ -57,22 +57,32 @@ export function AdvancedFiveElementsChart({
   )
 
   // 各要素のパーセンテージを計算
-  const totalCount =
-    gogyoResult.elements.wood +
-    gogyoResult.elements.fire +
-    gogyoResult.elements.earth +
-    gogyoResult.elements.metal +
-    gogyoResult.elements.water
-
-  const woodPercent = Math.round((gogyoResult.elements.wood / totalCount) * 100)
-  const firePercent = Math.round((gogyoResult.elements.fire / totalCount) * 100)
-  const earthPercent = Math.round((gogyoResult.elements.earth / totalCount) * 100)
-  const metalPercent = Math.round((gogyoResult.elements.metal / totalCount) * 100)
-  const waterPercent = Math.round((gogyoResult.elements.water / totalCount) * 100)
-
-  // Add these safety checks before using the arrays
+  // 生年月日要素と名前要素の合計数を使用
   const birthStars = gogyoResult.birthStars || []
   const nameStars = gogyoResult.nameStars || []
+  const totalCount = birthStars.length + nameStars.length
+
+  // 生年月日要素と名前要素から実際の数を計算
+  const woodCount = [...birthStars, ...nameStars].filter(star => star.includes('木')).length
+  const fireCount = [...birthStars, ...nameStars].filter(star => star.includes('火')).length
+  const earthCount = [...birthStars, ...nameStars].filter(star => star.includes('土')).length
+  const metalCount = [...birthStars, ...nameStars].filter(star => star.includes('金')).length
+  const waterCount = [...birthStars, ...nameStars].filter(star => star.includes('水')).length
+
+  const woodPercent = Math.round((woodCount / totalCount) * 100)
+  const firePercent = Math.round((fireCount / totalCount) * 100)
+  const earthPercent = Math.round((earthCount / totalCount) * 100)
+  const metalPercent = Math.round((metalCount / totalCount) * 100)
+  const waterPercent = Math.round((waterCount / totalCount) * 100)
+
+  // Add these safety checks before using the arrays
+  
+  // 生年月日と名前の要素を分けて表示
+  console.log("=== 陰陽五行分析デバッグ ===")
+  console.log("生年月日要素:", birthStars)
+  console.log("名前要素:", nameStars)
+  console.log("合計要素:", gogyoResult.elements)
+  console.log("要素の合計:", totalCount)
 
   return (
     <Card>
@@ -107,12 +117,12 @@ export function AdvancedFiveElementsChart({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="font-medium">木 ({gogyoResult.elements.wood})</span>
+                  <span className="font-medium">木 ({woodCount})</span>
                 </div>
                 <span className="text-sm">{woodPercent}%</span>
               </div>
               <Progress
-                value={(gogyoResult.elements.wood / maxCount) * 100}
+                value={(woodCount / totalCount) * 100}
                 className="h-2 bg-gray-100 dark:bg-gray-700"
                 indicatorClassName="bg-green-500"
               />
@@ -122,12 +132,12 @@ export function AdvancedFiveElementsChart({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="font-medium">火 ({gogyoResult.elements.fire})</span>
+                  <span className="font-medium">火 ({fireCount})</span>
                 </div>
                 <span className="text-sm">{firePercent}%</span>
               </div>
               <Progress
-                value={(gogyoResult.elements.fire / maxCount) * 100}
+                value={(fireCount / totalCount) * 100}
                 className="h-2 bg-gray-100 dark:bg-gray-700"
                 indicatorClassName="bg-red-500"
               />
@@ -137,12 +147,12 @@ export function AdvancedFiveElementsChart({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                  <span className="font-medium">土 ({gogyoResult.elements.earth})</span>
+                  <span className="font-medium">土 ({earthCount})</span>
                 </div>
                 <span className="text-sm">{earthPercent}%</span>
               </div>
               <Progress
-                value={(gogyoResult.elements.earth / maxCount) * 100}
+                value={(earthCount / totalCount) * 100}
                 className="h-2 bg-gray-100 dark:bg-gray-700"
                 indicatorClassName="bg-amber-500"
               />
@@ -152,12 +162,12 @@ export function AdvancedFiveElementsChart({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="font-medium">金 ({gogyoResult.elements.metal})</span>
+                  <span className="font-medium">金 ({metalCount})</span>
                 </div>
                 <span className="text-sm">{metalPercent}%</span>
               </div>
               <Progress
-                value={(gogyoResult.elements.metal / maxCount) * 100}
+                value={(metalCount / totalCount) * 100}
                 className="h-2 bg-gray-100 dark:bg-gray-700"
                 indicatorClassName="bg-yellow-500"
               />
@@ -167,12 +177,12 @@ export function AdvancedFiveElementsChart({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="font-medium">水 ({gogyoResult.elements.water})</span>
+                  <span className="font-medium">水 ({waterCount})</span>
                 </div>
                 <span className="text-sm">{waterPercent}%</span>
               </div>
               <Progress
-                value={(gogyoResult.elements.water / maxCount) * 100}
+                value={(waterCount / totalCount) * 100}
                 className="h-2 bg-gray-100 dark:bg-gray-700"
                 indicatorClassName="bg-blue-500"
               />
@@ -204,6 +214,37 @@ export function AdvancedFiveElementsChart({
                 {gogyoResult.weakElement === "水" &&
                   "柔軟性や適応力が不足しがちです。新しい知識を吸収する習慣をつけると良いでしょう。"}
               </p>
+              
+              {/* 生年月日と名前の要素の詳細内訳 */}
+              <div className="mt-4 p-3 bg-white dark:bg-gray-700 rounded-lg">
+                <h5 className="font-medium mb-2 text-sm">詳細内訳（合計{birthStars.length + nameStars.length}点）</h5>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <div className="font-medium text-green-600">生年月日要素 ({birthStars.length}点):</div>
+                    <div className="ml-2">
+                      {birthStars.length > 0 ? (
+                        birthStars.map((star, index) => (
+                          <div key={index} className="text-gray-600">• {star}</div>
+                        ))
+                      ) : (
+                        <div className="text-gray-500">なし</div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-blue-600">名前要素 ({nameStars.length}点):</div>
+                    <div className="ml-2">
+                      {nameStars.length > 0 ? (
+                        nameStars.map((star, index) => (
+                          <div key={index} className="text-gray-600">• {star}</div>
+                        ))
+                      ) : (
+                        <div className="text-gray-500">なし</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* プレミアム会員向けの詳細アドバイス - プレミアム会員のみ表示 */}
