@@ -100,10 +100,15 @@ export function calculateDailyFortune(sixStar: { star: SixStar; type: SixStarTyp
   // 基本スコアに日付変動と+/-変動を加える
   const baseScore = baseScores[sixStar.star] + dailyVariation + typeModifier
 
-  // 各分野のスコアを計算（若干のランダム性を加える）
-  const luckScore = Math.min(100, Math.max(1, Math.round(baseScore + (Math.random() * 10 - 5))))
-  const healthScore = Math.min(100, Math.max(1, Math.round(baseScore + (Math.random() * 10 - 5))))
-  const relationshipScore = Math.min(100, Math.max(1, Math.round(baseScore + (Math.random() * 10 - 5))))
+  // 各分野のスコアを計算（確定的なロジックを使用）
+  // 日付と星の組み合わせで一貫した結果を生成
+  const luckVariation = Math.sin(dayOfYear * 0.3 + (sixStar.star === "水星" ? 0 : sixStar.star === "金星" ? 1 : sixStar.star === "木星" ? 2 : sixStar.star === "火星" ? 3 : sixStar.star === "土星" ? 4 : 5)) * 8
+  const healthVariation = Math.sin(dayOfYear * 0.4 + (sixStar.star === "水星" ? 1 : sixStar.star === "金星" ? 2 : sixStar.star === "木星" ? 3 : sixStar.star === "火星" ? 4 : sixStar.star === "土星" ? 5 : 0)) * 8
+  const relationshipVariation = Math.sin(dayOfYear * 0.5 + (sixStar.star === "水星" ? 2 : sixStar.star === "金星" ? 3 : sixStar.star === "木星" ? 4 : sixStar.star === "火星" ? 5 : sixStar.star === "土星" ? 0 : 1)) * 8
+  
+  const luckScore = Math.min(100, Math.max(1, Math.round(baseScore + luckVariation)))
+  const healthScore = Math.min(100, Math.max(1, Math.round(baseScore + healthVariation)))
+  const relationshipScore = Math.min(100, Math.max(1, Math.round(baseScore + relationshipVariation)))
 
   // アドバイスを生成
   let advice = ""
