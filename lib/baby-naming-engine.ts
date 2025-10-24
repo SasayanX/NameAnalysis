@@ -1,5 +1,5 @@
 // 赤ちゃん名付けエンジン - 完全版
-import { analyzeNameFortune } from "./name-data-simple"
+import { analyzeNameFortune } from "./name-data-simple-fixed"
 import { customFortuneData } from "./fortune-data-custom"
 import { calculateNameRankingPoints } from "./name-ranking"
 
