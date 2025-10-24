@@ -290,7 +290,7 @@ export class UnifiedNameAnalyzer {
 
     // フォールバック：範囲による判定
     if (strokeCount >= 42 && strokeCount <= 50) {
-      return { fortune: "吉", score: 60, description: "基本的な運勢を持ち、安定した人生を送ることができます。努力を重ねることで、より良い結果を得ることができます。周囲との調和を大切にし、協調性を発揮することで成功できます。" }
+      return { fortune: "大吉", score: 100, description: "安定した運勢を持ち、着実に成長していくことができます。継続的な努力が実を結び、長期的な成功が期待できます。バランス感覚が良く、安定した人生を送ることができます。" }
     }
     if (strokeCount >= 51 && strokeCount <= 60) {
       return { fortune: "中吉", score: 80, description: "安定した運勢を持ち、着実に成長していくことができます。継続的な努力が実を結び、長期的な成功が期待できます。バランス感覚が良く、安定した人生を送ることができます。" }
