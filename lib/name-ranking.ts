@@ -178,6 +178,19 @@ export function calculateFortunePoints(result: any, gender = "male"): number {
   console.log("result.totalScore:", result.totalScore)
   console.log("result.categories:", result.categories)
   console.log("性別:", gender)
+  
+  // 各カテゴリの詳細情報を表示
+  if (result.categories && Array.isArray(result.categories)) {
+    console.log("各カテゴリの詳細:")
+    result.categories.forEach((cat: any, index: number) => {
+      console.log(`  ${index + 1}. ${cat.name}:`, {
+        strokes: cat.strokes,
+        fortune: cat.fortune,
+        score: cat.score,
+        description: cat.description
+      })
+    })
+  }
 
   if (!result || !result.categories) {
     console.error("結果データが無効です")
@@ -198,7 +211,7 @@ export function calculateFortunePoints(result: any, gender = "male"): number {
   let categoryCount = 0
 
   result.categories.forEach((category: any) => {
-    console.log(`${category.name}: ${category.fortune}`)
+    console.log(`${category.name}: ${category.fortune} (画数: ${category.strokes})`)
     categoryCount++
     
     // 各格の運勢を判定
@@ -215,6 +228,7 @@ export function calculateFortunePoints(result: any, gender = "male"): number {
     // 運勢が見つからない場合のデバッグ
     if (!foundFortune) {
       console.warn(`${category.name}の運勢が見つかりません: ${category.fortune}`)
+      console.warn(`${category.name}の詳細データ:`, category)
     }
   })
 
