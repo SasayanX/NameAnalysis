@@ -4,6 +4,7 @@
 - **2025-01-26**: Initial version created
 - **Phase 2 Refactoring**: Completed ✅
 - **TWA Preparation**: 90% Complete ✅
+- **2025-01-26**: Added ranking system and rank SNS sharing features
 
 ---
 
@@ -37,8 +38,21 @@
   - Name analysis results: 20pt
   - Omamori images: 30pt
   - Special results: 50pt (Great fortune, all great fortune, Kinamei Ryu omamori)
+  - Rank display: 40pt (S・A・B・C・D rank SNS posts)
 - **Supported Platforms**: Twitter, Facebook, LINE, Instagram, TikTok
 - **Viral Strategy**: Beautiful image generation, appropriate hashtags, buzz-worthy elements
+
+#### **4. Ranking System**
+- **National Ranking Table**:
+  - Privacy Protection: Partial kanji masking (e.g., 佐々〇 靖隆)
+  - Logic Protection: Stroke calculation details hidden
+  - Rank-based Display: SSS・SS・S・A・B・C・D separate rankings
+  - Real-time Updates: Automatic updates with new results
+- **Ranking Features**:
+  - National Ranking: Overall score ranking
+  - Regional Ranking: Prefecture-based ranking
+  - Age-based Ranking: Age group ranking
+  - Gender Ranking: Male/Female separate ranking
 
 ---
 

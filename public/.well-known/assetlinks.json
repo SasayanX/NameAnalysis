@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kanaukiryu.mainichiainameanalysis",
+      "sha256_cert_fingerprints": ["4E:EB:E0:B3:98:91:8B:08:3D:E6:3C:7E:9C:03:56:C7:41:34:9C:6D:3A:73:35:3E:48:33:08:E2:D4:E2:23:5D"]
+    }
+  }
+]

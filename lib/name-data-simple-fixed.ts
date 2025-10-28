@@ -190,16 +190,30 @@ export function analyzeNameFortune(
   
   console.log(`✅ 総格計算結果: ${totalFormat}画`)
   
-  // 外格の計算
+  // 外格の計算（正しいロジック）
   let gaiFormat
+  console.log(`🔍 外格計算開始: 姓${lastName.length}文字, 名${firstName.length}文字`)
+  
   if (lastName.length === 1 && firstName.length === 1) {
-    // 一字姓・一字名の場合：外格 = 2画（固定）
+    // 一字姓・一字名の場合：外格 = 霊数 + 霊数 = 2画
     gaiFormat = 2
-    console.log(`🔍 外格計算: 一字姓・一字名 → 外格 = 2画（固定）`)
+    console.log(`🔍 外格計算: 一字姓・一字名 → 霊数1画 + 霊数1画 = ${gaiFormat}画`)
+  } else if (lastName.length === 1 && firstName.length > 1) {
+    // 一字姓・複数字名の場合：外格 = 霊数 + 名の最後の文字
+    const lastCharOfFirstName = firstName.charAt(firstName.length - 1)
+    const lastCharStroke = getStrokeCount(lastCharOfFirstName)
+    gaiFormat = 1 + lastCharStroke
+    console.log(`🔍 外格計算: 一字姓・複数字名 → 霊数1画 + 名の最後「${lastCharOfFirstName}」${lastCharStroke}画 = ${gaiFormat}画`)
+  } else if (lastName.length > 1 && firstName.length === 1) {
+    // 複数字姓・一字名の場合：外格 = 姓の最初の文字 + 霊数
+    const firstCharOfLastName = lastName.charAt(0)
+    const firstCharStroke = getStrokeCount(firstCharOfLastName)
+    gaiFormat = firstCharStroke + 1
+    console.log(`🔍 外格計算: 複数字姓・一字名 → 姓の最初「${firstCharOfLastName}」${firstCharStroke}画 + 霊数1画 = ${gaiFormat}画`)
   } else {
-    // その他の場合：外格 = 総格 - 人格
-    gaiFormat = totalFormat - jinFormat
-    console.log(`🔍 外格計算: 総格(${totalFormat}画) - 人格(${jinFormat}画) = ${gaiFormat}画`)
+    // 通常の場合（複数字姓・複数字名）：外格 = 天格 + 地格 - 人格
+    gaiFormat = tenFormat + chiFormat - jinFormat
+    console.log(`🔍 外格計算: 通常 → 天格${tenFormat}画 + 地格${chiFormat}画 - 人格${jinFormat}画 = ${gaiFormat}画`)
   }
 
   console.log(`📊 五格計算結果:`, {

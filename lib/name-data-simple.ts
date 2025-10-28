@@ -126,7 +126,7 @@ export function getNameStrokesWithReisuuArray(
   const hasReisuuInLastName = lastNameChars.length === 1
   const hasReisuuInFirstName = firstNameChars.length === 1
 
-  const lastNameStrokes = hasReisuuInLastName ? [...baseLastNameStrokes, 1] : baseLastNameStrokes
+  const lastNameStrokes = hasReisuuInLastName ? [1, ...baseLastNameStrokes] : baseLastNameStrokes
 
   const firstNameStrokes = hasReisuuInFirstName ? [...baseFirstNameStrokes, 1] : baseFirstNameStrokes
 

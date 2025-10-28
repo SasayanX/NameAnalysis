@@ -29,5 +29,10 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["lifestyle", "entertainment"],
     lang: "ja",
     dir: "ltr",
+    // TWA用設定
+    display_override: ["window-controls-overlay"],
+    edge_side_panel: {
+      preferred_width: 400
+    },
   }
 }
