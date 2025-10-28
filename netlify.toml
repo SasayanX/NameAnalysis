@@ -8,12 +8,12 @@
 # Netlify Scheduled Functions (UTC):
 # 07:00 JST = 22:00 UTC (previous day)
 # 19:00 JST = 10:00 UTC
-[[functions]]
+[[scheduled.functions]]
   name = "autopilot-execute"
-  schedule = "0 22 * * *"
+  cron = "0 22 * * *"
 
-[[functions]]
+[[scheduled.functions]]
   name = "autopilot-execute"
-  schedule = "0 10 * * *"
+  cron = "0 10 * * *"
 
 
