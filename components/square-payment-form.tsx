@@ -56,7 +56,7 @@ export function SquarePaymentForm() {
       }
 
       const script = document.createElement("script")
-      script.src = "https://sandbox.web.squarecdn.com/v1/square.js"
+      script.src = "https://web.squarecdn.com/v1/square.js" // 本番環境用URL
       script.onload = () => {
         initializeSquare()
       }
@@ -65,9 +65,16 @@ export function SquarePaymentForm() {
 
     const initializeSquare = async () => {
       try {
+        // DOM要素の存在確認
+        const cardContainer = document.getElementById("card-container")
+        if (!cardContainer) {
+          console.error("Card container not found")
+          return
+        }
+
         const payments = window.Square.payments(
-          process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID || "sandbox-sq0idb--5njRFbXokY3Fyr9vp9Wxw",
-          process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "sandbox-location-id",
+          process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID || "sq0idp-CbbdF82IxFWDSqf8D2S0Pw",
+          process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "L0YH3ASTVNNMA",
         )
 
         const cardElement = await payments.card()
@@ -84,7 +91,12 @@ export function SquarePaymentForm() {
       }
     }
 
-    loadSquareSDK()
+    // DOM要素が存在することを確認してから初期化
+    const timer = setTimeout(() => {
+      loadSquareSDK()
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [toast])
 
   const handlePayment = async () => {
