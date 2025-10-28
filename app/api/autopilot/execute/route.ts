@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { StrokeDataExpansionManager } from '@/lib/stroke-data-expansion'
 import { AutoShareManager, DEFAULT_AUTO_SHARE_CONFIG } from '@/lib/auto-share-manager'
 import { analyzeNameFortune } from '@/lib/name-data-simple-fixed'
-import { generateNameAnalysisShareContent } from '@/components/share-buttons'
 import { sendShareNotification } from '@/lib/email-notification'
 
 export async function POST(request: NextRequest) {
@@ -95,7 +94,12 @@ export async function POST(request: NextRequest) {
         finalShareResult = {
           name: top.name,
           result: top.result,
-          shareContent: generateNameAnalysisShareContent(top.result)
+          shareContent: {
+            title: `${top.name} さんの姓名判断結果` ,
+            description: `総合スコア: ${top.result?.totalScore}点 / 運勢: ${top.result?.fortune}`,
+            hashtags: ['姓名判断', 'MainichiAINameAnalysis'],
+            url: ''
+          }
         }
         forcedShare = true
         console.log(`📌 フォールバック選出: ${top.name}（スコア:${top.result?.totalScore}）`)
