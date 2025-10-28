@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
     
     console.log(`✅ 画数データ拡充完了: ${expansionResult.addedKanji.length}個の漢字を追加`)
     
-    // 2. 自動SNS共有実行（条件を緩和）
+    // 2. 自動SNS共有実行（条件をさらに緩和）
     const relaxedConfig = {
       ...DEFAULT_AUTO_SHARE_CONFIG,
       conditions: {
         ...DEFAULT_AUTO_SHARE_CONFIG.conditions,
-        minScore: 50,        // 70 → 50に緩和
-        minFortune: '凶'      // 吉 → 凶に緩和（より多くの結果を取得）
+        minScore: 30,        // 50 → 30に緩和
+        minFortune: '大凶'    // 凶 → 大凶に緩和（すべての結果を取得）
       }
     }
     const shareManager = new AutoShareManager(relaxedConfig)
