@@ -1,9 +1,12 @@
+// 統合版: lib/name-data-simple.tsのエイリアス
+export { strokeCountData, getCharStroke, getCharStrokeWithContext } from "./name-data-simple"
+
 // First, import the necessary functions from kanji-conversion
 import { convertToOldKanji, isNewKanji } from "./kanji-conversion"
 import { useStrokeData } from "@/contexts/stroke-data-context"
 
-// 漢字の画数データ
-export const strokeCountData: Record<string, number> = {
+// レガシー互換性のためのデータ（非推奨）
+const legacyStrokeCountData: Record<string, number> = {
   // 常用漢字（一部）
   一: 1,
   二: 2,

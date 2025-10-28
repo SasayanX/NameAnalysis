@@ -251,84 +251,55 @@ export function calculateFortunePoints(result: any, gender = "male"): number {
 
 // 画数ポイントを計算する関数を大幅に修正
 function calculateStrokePoints(result: any) {
-  console.log("=== 画数パワー計算詳細 ===")
+  console.log("=== 画数パワー計算（正規化版） ===")
   console.log("入力データ:", result)
 
-  let points = 30 // 基本点を50から30に下げる
-  console.log("基本点:", points)
-
-  // 各格の吉凶に基づくポイント配分を適正に調整
-  const fortunePoints = {
-    大吉: 15,
-    中吉: 10,
-    吉: 5,
-    凶: -5, // 適正な減点に調整
-    中凶: -8, // 適正な減点に調整
-    大凶: -12, // 適正な減点に調整
+  // 1) 吉凶を正規化スコアに変換（大吉=満点）
+  //    各格の重み最大を5とし、平均→0〜100に線形マップ
+  const weightTable: Record<string, number> = {
+    大吉: 5,
+    中吉: 4,
+    吉: 3,
+    凶: 1,
+    中凶: 0.5,
+    大凶: 0,
   }
 
-  // 各格の吉凶を評価してポイントを加算
-  let totalFortunePoints = 0
-  result.categories.forEach((category: any) => {
-    console.log(`${category.name}: ${category.fortune}`)
-    // 各格の運勢を判定
-    for (const [fortune, pointValue] of Object.entries(fortunePoints)) {
-      if (category.fortune.includes(fortune)) {
-        totalFortunePoints += pointValue as number
-        console.log(category.name + "で" + fortune + ": " + (pointValue > 0 ? "+" : "") + pointValue + "ポイント")
+  const categories = Array.isArray(result.categories) ? result.categories : []
+  let sumWeights = 0
+  let count = 0
+  categories.forEach((category: any) => {
+    const fortuneText = category?.fortune || category?.description || ""
+    let applied = 0
+    for (const [k, w] of Object.entries(weightTable)) {
+      if (fortuneText.includes(k)) {
+        applied = w
         break
       }
     }
+    sumWeights += applied
+    count += 1
   })
 
-  // 5格の吉凶ポイントを基本点に加算（スケーリングを調整）
-  points += totalFortunePoints * 2 // 適正なスケーリングに調整
+  // 最大値は count * 5（全格大吉）
+  const baseScore = count > 0 ? (sumWeights / (count * 5)) * 100 : 0
 
-  // 低スコア格がある場合の追加減点を画数パワーにも適用（大幅強化）
-  const lowScoreCategories = result.categories.filter((category: any) => {
-    const fortuneText = category?.fortune || category?.description || ""
-    return fortuneText.includes("凶")
-  })
-
-  if (lowScoreCategories.length > 0) {
-    const lowScorePenalty = lowScoreCategories.length * 8 // 適正な減点に調整
-    points -= lowScorePenalty
-    console.log(
-      "画数パワー: 低スコア格" + lowScoreCategories.length + "個による追加減点: -" + lowScorePenalty + "ポイント",
-    )
-  }
-
-  // 特定の強い画数にボーナスポイント（ボーナスを抑制）
+  // 2) 小さなボーナス（総格の強数 + 長さ）
+  let bonus = 0
   const powerfulStrokes = [1, 3, 5, 8, 11, 16, 21, 23, 24, 31, 33, 36, 37, 41, 45, 47, 52]
-
-  // 総格の画数を取得（totalFormatプロパティまたは総格カテゴリから）
   let totalStroke = 0
   if (result.totalFormat) {
     totalStroke = result.totalFormat
   } else {
-    const totalCategory = result.categories.find((c: any) => c.name === "総格")
-    if (totalCategory && totalCategory.strokeCount) {
-      totalStroke = totalCategory.strokeCount
-    }
+    const totalCategory = categories.find((c: any) => c.name === "総格")
+    if (totalCategory && totalCategory.strokeCount) totalStroke = totalCategory.strokeCount
   }
+  if (totalStroke > 0 && powerfulStrokes.includes(totalStroke)) bonus += 2
+  if (totalStroke > 0) bonus += Math.min(2, Math.floor(totalStroke / 25))
 
-  if (totalStroke > 0) {
-    // 強い画数の場合はボーナス（ただし凶数がある場合は半減）
-    if (powerfulStrokes.includes(totalStroke)) {
-      const bonus = lowScoreCategories.length > 0 ? 5 : 10 // 適正なボーナスに調整
-      points += bonus
-      console.log("強い画数ボーナス: +" + bonus + "ポイント")
-    }
-
-    // 画数が多いほど若干ボーナス（最大5点に削減）
-    const lengthBonus = Math.min(5, Math.floor(totalStroke / 10)) // /6から/10に調整、上限も5に削減
-    points += lengthBonus
-    console.log("画数長さボーナス: +" + lengthBonus + "ポイント")
-  }
-
-  console.log("画数パワー最終計算: " + points + "ポイント")
-
-  return Math.max(0, Math.min(100, points))
+  const finalPoints = Math.max(0, Math.min(100, Math.round(baseScore + bonus)))
+  console.log("画数パワー最終計算:", finalPoints, "点 (base:", Math.round(baseScore), ", bonus:", bonus, ")")
+  return finalPoints
 }
 
 // 五行要素ポイントを計算

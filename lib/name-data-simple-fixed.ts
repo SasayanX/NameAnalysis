@@ -1,47 +1,91 @@
 import { customFortuneData } from "./fortune-data-custom"
 import { getCharStrokeWithContext } from "./name-data-simple"
 
-const DEBUG_MODE = true
+const DEBUG_MODE = false
+
+// キャッシュ機能
+const strokeCache = new Map<string, number>()
+const MAX_CACHE_SIZE = 1000
+
+// キャッシュをクリアする関数
+function clearCache() {
+  if (strokeCache.size > MAX_CACHE_SIZE) {
+    strokeCache.clear()
+  }
+}
 
 // 基本画数を取得する関数（霊数は含めない）- 統合版
 export function getStrokeCount(character: string): number {
-  console.log(`🔍 getStrokeCount呼び出し: "${character}"`)
-  
-  // 「々」の場合は7画を返す
-  if (character === "々") {
-    console.log(`🔍 getStrokeCount: "々" → 7画 (直接指定)`)
-    return 7
+  try {
+    if (DEBUG_MODE) console.log(`🔍 getStrokeCount呼び出し: "${character}"`)
+    
+    // 入力値の検証
+    if (!character || character.length !== 1) {
+      console.warn(`不正な文字です: "${character}"`)
+      return 1 // デフォルト値
+    }
+    
+    // キャッシュから取得を試行
+    if (strokeCache.has(character)) {
+      return strokeCache.get(character)!
+    }
+    
+    // lib/name-data-simple.tsのgetCharStrokeWithContextを使用
+    const result = getCharStrokeWithContext(character, character, 0)
+    if (DEBUG_MODE) console.log(`🔍 getStrokeCount: "${character}" → ${result.stroke}画 (getCharStrokeWithContext)`)
+    
+    // 結果の検証
+    if (typeof result.stroke !== 'number' || result.stroke < 0) {
+      console.warn(`不正な画数です: "${character}" → ${result.stroke}`)
+      return 1 // デフォルト値
+    }
+    
+    // キャッシュに保存
+    strokeCache.set(character, result.stroke)
+    clearCache() // 必要に応じてキャッシュをクリア
+    
+    return result.stroke
+  } catch (error) {
+    console.error(`画数取得エラー: "${character}"`, error)
+    return 1 // エラー時のデフォルト値
   }
-  
-  // 「寛」の場合は15画を返す
-  if (character === "寛") {
-    console.log(`🔍 getStrokeCount: "寛" → 15画 (直接指定)`)
-    return 15
-  }
-  
-  // lib/name-data-simple.tsのgetCharStrokeWithContextを使用
-  const result = getCharStrokeWithContext(character, character, 0)
-  console.log(`🔍 getStrokeCount: "${character}" → ${result.stroke}画 (getCharStrokeWithContext)`)
-  return result.stroke
 }
 
 // 霊数ルールを適用した画数計算（「々」は繰り返し文字として7画）
 function calculateStrokesWithReisuu(text: string): { count: number; hasReisuu: boolean } {
+  try {
+    // 入力値の検証
+    if (!text || typeof text !== 'string') {
+      console.warn(`不正なテキストです: "${text}"`)
+      return { count: 1, hasReisuu: false }
+    }
+    
   let total = 0
-  let hasReisuu = false
+    let hasReisuu = false
 
-  // まず全ての文字の画数を計算
-  for (let i = 0; i < text.length; i++) {
-    total += getStrokeCount(text[i])
-  }
-  
-  // 一文字姓・一文字名の場合のみ霊数を追加
-  if (text.length === 1) {
-    total += 1 // 霊数1画を追加
-    hasReisuu = true
+    // まず全ての文字の画数を計算
+    for (let i = 0; i < text.length; i++) {
+      const stroke = getStrokeCount(text[i])
+    total += stroke
   }
 
-  return { count: total, hasReisuu }
+    // 一文字姓・一文字名の場合のみ霊数を追加
+    if (text.length === 1) {
+      total += 1 // 霊数1画を追加
+      hasReisuu = true
+    }
+
+    // 結果の検証
+    if (total <= 0) {
+      console.warn(`不正な総画数です: "${text}" → ${total}`)
+      return { count: 1, hasReisuu: false }
+    }
+
+    return { count: total, hasReisuu }
+  } catch (error) {
+    console.error(`霊数計算エラー: "${text}"`, error)
+    return { count: 1, hasReisuu: false }
+  }
 }
 
 // カスタムデータから吉凶を取得する関数（性別考慮）
@@ -50,30 +94,34 @@ function getFortuneFromCustomDataWithGender(
   customData: Record<string, any>,
   gender: string
 ): any {
-  console.log(`🔍 getFortuneFromCustomDataWithGender呼び出し:`, {
-    strokeCount,
-    gender,
-    customDataExists: !!customData,
-    customDataKeys: customData ? Object.keys(customData).length : 0
-  })
+  if (DEBUG_MODE) {
+    console.log(`🔍 getFortuneFromCustomDataWithGender呼び出し:`, {
+      strokeCount,
+      gender,
+      customDataExists: !!customData,
+      customDataKeys: customData ? Object.keys(customData).length : 0
+    })
+  }
 
   const key = strokeCount.toString()
   const data = customData[key]
 
-  console.log(`🔍 取得データ:`, {
-    key,
-    data,
-    dataExists: !!data
-  })
+  if (DEBUG_MODE) {
+    console.log(`🔍 取得データ:`, {
+      key,
+      data,
+      dataExists: !!data
+    })
+  }
 
   if (!data) {
-    console.log(`❌ 画数${strokeCount}のデータが見つかりません`)
+    if (DEBUG_MODE) console.log(`❌ 画数${strokeCount}のデータが見つかりません`)
     return null
   }
 
   // 性別に応じたデータを取得
   const genderData = data[gender] || data["male"] || data
-  console.log(`✅ 性別${gender}のデータを取得:`, genderData)
+  if (DEBUG_MODE) console.log(`✅ 性別${gender}のデータを取得:`, genderData)
 
   return genderData
 }
@@ -85,12 +133,14 @@ export function analyzeNameFortune(
   gender = "male",
   customFortuneData?: Record<string, any>,
 ): any {
-  console.log(`🔍 analyzeNameFortune呼び出し:`, {
-    lastName,
-    firstName,
-    gender,
-    customDataExists: !!customFortuneData
-  })
+  if (DEBUG_MODE) {
+    console.log(`🔍 analyzeNameFortune呼び出し:`, {
+      lastName,
+      firstName,
+      gender,
+      customDataExists: !!customFortuneData
+    })
+  }
 
   // 霊数ルールを適用した画数計算
   const lastNameResult = calculateStrokesWithReisuu(lastName)
@@ -99,12 +149,14 @@ export function analyzeNameFortune(
   const lastNameCount = lastNameResult.count
   const firstNameCount = firstNameResult.count
 
-  console.log(`📊 画数計算結果:`, {
-    lastName: `${lastName} → ${lastNameCount}画`,
-    firstName: `${firstName} → ${firstNameCount}画`,
-    lastNameHasReisuu: lastNameResult.hasReisuu,
-    firstNameHasReisuu: firstNameResult.hasReisuu
-  })
+  if (DEBUG_MODE) {
+    console.log(`📊 画数計算結果:`, {
+      lastName: `${lastName} → ${lastNameCount}画`,
+      firstName: `${firstName} → ${firstNameCount}画`,
+      lastNameHasReisuu: lastNameResult.hasReisuu,
+      firstNameHasReisuu: firstNameResult.hasReisuu
+    })
+  }
 
   // 五格の計算（正しいロジック）
   const tenFormat = lastNameCount  // 天格：姓の画数の合計
