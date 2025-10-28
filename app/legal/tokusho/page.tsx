@@ -24,12 +24,12 @@ export default function TokushoPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <h3 className="font-semibold text-gray-700 mb-2">販売事業者名</h3>
-                <p className="text-lg">カナウ四柱推命</p>
+                <p className="text-lg">まいにちAI姓名判断</p>
                 <p className="text-sm text-gray-600">個人事業主</p>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-700 mb-2">代表者名</h3>
-                <p className="text-lg">金雨 輝龍（佐々木 靖隆）</p>
+                <p className="text-lg">金雨 輝龍</p>
               </div>
             </div>
           </CardContent>
@@ -45,9 +45,8 @@ export default function TokushoPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <p className="text-lg">〒226-0011</p>
+              <p className="text-lg">〒226-0019</p>
               <p className="text-lg">神奈川県横浜市緑区中山3-1-8-207</p>
-              <p className="text-sm text-gray-600 mt-2">※正確な郵便番号をご確認ください</p>
             </div>
           </CardContent>
         </Card>
@@ -100,6 +99,13 @@ export default function TokushoPage() {
                 </p>
                 <p className="text-sm text-gray-600">税込価格</p>
               </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h3 className="font-semibold mb-2">年額プラン</h3>
+                <p className="text-2xl font-bold">
+                  2,200円<span className="text-sm">/年</span>
+                </p>
+                <p className="text-sm text-gray-600">月額183円相当</p>
+              </div>
             </div>
             <p className="text-sm text-gray-600">
               ※価格は全て税込表示です。消費税率の変更に伴い価格が変更される場合があります。
@@ -118,9 +124,10 @@ export default function TokushoPage() {
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>クレジットカード（Visa、Mastercard、JCB、American Express）</li>
                 <li>デビットカード</li>
-                <li>コンビニ決済（予定）</li>
-                <li>銀行振込（予定）</li>
               </ul>
+              <p className="text-sm text-gray-600 mt-2">
+                ※決済プロバイダー：Stripe（審査通過時）、Square（Stripe審査未通過時）
+              </p>
             </div>
             <div>
               <h3 className="font-semibold text-gray-700 mb-2">支払時期</h3>

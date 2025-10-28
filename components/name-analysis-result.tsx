@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { AIFortuneAdvisor } from "@/components/ai-fortune-advisor"
 
 interface NameAnalysisResultProps {
   results: any
@@ -545,6 +546,33 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
           </div>
         )}
 
+        {/* 推測マーク案内 */}
+        {results.characterDetails && results.characterDetails.some((detail: any) => detail.isDefault) && (
+          <div className="mt-4 pt-4 border-t">
+            <Alert className="border-orange-200 bg-orange-50">
+              <InfoIcon className="h-4 w-4 text-orange-600" />
+              <AlertDescription>
+                <p className="text-sm font-medium text-orange-800">※推定マークについて</p>
+                <p className="text-sm text-orange-700 mt-1">
+                  推測マークがついた文字は画数データベースに無い文字の場合があり、
+                  <strong>正しく算出できていない可能性があります</strong>。
+                </p>
+                <p className="text-sm text-orange-700 mt-2">
+                  <strong>すぐに追加致しますので、お知らせ願えれば幸いです。</strong>
+                </p>
+                <div className="mt-3 p-3 bg-white rounded-lg border border-orange-200">
+                  <p className="text-sm font-medium text-orange-800 mb-2">📝 お知らせ方法：</p>
+                  <ul className="text-sm text-orange-700 space-y-1">
+                    <li>• お問い合わせフォームからご連絡ください</li>
+                    <li>• 該当する文字名をお教えください</li>
+                    <li>• 24時間以内にデータベースに追加いたします</li>
+                  </ul>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* 詳細アドバイス */}
         {results.advice && canViewDetailedAnalysis && (
           <div className="mt-4 pt-4 border-t">
@@ -604,6 +632,19 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
             </Alert>
           </div>
         )}
+
+        {/* AI開運アドバイス（無料で利用可能） */}
+        <div className="mt-6">
+          <AIFortuneAdvisor 
+            analysisData={{
+              name,
+              gender: gender as "male" | "female",
+              categories: results.categories || [],
+              totalScore: results.totalScore || 0,
+              elements: results.elements
+            }}
+          />
+        </div>
 
         {/* デバッグ情報表示（開発時のみ） */}
         {process.env.NODE_ENV === "development" && (

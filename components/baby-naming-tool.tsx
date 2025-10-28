@@ -67,9 +67,7 @@ export function BabyNamingTool() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [showUsageLimitModal, setShowUsageLimitModal] = useState(false) // 追加
 
-  // 実際の名前数を取得
-  const nameCount = getNameCount()
-  const usageTracker = UsageTracker.getInstance() // 追加
+  const usageTracker = UsageTracker.getInstance()
 
   const handleGenerate = async () => {
     if (!lastName.trim()) {
@@ -162,7 +160,7 @@ export function BabyNamingTool() {
           </CardTitle>
           <CardDescription>
             {/* 使用制限情報を追加 */}
-            {babyNamingUsage.limit !== -1 && (
+            {babyNamingUsage.limit !== -1 ? (
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-3">
                 <div className="flex items-center justify-between">
                   <span className="text-blue-700 font-medium">
@@ -173,9 +171,20 @@ export function BabyNamingTool() {
                   </Badge>
                 </div>
               </div>
+            ) : (
+              <div className="bg-green-50 p-3 rounded-lg border border-green-200 mb-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-green-700 font-medium">
+                    プレミアム機能 - 使い放題
+                  </span>
+                  <Badge variant="outline" className="text-green-600 border-green-300">
+                    無制限
+                  </Badge>
+                </div>
+              </div>
             )}
             <strong>
-              🎯 男性{nameCount.male}個・女性{nameCount.female}個の豊富な候補から厳選！
+              🎯 豊富な候補から厳選！
             </strong>
             <br />
             姓名判断で凶数を完全に排除した名前のみをご提案します。
@@ -194,8 +203,7 @@ export function BabyNamingTool() {
           <Alert>
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              <strong>豊富な名付けロジック</strong>: 男性{nameCount.male}個・女性{nameCount.female}
-              個の多様な名前候補（伝統的・現代的・自然系・季節系・天体系・色彩系・音楽系・芸術系など）から、姓名判断で天格・人格・地格・外格・総格の全てに「凶」「大凶」が含まれない名前のみを厳選します。
+              <strong>豊富な名付けロジック</strong>: 多様な名前候補（伝統的・現代的・自然系・季節系・天体系・色彩系・音楽系・芸術系など）から、姓名判断で天格・人格・地格・外格・総格の全てに「凶」「大凶」が含まれない名前のみを厳選します。
             </AlertDescription>
           </Alert>
 
@@ -219,11 +227,11 @@ export function BabyNamingTool() {
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="male" id="male" />
-                  <Label htmlFor="male">男の子（{nameCount.male}候補）</Label>
+                  <Label htmlFor="male">男の子</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="female" id="female" />
-                  <Label htmlFor="female">女の子（{nameCount.female}候補）</Label>
+                  <Label htmlFor="female">女の子</Label>
                 </div>
               </RadioGroup>
             </div>

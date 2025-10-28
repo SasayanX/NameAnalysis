@@ -87,6 +87,9 @@ export default function TermsOfServicePage() {
                 <li>
                   <strong>プレミアムプラン</strong>：月額440円（税込）
                 </li>
+                <li>
+                  <strong>年額プラン</strong>：年額2,200円（税込、月額183円相当）
+                </li>
               </ul>
             </div>
 

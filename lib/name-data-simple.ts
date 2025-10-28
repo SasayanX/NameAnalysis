@@ -27,7 +27,7 @@ export const strokeCountData: Record<string, number> = {
   ...csvImportedData,
 }
 
-delete strokeCountData["々"]
+// 「々」は繰り返し文字として7画で処理
 
 export function getCharStroke(char: string): number {
   const stroke = strokeCountData[char]

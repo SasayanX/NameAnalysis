@@ -1,10 +1,87 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
+import { FileText, Shield, AlertTriangle, CreditCard } from "lucide-react"
 
 export default function LegalPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">特定商取引法に基づく表記</h1>
+        <h1 className="text-3xl font-bold mb-8">法的文書</h1>
+        
+        {/* 法的文書一覧 */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <Link href="/legal/terms-of-service">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  利用規約
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">サービスの利用条件、有料プラン、解約・返金について</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/legal/privacy-policy">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  プライバシーポリシー
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">個人情報の収集、利用、保護について</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/legal/tokusho">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  特定商取引法に基づく表記
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">事業者情報、料金、支払い方法について</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/legal/disclaimer">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  免責事項
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">サービス利用に関する責任の範囲について</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/legal/refund-policy">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  返金・キャンセルポリシー
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">返金条件、クーリングオフ、解約手続きについて</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        <h2 className="text-2xl font-bold mb-6">特定商取引法に基づく表記</h2>
 
         <div className="space-y-6">
           <Card>
@@ -15,15 +92,15 @@ export default function LegalPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-semibold text-gray-700">事業者名</h3>
-                  <p>まいにち姓名判断</p>
+                  <p>まいにちAI姓名判断</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-700">代表者</h3>
-                  <p>金雨輝龍</p>
+                  <p>金雨 輝龍</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-700">所在地</h3>
-                  <p>〒226-0011 神奈川県横浜市緑区中山3－1－8－207</p>
+                  <p>〒226-0019 神奈川県横浜市緑区中山3-1-8-207</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-700">電話番号</h3>
@@ -50,15 +127,15 @@ export default function LegalPage() {
                 <h3 className="font-semibold text-gray-700">販売商品・サービス</h3>
                 <ul className="list-disc list-inside space-y-1 mt-2">
                   <li>姓名判断サービス（基本鑑定：無料）</li>
-                  <li>ベーシック会員：月額110円（税込）</li>
-                  <li>プロ会員：月額330円（税込）</li>
-                  <li>プレミアム会員：月額550円（税込）</li>
+                  <li>ベーシックプラン：月額220円（税込）</li>
+                  <li>プレミアムプラン：月額440円（税込）</li>
+                  <li>年額プラン：年額2,200円（税込、月額183円相当）</li>
                 </ul>
               </div>
 
               <div>
                 <h3 className="font-semibold text-gray-700">支払い方法</h3>
-                <p>クレジットカード決済（Stripe経由）</p>
+                <p>クレジットカード決済（StripeまたはSquare経由）</p>
               </div>
 
               <div>

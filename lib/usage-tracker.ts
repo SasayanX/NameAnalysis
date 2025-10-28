@@ -199,17 +199,17 @@ export class UsageTracker {
       }
 
       // In a real implementation, this would get the plan from SubscriptionManager
-      // For now, return "free" as default
+      // For now, return "premium" as default for testing
       if (typeof window !== "undefined") {
         const debugPlan = localStorage.getItem("debug_current_plan")
         if (debugPlan) {
           return debugPlan
         }
       }
-      return "free"
+      return "premium"
     } catch (error) {
       console.error("Error getting current plan:", error)
-      return "free"
+      return "premium"
     }
   }
 
