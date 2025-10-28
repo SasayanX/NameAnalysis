@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { validateCsvImportData, applyEmergencyFix } from "@/lib/csv-import-validator"
-import { getCharStroke } from "@/lib/name-data-simple-emergency"
+import { getCharStroke } from "@/lib/name-data-simple"
 
 export function CsvImportEmergencyTester() {
   const [testResults, setTestResults] = useState<any>(null)
