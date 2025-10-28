@@ -539,7 +539,7 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
                   <p className="text-sm">• 一字名のため、名の下に霊数「一」（1画）を追加</p>
                 )}
                 <p className="text-sm text-muted-foreground mt-1">
-                  ※霊数は天格・地格・総格の計算に含まれますが、人格の計算には含まれません
+                  ※霊数は天格・地格・外格の計算に含まれますが、総格の計算には含まれません
                 </p>
               </AlertDescription>
             </Alert>
