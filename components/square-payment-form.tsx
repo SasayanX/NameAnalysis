@@ -49,43 +49,82 @@ export function SquarePaymentForm() {
   const { toast } = useToast()
 
   useEffect(() => {
-    const loadSquareSDK = async () => {
-      if (window.Square) {
-        initializeSquare()
-        return
-      }
+    // selectedPlanが選択された時のみ初期化
+    if (!selectedPlan) {
+      return
+    }
 
-      const script = document.createElement("script")
-      script.src = "https://web.squarecdn.com/v1/square.js" // 本番環境用URL
-      script.onload = () => {
-        initializeSquare()
+    const loadSquareSDK = async () => {
+      try {
+        // Square SDKが既に読み込まれているかチェック
+        if (window.Square) {
+          await initializeSquare()
+          return
+        }
+
+        // Square SDKを動的に読み込み
+        const script = document.createElement("script")
+        script.src = "https://web.squarecdn.com/v1/square.js"
+        script.async = true
+        script.defer = true
+        
+        script.onload = async () => {
+          if (!window.Square) {
+            throw new Error('Square.js failed to load properly')
+          }
+          await initializeSquare()
+        }
+        
+        script.onerror = () => {
+          throw new Error('Failed to load Square SDK')
+        }
+        
+        document.head.appendChild(script)
+      } catch (error) {
+        console.error("Square SDK loading error:", error)
+        toast({
+          title: "エラー",
+          description: "決済システムの読み込みに失敗しました",
+          variant: "destructive",
+        })
       }
-      document.head.appendChild(script)
     }
 
     const initializeSquare = async () => {
       try {
-        // DOM要素の存在確認
+        // DOM要素の存在確認（最新ベストプラクティス）
         const cardContainer = document.getElementById("card-container")
         if (!cardContainer) {
-          console.error("Card container not found")
-          return
+          throw new Error('Card container element not found')
         }
 
+        // Square Payments初期化（最新API）
         const payments = window.Square.payments(
           process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID || "sq0idp-CbbdF82IxFWDSqf8D2S0Pw",
           process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "L0YH3ASTVNNMA",
         )
 
+        // カード要素の初期化
         const cardElement = await payments.card()
+        
+        // DOM要素にアタッチ
         await cardElement.attach("#card-container")
+        
         setCard(cardElement)
         setSquareLoaded(true)
+        
+        console.log("Square payment form initialized successfully")
       } catch (error) {
         console.error("Square initialization error:", error)
+        
+        let errorMessage = "決済システムの初期化に失敗しました"
+        if (error instanceof Error) {
+          errorMessage += `: ${error.message}`
+        }
+        
         toast({
           title: "エラー",
-          description: "決済システムの初期化に失敗しました",
+          description: errorMessage,
           variant: "destructive",
         })
       }
@@ -97,7 +136,7 @@ export function SquarePaymentForm() {
     }, 100)
 
     return () => clearTimeout(timer)
-  }, [toast])
+  }, [selectedPlan, toast])
 
   const handlePayment = async () => {
     if (!selectedPlan || !card) {
