@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { StrokeDataExpansionManager } from '@/lib/stroke-data-expansion'
 import { AutoShareManager, DEFAULT_AUTO_SHARE_CONFIG } from '@/lib/auto-share-manager'
+import { analyzeNameFortune } from '@/lib/name-data-simple-fixed'
+import { generateNameAnalysisShareContent } from '@/components/share-buttons'
 import { sendShareNotification } from '@/lib/email-notification'
 
 export async function POST(request: NextRequest) {
@@ -59,18 +61,54 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    let finalShareResult: { name: string, result: any, shareContent: any } | null = null
+    let forcedShare = false
+
     if (shareableResults.length > 0) {
-      // メール通知送信
-      const shareResult = shareableResults[0]
-      await sendShareNotification(
-        shareResult.name,
-        shareResult.result,
-        shareResult.shareContent
-      )
-      
-      console.log(`📧 メール通知送信完了: ${shareResult.name}さん`)
+      // 優先: 条件を満たした結果
+      finalShareResult = {
+        name: shareableResults[0].name,
+        result: shareableResults[0].result,
+        shareContent: shareableResults[0].shareContent
+      }
     } else {
-      console.log('📱 共有可能な結果がありません')
+      // フォールバック: 条件未達でも最高スコアの姓名を1件選出
+      console.log('📱 共有可能な結果がありません → フォールバックを実行')
+
+      const evaluated = [] as Array<{ name: string, result: any }>
+      for (const nameData of sampleNames) {
+        try {
+          const result = await analyzeNameFortune({
+            lastName: nameData.lastName,
+            firstName: nameData.firstName,
+            gender: nameData.gender || 'male'
+          })
+          evaluated.push({ name: `${nameData.lastName}${nameData.firstName}`, result })
+        } catch (e) {
+          console.error('フォールバック評価エラー:', e)
+        }
+      }
+
+      if (evaluated.length > 0) {
+        evaluated.sort((a, b) => (b.result?.totalScore ?? 0) - (a.result?.totalScore ?? 0))
+        const top = evaluated[0]
+        finalShareResult = {
+          name: top.name,
+          result: top.result,
+          shareContent: generateNameAnalysisShareContent(top.result)
+        }
+        forcedShare = true
+        console.log(`📌 フォールバック選出: ${top.name}（スコア:${top.result?.totalScore}）`)
+      }
+    }
+
+    if (finalShareResult) {
+      await sendShareNotification(
+        finalShareResult.name,
+        finalShareResult.result,
+        finalShareResult.shareContent
+      )
+      console.log(`📧 メール通知送信完了: ${finalShareResult.name}さん${forcedShare ? '（フォールバック）' : ''}`)
     }
     
     // 3. 結果を返す
@@ -85,7 +123,8 @@ export async function POST(request: NextRequest) {
       },
       sharing: {
         shareableResults: shareableResults.length,
-        sharedName: shareableResults.length > 0 ? shareableResults[0].name : null
+        sharedName: finalShareResult ? finalShareResult.name : null,
+        forcedShare
       }
     }
     
