@@ -125,6 +125,10 @@ export default function PricingPage() {
               <CardTitle className="text-2xl text-purple-900">🏆 おなまえ格付けランク</CardTitle>
               <CardDescription className="text-lg text-purple-700">
                 あなたの名前を全国レベルで格付け！S・A・B・C・D の5段階評価
+                <br />
+                <span className="text-sm text-purple-600">
+                  ※ SSS・SSランクは有料プラン限定の特別ランクです
+                </span>
               </CardDescription>
             </CardHeader>
             <CardContent>
