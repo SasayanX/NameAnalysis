@@ -494,12 +494,14 @@ export const csvImportedData: Record<string, number> = {
   鸚: 28,
   黎: 15,
   䯂: 34,
+  住: 7,
+  紳: 11,
 }
 
 // 統計情報
 export const csvImportStats = {
-  totalCount: 378,
-  newCount: 512,
+  totalCount: 380,
+  newCount: 514,
   updatedCount: 0,
   duplicateCount: 10,
   lastUpdated: "2025-07-12T05:48:12.194Z",

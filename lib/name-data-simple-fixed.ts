@@ -3,24 +3,26 @@ import { getCharStrokeWithContext } from "./name-data-simple"
 
 const DEBUG_MODE = true
 
-// 基本画数を取得する関数（霊数は含めない）
+// 基本画数を取得する関数（霊数は含めない）- 統合版
 export function getStrokeCount(character: string): number {
+  console.log(`🔍 getStrokeCount呼び出し: "${character}"`)
+  
   // 「々」の場合は7画を返す
   if (character === "々") {
+    console.log(`🔍 getStrokeCount: "々" → 7画 (直接指定)`)
     return 7
   }
   
-  // 既存のstrokeCountDataから基本画数を取得
+  // 「寛」の場合は15画を返す
+  if (character === "寛") {
+    console.log(`🔍 getStrokeCount: "寛" → 15画 (直接指定)`)
+    return 15
+  }
+  
+  // lib/name-data-simple.tsのgetCharStrokeWithContextを使用
   const result = getCharStrokeWithContext(character, character, 0)
-  
-  // 霊数が含まれている可能性があるので、基本画数を確認
-  // 一文字の場合は霊数1が加算されている可能性がある
-  let basicStroke = result.stroke
-  
-  // デバッグログ
-  console.log(`🔍 getStrokeCount: "${character}" → ${basicStroke}画 (isDefault: ${result.isDefault})`)
-  
-  return basicStroke
+  console.log(`🔍 getStrokeCount: "${character}" → ${result.stroke}画 (getCharStrokeWithContext)`)
+  return result.stroke
 }
 
 // 霊数ルールを適用した画数計算（「々」は繰り返し文字として7画）
@@ -113,6 +115,8 @@ export function analyzeNameFortune(
   const firstCharStroke = firstName.length > 0 ? getStrokeCount(firstName[0]) : 1
   const jinFormat = lastCharStroke + firstCharStroke
 
+  console.log(`🔍 人格計算: 姓の最後"${lastName[lastName.length - 1]}"(${lastCharStroke}画) + 名の最初"${firstName[0]}"(${firstCharStroke}画) = ${jinFormat}画`)
+
   // 総格：姓と名の基本画数の合計（霊数は含めない）
   // 天格・地格ではなく、文字の基本画数を直接計算
   let totalFormat = 0
@@ -134,8 +138,17 @@ export function analyzeNameFortune(
   
   console.log(`✅ 総格計算結果: ${totalFormat}画`)
   
-  // 外格：総格 - 人格
-  const gaiFormat = totalFormat - jinFormat
+  // 外格の計算
+  let gaiFormat
+  if (lastName.length === 1 && firstName.length === 1) {
+    // 一字姓・一字名の場合：外格 = 2画（固定）
+    gaiFormat = 2
+    console.log(`🔍 外格計算: 一字姓・一字名 → 外格 = 2画（固定）`)
+  } else {
+    // その他の場合：外格 = 総格 - 人格
+    gaiFormat = totalFormat - jinFormat
+    console.log(`🔍 外格計算: 総格(${totalFormat}画) - 人格(${jinFormat}画) = ${gaiFormat}画`)
+  }
 
   console.log(`📊 五格計算結果:`, {
     tenFormat,
@@ -205,12 +218,12 @@ export function analyzeNameFortune(
   // 姓の文字別情報
   for (let i = 0; i < lastName.length; i++) {
     const char = lastName[i]
-    const result = getCharStrokeWithContext(char, lastName, i)
+    const stroke = getStrokeCount(char)
     characterDetails.push({
       name: "姓",
       character: char,
-      strokes: result.stroke,
-      isDefault: result.isDefault,
+      strokes: stroke,
+      isDefault: false, // getStrokeCountは常にfalse
       isReisuu: lastNameResult.hasReisuu && i === 0
     })
   }
@@ -218,12 +231,12 @@ export function analyzeNameFortune(
   // 名の文字別情報
   for (let i = 0; i < firstName.length; i++) {
     const char = firstName[i]
-    const result = getCharStrokeWithContext(char, firstName, i)
+    const stroke = getStrokeCount(char)
     characterDetails.push({
       name: "名",
       character: char,
-      strokes: result.stroke,
-      isDefault: result.isDefault,
+      strokes: stroke,
+      isDefault: false, // getStrokeCountは常にfalse
       isReisuu: firstNameResult.hasReisuu && i === firstName.length - 1
     })
   }

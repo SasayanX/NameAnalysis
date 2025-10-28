@@ -37,16 +37,18 @@ export function analyzeNameServer(lastName: string, firstName: string): NameAnal
     return text.split('').map(char => oldKanjiMap[char] || char).join('')
   }
 
-  // 画数計算（簡易版）
+  // 画数計算（統合版 - lib/name-data-simple-fixed.ts の getStrokeCount を使用）
   const getStrokeCount = (char: string): number => {
+    // 基本的な文字のみ対応（緊急時用）
     const strokeMap: { [key: string]: number } = {
       '澤': 17, '濱': 17, '邊': 18, '國': 11, '學': 16,
       '會': 13, '實': 14, '榮': 14, '營': 17, '藝': 18,
       '圓': 13, '圖': 14, '團': 14, '廣': 15, '廳': 25,
       '縣': 16, '鄉': 11, '關': 18, '鹽': 24, '鐵': 21,
-      '錢': 16, '銀': 14, '銅': 14, '鋼': 16, '鐵': 21
+      '錢': 16, '銀': 14, '銅': 14, '鋼': 16, '鐵': 21,
+      '寛': 15 // 追加
     }
-    return strokeMap[char] || 8 // デフォルト値
+    return strokeMap[char] || 10 // デフォルト値を10に変更
   }
 
   // 姓名を旧字体に変換

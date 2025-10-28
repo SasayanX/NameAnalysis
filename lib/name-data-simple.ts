@@ -25,6 +25,10 @@ export const strokeCountData: Record<string, number> = {
   ...katakanaData,
   ...extendedKanjiData,
   ...csvImportedData,
+  // 直接追加
+  寛: 15,
+  住: 7,
+  紳: 11,
 }
 
 // 「々」は繰り返し文字として7画で処理
@@ -64,6 +68,14 @@ export function getCharStrokeWithContext(
   stroke: number
   isDefault: boolean
 } {
+  console.log(`🔍 getCharStrokeWithContext呼び出し: "${char}"`)
+  
+  // 「寛」の場合は15画を返す
+  if (char === "寛") {
+    console.log(`🔍 getCharStrokeWithContext: "寛" → 15画 (直接指定)`)
+    return { stroke: 15, isDefault: false }
+  }
+  
   if (char === "々") {
     if (position > 0) {
       const prevChar = fullText.charAt(position - 1)
@@ -81,9 +93,11 @@ export function getCharStrokeWithContext(
 
   if (stroke === undefined) {
     const defaultStroke = getDefaultStrokeByCharType(char)
+    console.log(`🔍 getCharStrokeWithContext: "${char}" → ${defaultStroke}画 (デフォルト)`)
     return { stroke: defaultStroke, isDefault: true }
   }
 
+  console.log(`🔍 getCharStrokeWithContext: "${char}" → ${stroke}画 (データベース)`)
   return { stroke, isDefault: false }
 }
 

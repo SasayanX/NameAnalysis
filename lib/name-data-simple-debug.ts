@@ -27,6 +27,7 @@ export const strokeCountData: Record<string, number> = {
   桑: 10,
   陸: 16,
   也: 3,
+  寛: 15,
 }
 
 // デバッグ用ログ

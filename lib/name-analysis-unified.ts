@@ -202,11 +202,21 @@ export class UnifiedNameAnalyzer {
       console.log(`人格計算: 姓の最後"${lastCharOfLastName}"(${lastCharStroke}画) + 名の最初"${firstCharOfFirstName}"(${firstCharStroke}画) = ${jinFormat}画`)
     }
 
-    // 外格 = 総格 - 人格
-    const gaiFormat = totalFormat - jinFormat
-    
-    if (process.env.NODE_ENV === "development") {
-      console.log(`外格計算: 総格(${totalFormat}画) - 人格(${jinFormat}画) = ${gaiFormat}画`)
+    // 外格の計算
+    let gaiFormat
+    if (lastName.length === 1 && firstName.length === 1) {
+      // 一字姓・一字名の場合：外格 = 2画（固定）
+      gaiFormat = 2
+      if (process.env.NODE_ENV === "development") {
+        console.log(`外格計算: 一字姓・一字名 → 外格 = 2画（固定）`)
+      }
+    } else {
+      // その他の場合：外格 = 総格 - 人格
+      gaiFormat = totalFormat - jinFormat
+      if (process.env.NODE_ENV === "development") {
+        console.log(`外格計算: 総格(${totalFormat}画) - 人格(${jinFormat}画) = ${gaiFormat}画`)
+      }
+    }
       console.log(`=== 五格計算結果 ===`)
       console.log(`天格: ${tenFormat}画`)
       console.log(`人格: ${jinFormat}画`)
@@ -220,7 +230,7 @@ export class UnifiedNameAnalyzer {
         console.log(`これは明らかに間違っています。`)
         console.log(`正しい計算: 総格(48) - 人格(17) = 31画`)
       }
-    }
+    
 
     return {
       tenFormat,

@@ -253,6 +253,7 @@ export const commonKanjiData: Record<string, number> = {
   障: 14,
   吾: 7,
   彅: 14,
+  寛: 15, // 寛大、寛容
 }
 
 // Import other stroke data
@@ -260,36 +261,4 @@ import { hiraganaData, katakanaData } from "./kana"
 import { extendedKanjiData } from "./extended-kanji"
 
 // Function to get stroke count for any character
-export function getStrokeCount(char: string): number {
-  // Check common kanji first
-  if (commonKanjiData[char]) {
-    return commonKanjiData[char]
-  }
-
-  // Check hiragana data
-  if (hiraganaData[char]) {
-    return hiraganaData[char]
-  }
-
-  // Check katakana data
-  if (katakanaData[char]) {
-    return katakanaData[char]
-  }
-
-  // Check extended kanji data
-  if (extendedKanjiData[char]) {
-    return extendedKanjiData[char]
-  }
-
-  // For unknown characters, return a default value based on character type
-  if (/[a-zA-Z]/.test(char)) {
-    return 1 // English letters
-  }
-
-  if (/[0-9]/.test(char)) {
-    return 1 // Numbers
-  }
-
-  // For other unknown characters, return 1
-  return 1
-}
+// getStrokeCount関数は lib/name-data-simple-fixed.ts に統合されました
