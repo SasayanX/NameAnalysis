@@ -29,6 +29,9 @@ export const strokeCountData: Record<string, number> = {
   寛: 15,
   住: 7,
   紳: 11,
+  佐: 7,
+  靖: 13,
+  隆: 17,
 }
 
 // 「々」は繰り返し文字として7画で処理
@@ -68,11 +71,8 @@ export function getCharStrokeWithContext(
   stroke: number
   isDefault: boolean
 } {
-  console.log(`🔍 getCharStrokeWithContext呼び出し: "${char}"`)
-  
   // 「寛」の場合は15画を返す
   if (char === "寛") {
-    console.log(`🔍 getCharStrokeWithContext: "寛" → 15画 (直接指定)`)
     return { stroke: 15, isDefault: false }
   }
   
@@ -81,11 +81,13 @@ export function getCharStrokeWithContext(
       const prevChar = fullText.charAt(position - 1)
       const prevStroke = strokeCountData[prevChar]
       if (prevStroke === undefined) {
-        return { stroke: 3, isDefault: true }
+        // 前の文字の画数が不明な場合は7画（一般的な繰り返し文字の画数）
+        return { stroke: 7, isDefault: true }
       }
       return { stroke: prevStroke, isDefault: false }
     } else {
-      return { stroke: 3, isDefault: true }
+      // 最初の文字が「々」の場合は7画
+      return { stroke: 7, isDefault: true }
     }
   }
 
@@ -93,11 +95,9 @@ export function getCharStrokeWithContext(
 
   if (stroke === undefined) {
     const defaultStroke = getDefaultStrokeByCharType(char)
-    console.log(`🔍 getCharStrokeWithContext: "${char}" → ${defaultStroke}画 (デフォルト)`)
     return { stroke: defaultStroke, isDefault: true }
   }
 
-  console.log(`🔍 getCharStrokeWithContext: "${char}" → ${stroke}画 (データベース)`)
   return { stroke, isDefault: false }
 }
 
