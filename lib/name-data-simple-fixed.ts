@@ -3,16 +3,24 @@ import { getCharStrokeWithContext } from "./name-data-simple"
 
 const DEBUG_MODE = true
 
-// 既存の推測マーク機能を使用する関数
+// 基本画数を取得する関数（霊数は含めない）
 export function getStrokeCount(character: string): number {
   // 「々」の場合は7画を返す
   if (character === "々") {
     return 7
   }
   
-  // 既存の推測マーク機能を使用
+  // 既存のstrokeCountDataから基本画数を取得
   const result = getCharStrokeWithContext(character, character, 0)
-  return result.stroke
+  
+  // 霊数が含まれている可能性があるので、基本画数を確認
+  // 一文字の場合は霊数1が加算されている可能性がある
+  let basicStroke = result.stroke
+  
+  // デバッグログ
+  console.log(`🔍 getStrokeCount: "${character}" → ${basicStroke}画 (isDefault: ${result.isDefault})`)
+  
+  return basicStroke
 }
 
 // 霊数ルールを適用した画数計算（「々」は繰り返し文字として7画）
@@ -104,9 +112,27 @@ export function analyzeNameFortune(
   const lastCharStroke = getStrokeCount(lastName[lastName.length - 1])
   const firstCharStroke = firstName.length > 0 ? getStrokeCount(firstName[0]) : 1
   const jinFormat = lastCharStroke + firstCharStroke
+
+  // 総格：姓と名の基本画数の合計（霊数は含めない）
+  // 天格・地格ではなく、文字の基本画数を直接計算
+  let totalFormat = 0
+  console.log(`🔍 総格計算開始:`, { lastName, firstName })
   
-  // 総格：全ての文字の画数の合計
-  const totalFormat = tenFormat + chiFormat
+  for (let i = 0; i < lastName.length; i++) {
+    const char = lastName[i]
+    const stroke = getStrokeCount(char)
+    totalFormat += stroke
+    console.log(`  ${char}: ${stroke}画`)
+  }
+  
+  for (let i = 0; i < firstName.length; i++) {
+    const char = firstName[i]
+    const stroke = getStrokeCount(char)
+    totalFormat += stroke
+    console.log(`  ${char}: ${stroke}画`)
+  }
+  
+  console.log(`✅ 総格計算結果: ${totalFormat}画`)
   
   // 外格：総格 - 人格
   const gaiFormat = totalFormat - jinFormat
@@ -175,7 +201,7 @@ export function analyzeNameFortune(
 
   // 文字別詳細情報
   const characterDetails = []
-  
+
   // 姓の文字別情報
   for (let i = 0; i < lastName.length; i++) {
     const char = lastName[i]
@@ -208,11 +234,11 @@ export function analyzeNameFortune(
     chiFormat,
     gaiFormat,
     totalFormat,
-    tenFortune,
-    jinFortune,
-    chiFortune,
-    gaiFortune,
-    totalFortune,
+      tenFortune,
+      jinFortune,
+      chiFortune,
+      gaiFortune,
+      totalFortune,
     categories, // UIコンポーネント用のcategories配列を追加
     characterDetails,
     reisuuInfo: {

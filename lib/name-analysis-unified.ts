@@ -184,7 +184,10 @@ export class UnifiedNameAnalyzer {
     }
 
     // 総格 = 実際の文字の画数のみ（霊数除外）
-    const totalFormat = lastNameCount + firstNameCount
+    // lastNameCount, firstNameCountは霊数を含んでいるので、霊数を除外する
+    const lastNameBasicCount = hasReisuuInLastName ? lastNameCount - 1 : lastNameCount
+    const firstNameBasicCount = hasReisuuInFirstName ? firstNameCount - 1 : firstNameCount
+    const totalFormat = lastNameBasicCount + firstNameBasicCount
 
     // 人格 = 姓の最後の文字と名の最初の文字の画数の合計（霊数除外）
     const lastCharOfLastName = lastName.charAt(lastName.length - 1)
