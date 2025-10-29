@@ -12,6 +12,9 @@ export type SupaPointsSummary = {
 
 export async function getOrCreatePointsSummary(userId: string): Promise<SupaPointsSummary> {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
 
   const { data, error } = await supabase
     .from("kanau_points")
@@ -52,6 +55,9 @@ export async function addTransaction(
   metadata?: Record<string, any>,
 ) {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
   const { error } = await supabase.from("point_transactions").insert({
     user_id: userId,
     type,
@@ -70,6 +76,9 @@ export async function addPointsSupa(
   category: "special_reward" | "purchase" = "special_reward",
 ) {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
   const summary = await getOrCreatePointsSummary(userId)
 
   const { error: upErr } = await supabase
@@ -93,6 +102,9 @@ export async function spendPointsSupa(
   category: "ranking_entry" | "purchase",
 ) {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
   const summary = await getOrCreatePointsSummary(userId)
   if ((summary.points || 0) < amount) {
     throw new Error("ポイントが不足しています")
@@ -114,6 +126,9 @@ export async function spendPointsSupa(
 
 export async function getSeasonalItemBonus(userId: string): Promise<number> {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    return 0
+  }
   const { data, error } = await supabase
     .from("special_items")
     .select("effect_value, effect_type, is_used")
@@ -128,6 +143,9 @@ export async function getSeasonalItemBonus(userId: string): Promise<number> {
 
 export async function processLoginBonusSupa(userId: string) {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
   const summary = await getOrCreatePointsSummary(userId)
 
   const today = new Date().toISOString().split("T")[0]
@@ -187,6 +205,9 @@ export async function processLoginBonusSupa(userId: string) {
 // 今日獲得した機能実行ボーナスKpを計算（上限管理用）
 export async function getTodayFeatureBonusEarned(userId: string): Promise<number> {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    return 0
+  }
   const today = new Date().toISOString().split("T")[0]
   const todayStart = `${today}T00:00:00.000Z`
   const todayEnd = `${today}T23:59:59.999Z`
@@ -211,6 +232,13 @@ export async function addFeatureBonus(
   featureName: string,
 ): Promise<{ actualAmount: number; remaining: number; message: string }> {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    return {
+      actualAmount: 0,
+      remaining: 0,
+      message: "Supabase環境変数が設定されていません",
+    }
+  }
   const todayEarned = await getTodayFeatureBonusEarned(userId)
   const DAILY_LIMIT = 5
 

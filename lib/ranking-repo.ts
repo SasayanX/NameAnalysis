@@ -26,6 +26,9 @@ export function getCurrentSeasonKey(date = new Date()): string {
 
 export async function fetchSeasonRanking(seasonKey: string, limit = 100): Promise<RankingEntry[]> {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    return []
+  }
   const { data, error } = await supabase
     .from("ranking_entries")
     .select("id, user_id, season, name, power_score, seasonal_bonus, item_bonus, total_score, rank, reward_points, created_at")
@@ -60,6 +63,9 @@ export function computeSeasonalBonusFromName(name: string, date = new Date()): n
 
 export async function submitRankingEntry(userId: string, name: string, powerScore: number) {
   const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
   // 参加費5Kpを消費
   await spendPointsSupa(userId, 5, "ランキング参加", "ranking_entry")
 

@@ -107,6 +107,57 @@ export async function POST(request: NextRequest) {
     }
 
     if (finalShareResult) {
+      let tweetId: string | undefined = undefined
+      
+      // X（Twitter）への投稿
+      try {
+        const { postToTwitter } = await import('@/lib/twitter-api')
+        const tweetText = generateTweetText(
+          finalShareResult.name,
+          finalShareResult.result,
+          finalShareResult.shareContent
+        )
+        
+        console.log(`🐦 Xへの投稿開始: ${finalShareResult.name}さん`)
+        tweetId = await postToTwitter(tweetText)
+        console.log(`✅ X投稿成功: Tweet ID ${tweetId}`)
+        
+        // 投稿履歴をSupabaseに保存
+        const { getSupabaseClient } = await import('@/lib/supabase-client')
+        const supabase = getSupabaseClient()
+        await supabase.from('twitter_posts').insert({
+          last_name: finalShareResult.name.substring(0, 1),
+          first_name: finalShareResult.name.substring(1),
+          tweet_id: tweetId,
+          tweet_content: tweetText,
+          posted_at: new Date().toISOString()
+        }).catch(err => console.error('投稿履歴保存エラー:', err))
+      } catch (twitterError: any) {
+        console.error('❌ X投稿エラー:', twitterError.message)
+        // X投稿に失敗してもメール通知は送信
+      }
+      
+      // ブログ記事を自動生成して保存
+      try {
+        const { generateBlogArticleFromAnalysis, saveBlogArticle } = await import('@/lib/blog-article-generator')
+        const lastName = finalShareResult.name.substring(0, 1)
+        const firstName = finalShareResult.name.substring(1)
+        
+        console.log(`📝 ブログ記事生成開始: ${finalShareResult.name}さん`)
+        const article = generateBlogArticleFromAnalysis(
+          lastName,
+          firstName,
+          finalShareResult.result,
+          tweetId
+        )
+        
+        const articleId = await saveBlogArticle(article)
+        console.log(`✅ ブログ記事保存完了: ${article.slug} (ID: ${articleId})`)
+      } catch (articleError: any) {
+        console.error('❌ ブログ記事生成エラー:', articleError.message)
+        // ブログ記事生成に失敗しても処理は続行
+      }
+      
       await sendShareNotification(
         finalShareResult.name,
         finalShareResult.result,
@@ -148,6 +199,26 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// ツイート用テキスト生成
+function generateTweetText(name: string, result: any, shareContent: any): string {
+  const score = result?.totalScore || 0
+  const rank = score >= 85 ? 'S' : score >= 75 ? 'A' : score >= 65 ? 'B' : score >= 55 ? 'C' : score >= 45 ? 'D' : 'E'
+  
+  const categories = result?.categories || []
+  const tenFortune = categories.find((c: any) => c.name === '天格')?.fortune || '不明'
+  const jinFortune = categories.find((c: any) => c.name === '人格')?.fortune || '不明'
+  const totalFortune = categories.find((c: any) => c.name === '総格')?.fortune || '不明'
+  
+  return `🔮【${name}さんの姓名判断】
+
+総合評価: ${score}点（${rank}ランク）
+天格: ${tenFortune}
+人格: ${jinFortune}
+総格: ${totalFortune}
+
+#姓名判断 #名前診断 #運勢 #占い`
 }
 
 // GETリクエストでも実行可能（テスト用）

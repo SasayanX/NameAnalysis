@@ -23,6 +23,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = getSupabaseClient()
+    if (!supabase) {
+      setLoading(false)
+      return
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
@@ -40,25 +45,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name?: string) => {
     const supabase = getSupabaseClient()
+    if (!supabase) {
+      return { error: { message: "Supabase環境変数が設定されていません" } }
+    }
     return await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: { 
+        data: { name },
+        emailRedirectTo: `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`,
+      },
     })
   }
 
   const signIn = async (email: string, password: string) => {
     const supabase = getSupabaseClient()
+    if (!supabase) {
+      return { error: { message: "Supabase環境変数が設定されていません" } }
+    }
     return await supabase.auth.signInWithPassword({ email, password })
   }
 
   const signOut = async () => {
     const supabase = getSupabaseClient()
+    if (!supabase) return
     await supabase.auth.signOut()
   }
 
   const signInWithGoogle = async () => {
     const supabase = getSupabaseClient()
+    if (!supabase) {
+      return { error: { message: "Supabase環境変数が設定されていません" } }
+    }
     const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined
     return await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
   }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Mail, Lock, User as UserIcon, Chrome } from "lucide-react"
+import { Mail, Lock, User as UserIcon, Chrome, CheckCircle2 } from "lucide-react"
 import { useAuth } from "./auth-provider"
 
 export function LoginForm() {
@@ -19,17 +19,30 @@ export function LoginForm() {
 
   const { signIn, signUp, signInWithGoogle } = useAuth()
 
+  const [successMessage, setSuccessMessage] = useState("")
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setSuccessMessage("")
     setLoading(true)
     try {
       if (isLogin) {
         const { error } = await signIn(email, password)
-        if (error) setError(error.message)
+        if (error) {
+          setError(error.message)
+        }
       } else {
-        const { error } = await signUp(email, password, name)
-        if (error) setError(error.message)
+        const { data, error } = await signUp(email, password, name)
+        if (error) {
+          setError(error.message)
+        } else if (data?.user && !data.session) {
+          // メール確認が必要な場合
+          setSuccessMessage("登録メールを送信しました。メールボックスを確認して認証リンクをクリックしてください。メールが届かない場合はスパムフォルダもご確認ください。")
+        } else if (data?.session) {
+          // メール確認がスキップされた場合（開発環境など）
+          setSuccessMessage("登録が完了しました！")
+        }
       }
     } catch {
       setError("予期しないエラーが発生しました。")
@@ -92,6 +105,13 @@ export function LoginForm() {
             </Alert>
           )}
 
+          {successMessage && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
+            </Alert>
+          )}
+
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "処理中..." : isLogin ? "ログイン" : "新規登録"}
           </Button>
@@ -105,9 +125,16 @@ export function LoginForm() {
             </div>
           </div>
 
-          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
-            <Chrome className="mr-2 h-4 w-4" /> Googleで{isLogin ? "ログイン" : "登録"}
-          </Button>
+          <div className="space-y-2">
+            <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
+              <Chrome className="mr-2 h-4 w-4" /> Googleで{isLogin ? "ログイン" : "登録"}
+            </Button>
+            {!isLogin && (
+              <p className="text-xs text-center text-muted-foreground">
+                💡 メール認証が届かない場合、Google認証がおすすめです
+              </p>
+            )}
+          </div>
 
           <div className="text-center">
             <Button type="button" variant="link" className="text-sm" onClick={() => setIsLogin(!isLogin)}>

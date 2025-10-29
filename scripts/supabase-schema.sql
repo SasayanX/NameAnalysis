@@ -212,3 +212,79 @@ $$ language plpgsql security definer;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- X（Twitter）自動投稿用テーブル
+CREATE TABLE IF NOT EXISTS public.twitter_posts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  last_name text NOT NULL,
+  first_name text NOT NULL,
+  tweet_id text UNIQUE NOT NULL,
+  tweet_content text NOT NULL,
+  posted_at timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now()
+);
+
+-- 収集した人名テーブル
+CREATE TABLE IF NOT EXISTS public.collected_names (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  last_name text NOT NULL,
+  first_name text NOT NULL,
+  source text NOT NULL,
+  collected_at timestamptz DEFAULT now(),
+  analyzed boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+-- インデックス
+CREATE INDEX IF NOT EXISTS idx_twitter_posts_name ON public.twitter_posts(last_name, first_name);
+CREATE INDEX IF NOT EXISTS idx_twitter_posts_posted_at ON public.twitter_posts(posted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_collected_names_source ON public.collected_names(source);
+CREATE INDEX IF NOT EXISTS idx_collected_names_collected_at ON public.collected_names(collected_at DESC);
+
+-- RLS設定（誰でも読み取り可能、認証不要で投稿履歴を保存）
+ALTER TABLE public.twitter_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.collected_names ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: 全員が読み取り可能、サービスロールが書き込み可能
+DO $$ BEGIN
+  CREATE POLICY "anyone_can_read_twitter_posts" ON public.twitter_posts
+    FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "anyone_can_read_collected_names" ON public.collected_names
+    FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ブログ記事テーブル（自動生成記事用）
+CREATE TABLE IF NOT EXISTS public.blog_articles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text UNIQUE NOT NULL,
+  title text NOT NULL,
+  description text NOT NULL,
+  content text NOT NULL,
+  last_name text NOT NULL,
+  first_name text NOT NULL,
+  analysis_result jsonb,
+  keywords text[] DEFAULT ARRAY[]::text[],
+  category text DEFAULT '姓名判断実例',
+  tweet_id text,
+  published_at timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- インデックス
+CREATE INDEX IF NOT EXISTS idx_blog_articles_slug ON public.blog_articles(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_articles_published_at ON public.blog_articles(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blog_articles_category ON public.blog_articles(category);
+CREATE INDEX IF NOT EXISTS idx_blog_articles_keywords ON public.blog_articles USING GIN(keywords);
+
+-- RLS設定
+ALTER TABLE public.blog_articles ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: 全員が読み取り可能（公開記事）
+DO $$ BEGIN
+  CREATE POLICY "anyone_can_read_blog_articles" ON public.blog_articles
+    FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
