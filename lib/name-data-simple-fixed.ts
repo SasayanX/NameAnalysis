@@ -234,13 +234,41 @@ export function analyzeNameFortune(
   const gaiFortune = getFortuneFromCustomDataWithGender(gaiFormat, fortuneData, gender)
   const totalFortune = getFortuneFromCustomDataWithGender(totalFormat, fortuneData, gender)
 
+  // スコア計算関数（運勢からスコアを計算）
+  const calculateScore = (fortune: any): number => {
+    if (!fortune || !fortune.運勢) return 50
+    switch (fortune.運勢) {
+      case "大吉":
+        return 100
+      case "中吉":
+        return 80
+      case "吉":
+        return 60
+      case "凶":
+        return 40
+      case "中凶":
+        return 20
+      case "大凶":
+        return 0
+      default:
+        return 50
+    }
+  }
+
+  // 各格のスコアを計算
+  const tenScore = calculateScore(tenFortune)
+  const jinScore = calculateScore(jinFortune)
+  const chiScore = calculateScore(chiFortune)
+  const gaiScore = calculateScore(gaiFortune)
+  const totalScore = calculateScore(totalFortune)
+
   // categories配列を生成（UIコンポーネント用）
   const categories = [
     {
       name: "天格",
       strokeCount: tenFormat,
       fortune: tenFortune?.運勢 || "不明",
-      score: tenFortune?.点数 || 0,
+      score: tenScore,
       description: tenFortune?.説明 || "天格の説明がありません",
       explanation: tenFortune?.詳細 || ""
     },
@@ -248,7 +276,7 @@ export function analyzeNameFortune(
       name: "人格", 
       strokeCount: jinFormat,
       fortune: jinFortune?.運勢 || "不明",
-      score: jinFortune?.点数 || 0,
+      score: jinScore,
       description: jinFortune?.説明 || "人格の説明がありません",
       explanation: jinFortune?.詳細 || ""
     },
@@ -256,7 +284,7 @@ export function analyzeNameFortune(
       name: "地格",
       strokeCount: chiFormat, 
       fortune: chiFortune?.運勢 || "不明",
-      score: chiFortune?.点数 || 0,
+      score: chiScore,
       description: chiFortune?.説明 || "地格の説明がありません",
       explanation: chiFortune?.詳細 || ""
     },
@@ -264,7 +292,7 @@ export function analyzeNameFortune(
       name: "外格",
       strokeCount: gaiFormat,
       fortune: gaiFortune?.運勢 || "不明", 
-      score: gaiFortune?.点数 || 0,
+      score: gaiScore,
       description: gaiFortune?.説明 || "外格の説明がありません",
       explanation: gaiFortune?.詳細 || ""
     },
@@ -272,7 +300,7 @@ export function analyzeNameFortune(
       name: "総格",
       strokeCount: totalFormat,
       fortune: totalFortune?.運勢 || "不明",
-      score: totalFortune?.点数 || 0, 
+      score: totalScore, 
       description: totalFortune?.説明 || "総格の説明がありません",
       explanation: totalFortune?.詳細 || ""
     }

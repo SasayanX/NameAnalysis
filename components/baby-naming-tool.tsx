@@ -68,6 +68,9 @@ export function BabyNamingTool() {
   const [showUsageLimitModal, setShowUsageLimitModal] = useState(false) // 追加
 
   const usageTracker = UsageTracker.getInstance()
+  
+  // 名前候補数を取得
+  const nameCount = getNameCount()
 
   const handleGenerate = async () => {
     if (!lastName.trim()) {
@@ -351,22 +354,33 @@ export function BabyNamingTool() {
                   <div>
                     <h4 className="font-semibold mb-2">性格・特徴</h4>
                     <div className="flex flex-wrap gap-2">
-                      {candidate.characteristics.map((char, i) => (
-                        <Badge key={i} variant="secondary">
-                          {char}
-                        </Badge>
-                      ))}
+                      {candidate.characteristics && candidate.characteristics.length > 0
+                        ? candidate.characteristics.map((char, i) => (
+                            <Badge key={i} variant="secondary">
+                              {char}
+                            </Badge>
+                          ))
+                        : <Badge variant="secondary">特徴を計算中...</Badge>
+                      }
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="text-sm text-muted-foreground">総合スコア: </span>
-                      <span className="text-lg font-bold text-primary">{candidate.totalScore}点</span>
+                      <span className="text-lg font-bold text-primary">
+                        {candidate.totalScore !== undefined && candidate.totalScore !== null 
+                          ? `${Math.round(candidate.totalScore)}点`
+                          : '計算中...'}
+                      </span>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">パワーレベル: </span>
-                      <span className="text-lg font-bold text-primary">{candidate.powerLevel}/10</span>
+                      <span className="text-lg font-bold text-primary">
+                        {candidate.powerLevel !== undefined && candidate.powerLevel !== null
+                          ? `${candidate.powerLevel}/10`
+                          : '計算中...'}
+                      </span>
                     </div>
                   </div>
 

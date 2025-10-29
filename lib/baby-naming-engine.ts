@@ -334,15 +334,22 @@ export function generateOptimalNames(request: NamingRequest, maxResults = 3): Ba
         continue
       }
 
+      // デバッグ: rankingResultを確認
+      if (!rankingResult || rankingResult.totalPoints === undefined) {
+        console.error(`❌ rankingResultが無効: ${nameData.kanji}`, rankingResult)
+      } else {
+        console.log(`✅ candidate作成: ${nameData.kanji} - totalScore: ${rankingResult.totalPoints}`)
+      }
+
       const candidate: BabyNameCandidate = {
         kanji: nameData.kanji,
         reading: nameData.reading,
         meaning: nameData.meaning,
-        totalScore: rankingResult.totalPoints,
-        powerLevel: rankingResult.powerLevel,
-        powerRank: rankingResult.powerRank,
+        totalScore: rankingResult?.totalPoints ?? 0,
+        powerLevel: rankingResult?.powerLevel ?? 0,
+        powerRank: rankingResult?.powerRank ?? "D",
         hasNoKyousu: !hasKyousu(analysis),
-        isGoodFortune: rankingResult.totalPoints >= 65,
+        isGoodFortune: (rankingResult?.totalPoints ?? 0) >= 65,
         searchMode: request.preferences?.strictMode ? "厳格モード" : "標準モード",
         fortuneAnalysis: {
           ten: analysis.categories?.find((c: any) => c.name === "天格")?.score || 0,
@@ -363,7 +370,7 @@ export function generateOptimalNames(request: NamingRequest, maxResults = 3): Ba
           gaiFortune: analysis.categories?.find((c: any) => c.name === "外格")?.fortune || "",
           totalFortune: analysis.categories?.find((c: any) => c.name === "総格")?.fortune || "",
         },
-        characteristics: generateCharacteristics(analysis),
+        characteristics: generateCharacteristics(analysis) || [],
       }
 
       candidates.push(candidate)
@@ -420,14 +427,17 @@ function hasKyousu(analysis: any): boolean {
 // 特徴生成関数
 function generateCharacteristics(analysis: any): string[] {
   const characteristics = []
+  
+  // totalScoreが存在しない場合は空配列を返す
+  const totalScore = analysis?.totalScore ?? 0
 
-  if (analysis.totalScore >= 90) {
+  if (totalScore >= 90) {
     characteristics.push("非常に優秀", "指導力がある", "成功運が強い")
-  } else if (analysis.totalScore >= 80) {
+  } else if (totalScore >= 80) {
     characteristics.push("優秀", "協調性がある", "安定した運勢")
-  } else if (analysis.totalScore >= 70) {
+  } else if (totalScore >= 70) {
     characteristics.push("良好", "努力家", "堅実な運勢")
-  } else if (analysis.totalScore >= 60) {
+  } else if (totalScore >= 60) {
     characteristics.push("普通", "バランスが良い", "平穏な運勢")
   } else {
     characteristics.push("個性的", "独特な魅力", "変化に富む運勢")
