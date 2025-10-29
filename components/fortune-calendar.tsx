@@ -162,9 +162,11 @@ export function FortuneCalendar({ userElements, isPremium = false, isPro = false
       }
     }
 
-    // 日付による変動（-10〜+10）
-    const dateVariation = Math.sin(date.getDate() * 0.7) * 10
-    score += dateVariation
+    // 日付による変動（-10〜+10）: 体感的変化をやや強め、月を跨いでもパターンが多様になるよう通算日を利用
+    const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000)
+    const dateVariation = Math.sin(dayOfYear * 0.28) * 12
+    const microNoise = Math.sin(dayOfYear * 1.7) * 4 // 決定的な微小ノイズ
+    score += dateVariation + microNoise
 
     return Math.min(100, Math.max(0, Math.round(score)))
   }

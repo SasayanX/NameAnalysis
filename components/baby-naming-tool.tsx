@@ -33,6 +33,10 @@ import {
 import { UsageTracker } from "@/lib/usage-tracker"
 import { UsageLimitModal } from "@/components/usage-limit-modal"
 import { getUpgradeMessage } from "@/lib/usage-limits"
+import { DevPlanSwitcher } from "@/components/dev-plan-switcher"
+import { useAuth } from "@/components/auth/auth-provider"
+import { addFeatureBonus } from "@/lib/kanau-points-supabase"
+import { useToast } from "@/hooks/use-toast"
 
 const RANK_COLORS = {
   SSS: "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white",
@@ -68,6 +72,8 @@ export function BabyNamingTool() {
   const [showUsageLimitModal, setShowUsageLimitModal] = useState(false) // 追加
 
   const usageTracker = UsageTracker.getInstance()
+  const { user: authUser } = useAuth()
+  const { toast } = useToast()
   
   // 名前候補数を取得
   const nameCount = getNameCount()
@@ -112,6 +118,27 @@ export function BabyNamingTool() {
 
       setCandidates(results)
 
+      // ポイント付与（赤ちゃん名付け）
+      if (authUser) {
+        try {
+          const bonus = await addFeatureBonus(authUser.id, 2, "赤ちゃん名付け")
+          if (bonus.actualAmount > 0) {
+            toast({
+              title: "ポイント獲得！",
+              description: bonus.message,
+            })
+          } else if (bonus.actualAmount === 0) {
+            toast({
+              title: "本日の上限に達しました",
+              description: bonus.message,
+              variant: "default",
+            })
+          }
+        } catch (error) {
+          console.error("ポイント付与エラー:", error)
+        }
+      }
+
       if (results.length === 0) {
         setErrorMessage(
           "非常に厳しい条件のため、完璧な名前が見つかりませんでした。" +
@@ -138,6 +165,9 @@ export function BabyNamingTool() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* 開発用プラン切り替え（開発環境のみ） */}
+      <DevPlanSwitcher />
+      
       {/* 使用制限モーダルを追加 */}
       <UsageLimitModal
         isOpen={showUsageLimitModal}
@@ -245,7 +275,7 @@ export function BabyNamingTool() {
               {isGenerating ? (
                 <div className="flex items-center justify-center gap-2">
                   <Shield className="animate-pulse h-5 w-5" />
-                  250候補から凶数完全排除中...
+                  {(gender === "male" ? nameCount.male : nameCount.female) + "件の名前から抽出中..."}
                 </div>
               ) : (
                 "豊富な候補から凶数なしの名前を厳選"

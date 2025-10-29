@@ -6,6 +6,7 @@ import { ThemeToggle } from "./theme-toggle"
 import { BookOpen, CreditCard, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSubscription } from "@/lib/subscription-manager"
+import { KanauPointsHeader } from "@/components/kanau-points-header"
 import { useState, useEffect } from "react"
 
 export function SiteHeader() {
@@ -107,6 +108,7 @@ export function SiteHeader() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
+          <KanauPointsHeader />
           <Button variant="outline" className={planInfo.style} onClick={handlePlanClick}>
             <Settings className="h-4 w-4 mr-2" />
             {planInfo.text}

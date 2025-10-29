@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,7 +8,8 @@ import { Check, X, Trophy, Star, Crown, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 export default function PricingPage() {
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
+  // 年額プランは無効化：常に月額のみ
+  const billingCycle: "monthly" = "monthly"
 
   const plans = {
     free: {
@@ -74,13 +74,6 @@ export default function PricingPage() {
     },
   }
 
-  const yearlyDiscount = (planKey: keyof typeof plans) => {
-    const plan = plans[planKey]
-    if (plan.price.monthly === 0) return 0
-    const monthlyTotal = plan.price.monthly * 12
-    const yearlyPrice = plan.price.yearly
-    return Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100)
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
@@ -89,26 +82,12 @@ export default function PricingPage() {
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">料金プラン</h1>
           <p className="text-xl text-gray-600 mb-8">あなたに最適なプランをお選びください</p>
-
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <span className={billingCycle === "monthly" ? "font-semibold" : "text-gray-500"}>月額</span>
-            <button
-              onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-              className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  billingCycle === "yearly" ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-            <span className={billingCycle === "yearly" ? "font-semibold" : "text-gray-500"}>年額</span>
-            {billingCycle === "yearly" && (
-              <Badge variant="secondary" className="ml-2">
-                最大20%お得
-              </Badge>
-            )}
+          
+          {/* 月額のみ表示 */}
+          <div className="text-center mb-8">
+            <Badge variant="secondary" className="text-lg px-4 py-2">
+              月額プランのみ対応
+            </Badge>
           </div>
         </div>
 
@@ -181,11 +160,6 @@ export default function PricingPage() {
                       </span>
                     )}
                   </div>
-                  {billingCycle === "yearly" && yearlyDiscount(key as keyof typeof plans) > 0 && (
-                    <Badge variant="secondary" className="mt-2">
-                      年額で{yearlyDiscount(key as keyof typeof plans)}%お得
-                    </Badge>
-                  )}
                 </div>
               </CardHeader>
 
@@ -305,7 +279,7 @@ export default function PricingPage() {
               <AccordionTrigger>支払い方法について教えてください</AccordionTrigger>
               <AccordionContent>
                 <p>
-                  クレジットカード決済に対応しています。年額プランをお選びいただくと、月額プランより最大20%お得になります。
+                  クレジットカード決済に対応しています。現在は月額プランのみのご提供となります。
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -353,7 +327,7 @@ export default function PricingPage() {
                   className="border-white text-white hover:bg-white hover:text-purple-600 bg-transparent"
                   asChild
                 >
-                  <Link href="/subscribe?plan=premium&billing=yearly">
+                  <Link href="/subscribe?plan=premium&billing=monthly">
                     <Trophy className="h-4 w-4 mr-2" />
                     プレミアムで格付けランクを体験
                   </Link>

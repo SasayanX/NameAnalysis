@@ -1,4 +1,7 @@
 // lib/usage-tracker.ts
+"use client"
+
+import { SubscriptionManager } from "./subscription-manager"
 
 interface UsageLimits {
   personalAnalysis: number
@@ -85,18 +88,16 @@ export class UsageTracker {
 
   // v0環境かどうかを判定
   private isV0Environment(): boolean {
-    // v0環境（Next.js）では常に制限を無効化
+    // プロダクション環境では常にfalse（制限を適用）
+    // 開発環境でも、明示的にデバッグモードが設定されていない限りfalse
     if (typeof window !== "undefined") {
-      // ブラウザ環境でv0特有の条件をチェック
-      return (
-        window.location.hostname.includes("v0.dev") ||
-        window.location.hostname.includes("vercel.app") ||
-        // v0環境の特徴的なパスやクエリパラメータをチェック
-        window.location.search.includes("v0=") ||
-        // Next.jsの特徴をチェック
-        (window as any).__NEXT_LITE__ === true
-      )
+      // 明示的なデバッグフラグがある場合のみ無制限
+      const isDebugMode = localStorage.getItem("debug_unlimited_mode") === "true"
+      if (isDebugMode && window.location.hostname === "localhost") {
+        return true
+      }
     }
+    // それ以外は常にfalse（制限を適用）
     return false
   }
 
@@ -193,23 +194,74 @@ export class UsageTracker {
 
   private getCurrentPlan(): string {
     try {
-      // v0環境では常にpremiumとして扱う
+      // 開発環境でのデバッグモードチェック（明示的に設定された場合のみ）
       if (this.isV0Environment()) {
         return "premium"
       }
 
-      // In a real implementation, this would get the plan from SubscriptionManager
-      // For now, return "premium" as default for testing
+      // SubscriptionManagerから実際のプラン情報を取得
       if (typeof window !== "undefined") {
+        // デバッグモードで上書きできるようにする（開発用）
         const debugPlan = localStorage.getItem("debug_current_plan")
-        if (debugPlan) {
+        if (debugPlan && process.env.NODE_ENV === "development") {
+          console.log(`[UsageTracker] デバッグプラン: ${debugPlan}`)
           return debugPlan
         }
+
+        // SubscriptionManagerから実際のプランを取得
+        try {
+          // SubscriptionManagerは直接インポート
+          const manager = SubscriptionManager.getInstance()
+          const subscriptionInfo = manager.getSubscriptionInfo()
+          
+          console.log(`[UsageTracker] サブスクリプション情報:`, subscriptionInfo)
+          
+          if (subscriptionInfo && subscriptionInfo.plan) {
+            const plan = subscriptionInfo.plan
+            
+            // 無料プランの場合はそのまま返す
+            if (plan === "free") {
+              console.log(`[UsageTracker] 無料プラン`)
+              return "free"
+            }
+            
+            // 有料プラン（basic/premium）の場合
+            // isSubscriptionActive()で有効性をチェック
+            // subscriptionInfo.isActiveは信用せず、必ずisSubscriptionActive()を使用
+            const isActive = manager.isSubscriptionActive()
+            console.log(`[UsageTracker] 有料プラン: ${plan}, isSubscriptionActive()=${isActive}`)
+            console.log(`[UsageTracker] subscriptionInfo詳細:`, {
+              plan: subscriptionInfo.plan,
+              isActive: subscriptionInfo.isActive,
+              status: subscriptionInfo.status,
+              expiresAt: subscriptionInfo.expiresAt
+            })
+            
+            if (isActive) {
+              console.log(`[UsageTracker] ✅ 有効な有料プラン: ${plan}`)
+              return plan
+            } else {
+              // 有料プランだが期限切れなどの場合は無料プランに戻す
+              console.log(`[UsageTracker] ❌ 有料プランだが無効 (status=${subscriptionInfo.status}, expiresAt=${subscriptionInfo.expiresAt}) → 無料プランに戻す`)
+              return "free"
+            }
+          }
+          
+          // サブスクリプション情報がない場合は無料プラン
+          console.log(`[UsageTracker] サブスクリプション情報なし → 無料プラン`)
+          return "free"
+        } catch (error) {
+          console.error("[UsageTracker] SubscriptionManager取得エラー:", error)
+          // エラーが発生した場合はfreeプランを返す
+        }
       }
-      return "premium"
+      
+      // デフォルトは"free"プラン
+      console.log(`[UsageTracker] デフォルト: freeプラン`)
+      return "free"
     } catch (error) {
-      console.error("Error getting current plan:", error)
-      return "premium"
+      console.error("[UsageTracker] getCurrentPlan エラー:", error)
+      return "free"
     }
   }
 
@@ -292,8 +344,9 @@ export class UsageTracker {
 
   canUseFeature(feature: keyof Omit<UsageData, "lastReset">): UsageLimit {
     try {
-      // v0環境では常に無制限
+      // v0環境（開発環境でのデバッグモード）では常に無制限
       if (this.isV0Environment()) {
+        console.log(`[UsageTracker] v0環境モード: ${feature} は無制限`)
         return {
           allowed: true,
           limit: -1,
@@ -302,12 +355,12 @@ export class UsageTracker {
         }
       }
 
-      // 開発環境での無制限モードチェック
+      // 開発環境での無制限モードチェック（明示的に設定された場合のみ）
       if (
-        process.env.NODE_ENV === "development" &&
         typeof window !== "undefined" &&
         localStorage.getItem("debug_unlimited_mode") === "true"
       ) {
+        console.log(`[UsageTracker] デバッグ無制限モード: ${feature} は無制限`)
         return {
           allowed: true,
           limit: -1,
@@ -319,10 +372,13 @@ export class UsageTracker {
       this.checkDailyReset()
 
       const currentPlan = this.getCurrentPlan()
+      console.log(`[UsageTracker] canUseFeature: ${feature}, プラン: ${currentPlan}`)
       const limits = this.getPlanLimits(currentPlan)
 
       const featureLimit = limits[feature]
       const currentUsage = this.usageData[feature] || 0
+
+      console.log(`[UsageTracker] ${feature}: 制限=${featureLimit}, 使用=${currentUsage}`)
 
       if (featureLimit === -1) {
         // 無制限
@@ -335,14 +391,17 @@ export class UsageTracker {
       }
 
       const remaining = Math.max(0, featureLimit - currentUsage)
-      return {
+      const result = {
         allowed: remaining > 0,
         limit: featureLimit,
         current: currentUsage,
         remaining,
       }
+      
+      console.log(`[UsageTracker] ${feature}: 結果:`, result)
+      return result
     } catch (error) {
-      console.error("Error checking feature usage:", error)
+      console.error("[UsageTracker] canUseFeature エラー:", error)
       return {
         allowed: false,
         limit: 0,
@@ -354,9 +413,10 @@ export class UsageTracker {
 
   getUsageStatus(): UsageStatus {
     try {
-      // v0環境では常に無制限として扱う
+      // v0環境（開発環境でのデバッグモード）では常に無制限として扱う
       if (this.isV0Environment()) {
         const { lastReset, ...todayUsage } = this.usageData
+        console.log("[UsageTracker] getUsageStatus: v0環境モード（無制限）")
         return {
           plan: "premium", // v0環境ではpremiumとして扱う
           isInTrial: false,
@@ -375,13 +435,13 @@ export class UsageTracker {
         }
       }
 
-      // 開発環境での無制限モードチェック
+      // 開発環境での無制限モードチェック（明示的に設定された場合のみ）
       if (
-        process.env.NODE_ENV === "development" &&
         typeof window !== "undefined" &&
         localStorage.getItem("debug_unlimited_mode") === "true"
       ) {
         const { lastReset, ...todayUsage } = this.usageData
+        console.log("[UsageTracker] getUsageStatus: デバッグ無制限モード")
         return {
           plan: this.getCurrentPlan(),
           isInTrial: this.isInTrialMode(),

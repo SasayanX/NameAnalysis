@@ -26,7 +26,10 @@ import { checkUsageLimit, getUpgradeMessage } from "@/lib/usage-limits"
 import { AdvancedFiveElementsChart } from "@/components/advanced-five-elements-chart"
 import { SixStarChart } from "@/components/six-star-chart"
 import { SixStarTest } from "@/components/six-star-test"
+import { useAuth } from "@/components/auth/auth-provider"
+import { addFeatureBonus } from "@/lib/kanau-points-supabase"
 import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 
 export function NameAnalyzer() {
   const [lastName, setLastName] = useState("")
@@ -46,6 +49,8 @@ export function NameAnalyzer() {
   const [upgradeMessage, setUpgradeMessage] = useState("")
 
   const { fortuneData } = useFortuneData()
+  const { user: authUser } = useAuth()
+  const { toast } = useToast()
   const {
     preferences,
     incrementUsage,
@@ -251,6 +256,27 @@ export function NameAnalyzer() {
 
         // 使用回数を増加（分析成功後）
         incrementUsage()
+
+        // ポイント付与（姓名判断）
+        if (authUser) {
+          try {
+            const bonus = await addFeatureBonus(authUser.id, 1, "姓名判断")
+            if (bonus.actualAmount > 0) {
+              toast({
+                title: "ポイント獲得！",
+                description: bonus.message,
+              })
+            } else if (bonus.actualAmount === 0) {
+              toast({
+                title: "本日の上限に達しました",
+                description: bonus.message,
+                variant: "default",
+              })
+            }
+          } catch (error) {
+            console.error("ポイント付与エラー:", error)
+          }
+        }
       } else if (analysisType === "company") {
         console.log("会社名分析開始: " + companyName)
         const companyAnalysisResult = analyzeCompanyName(companyName, fortuneData)
@@ -258,6 +284,27 @@ export function NameAnalyzer() {
 
         // 使用回数を増加（分析成功後）
         incrementUsage()
+
+        // ポイント付与（社名判断）
+        if (authUser) {
+          try {
+            const bonus = await addFeatureBonus(authUser.id, 1, "社名判断")
+            if (bonus.actualAmount > 0) {
+              toast({
+                title: "ポイント獲得！",
+                description: bonus.message,
+              })
+            } else if (bonus.actualAmount === 0) {
+              toast({
+                title: "本日の上限に達しました",
+                description: bonus.message,
+                variant: "default",
+              })
+            }
+          } catch (error) {
+            console.error("ポイント付与エラー:", error)
+          }
+        }
       }
     } catch (error) {
       console.error("分析エラー:", error)

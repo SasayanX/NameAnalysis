@@ -2,6 +2,7 @@
 import { analyzeNameFortune } from "./name-data-simple-fixed"
 import { customFortuneData } from "./fortune-data-custom"
 import { calculateNameRankingPoints } from "./name-ranking"
+import babyNamesData from "@/data/baby-names.json"
 
 export interface NamingRequest {
   lastName: string
@@ -48,235 +49,9 @@ export interface BabyNameCandidate {
   searchMode?: string
 }
 
-// 🔥 男性名前候補（画数データ確認済み）
-const MALE_NAMES = [
-  // 2021-2025年人気ランキング上位
-  { kanji: "碧", reading: "あお", meaning: "美しい青緑色" },
-  { kanji: "蓮", reading: "れん", meaning: "蓮の花のように清らか" },
-  { kanji: "陽翔", reading: "はると", meaning: "太陽のように翔ける" },
-  { kanji: "湊", reading: "みなと", meaning: "人が集まる港" },
-  { kanji: "蒼", reading: "あおい", meaning: "蒼い空のように広い" },
-  { kanji: "樹", reading: "いつき", meaning: "大樹のように成長" },
-  { kanji: "大翔", reading: "ひろと", meaning: "大きく翔ける" },
-  { kanji: "悠真", reading: "ゆうま", meaning: "ゆったりと真っ直ぐ" },
-  { kanji: "結翔", reading: "ゆいと", meaning: "結ばれて翔ける" },
-  { kanji: "律", reading: "りつ", meaning: "規律正しい" },
-
-  // 伝統的な名前
-  { kanji: "太郎", reading: "たろう", meaning: "長男" },
-  { kanji: "一郎", reading: "いちろう", meaning: "第一の男子" },
-  { kanji: "次郎", reading: "じろう", meaning: "次男" },
-  { kanji: "三郎", reading: "さぶろう", meaning: "三男" },
-
-  // 自然系の名前
-  { kanji: "海斗", reading: "かいと", meaning: "海のように広い心" },
-  { kanji: "大地", reading: "だいち", meaning: "大きな大地" },
-  { kanji: "春太", reading: "はるた", meaning: "春のように暖かい" },
-  { kanji: "夏樹", reading: "なつき", meaning: "夏の木" },
-  { kanji: "秋人", reading: "あきと", meaning: "秋のように実り豊か" },
-  { kanji: "冬馬", reading: "とうま", meaning: "冬のように清らか" },
-
-  // 現代的な名前
-  { kanji: "奏", reading: "かなで", meaning: "音楽を奏でる" },
-  { kanji: "廉", reading: "れん", meaning: "清廉な" },
-  { kanji: "凛", reading: "りん", meaning: "凛々しい" },
-  { kanji: "翼", reading: "つばさ", meaning: "大きな翼" },
-  { kanji: "颯", reading: "はやて", meaning: "颯爽とした" },
-
-  // 力強い名前
-  { kanji: "剛", reading: "つよし", meaning: "剛強な" },
-  { kanji: "勇", reading: "いさむ", meaning: "勇敢な" },
-  { kanji: "健", reading: "けん", meaning: "健康な" },
-  { kanji: "強", reading: "つよし", meaning: "強い" },
-
-  // 知性的な名前
-  { kanji: "智", reading: "さとし", meaning: "智恵のある" },
-  { kanji: "学", reading: "まなぶ", meaning: "学問を愛する" },
-  { kanji: "賢", reading: "けん", meaning: "賢い" },
-  { kanji: "聡", reading: "さとし", meaning: "聡明な" },
-
-  // 2024年人気名前追加
-  { kanji: "翔太", reading: "しょうた", meaning: "翔ける太陽" },
-  { kanji: "大和", reading: "やまと", meaning: "大和の心" },
-  { kanji: "健太", reading: "けんた", meaning: "健康で強い" },
-  { kanji: "拓也", reading: "たくや", meaning: "開拓する" },
-  { kanji: "直樹", reading: "なおき", meaning: "真っ直ぐな木" },
-  { kanji: "慎吾", reading: "しんご", meaning: "慎み深い" },
-  { kanji: "雄太", reading: "ゆうた", meaning: "雄々しい" },
-  { kanji: "和也", reading: "かずや", meaning: "和やかな" },
-  { kanji: "誠", reading: "まこと", meaning: "誠実な" },
-  { kanji: "光", reading: "ひかる", meaning: "光る" },
-
-  // 自然・季節系追加
-  { kanji: "風太", reading: "ふうた", meaning: "風のように自由" },
-  { kanji: "雪斗", reading: "ゆきと", meaning: "雪のように清らか" },
-  { kanji: "雷", reading: "らい", meaning: "雷のように力強い" },
-  { kanji: "雲", reading: "くも", meaning: "雲のように高く" },
-  { kanji: "虹", reading: "にじ", meaning: "虹のように美しい" },
-  { kanji: "星", reading: "ほし", meaning: "星のように輝く" },
-  { kanji: "月", reading: "つき", meaning: "月のように清らか" },
-  { kanji: "太陽", reading: "たいよう", meaning: "太陽のように明るい" },
-
-  // 現代的な名前追加
-  { kanji: "空", reading: "そら", meaning: "空のように広い心" },
-  { kanji: "心", reading: "こころ", meaning: "心の優しさ" },
-  { kanji: "愛", reading: "あい", meaning: "愛に満ちた" },
-  { kanji: "希望", reading: "きぼう", meaning: "希望に満ちた" },
-  { kanji: "未来", reading: "みらい", meaning: "未来に向かって" },
-  { kanji: "夢", reading: "ゆめ", meaning: "夢を追いかける" },
-  { kanji: "光", reading: "ひかり", meaning: "光のように明るい" },
-  { kanji: "輝", reading: "かがやき", meaning: "輝き続ける" },
-
-  // 伝統的な名前追加
-  { kanji: "正一", reading: "しょういち", meaning: "正しい第一人者" },
-  { kanji: "正二", reading: "しょうじ", meaning: "正しい第二人者" },
-  { kanji: "正三", reading: "しょうぞう", meaning: "正しい第三人者" },
-  { kanji: "正四", reading: "しょうし", meaning: "正しい第四人者" },
-  { kanji: "正五", reading: "しょうご", meaning: "正しい第五人者" },
-  { kanji: "正六", reading: "しょうろく", meaning: "正しい第六人者" },
-  { kanji: "正七", reading: "しょうしち", meaning: "正しい第七人者" },
-  { kanji: "正八", reading: "しょうはち", meaning: "正しい第八人者" },
-  { kanji: "正九", reading: "しょうく", meaning: "正しい第九人者" },
-  { kanji: "正十", reading: "しょうじゅう", meaning: "正しい第十人者" },
-
-  // 季節の名前追加
-  { kanji: "春一", reading: "はるいち", meaning: "春の第一人者" },
-  { kanji: "夏一", reading: "なついち", meaning: "夏の第一人者" },
-  { kanji: "秋一", reading: "あきいち", meaning: "秋の第一人者" },
-  { kanji: "冬一", reading: "ふゆいち", meaning: "冬の第一人者" },
-  { kanji: "春二", reading: "はるじ", meaning: "春の第二人者" },
-  { kanji: "夏二", reading: "なつじ", meaning: "夏の第二人者" },
-  { kanji: "秋二", reading: "あきじ", meaning: "秋の第二人者" },
-  { kanji: "冬二", reading: "ふゆじ", meaning: "冬の第二人者" },
-
-  // 数字の名前追加
-  { kanji: "一", reading: "いち", meaning: "第一人者" },
-  { kanji: "二", reading: "じ", meaning: "第二人者" },
-  { kanji: "三", reading: "ぞう", meaning: "第三人者" },
-  { kanji: "四", reading: "し", meaning: "第四人者" },
-  { kanji: "五", reading: "ご", meaning: "第五人者" },
-  { kanji: "六", reading: "ろく", meaning: "第六人者" },
-  { kanji: "七", reading: "しち", meaning: "第七人者" },
-  { kanji: "八", reading: "はち", meaning: "第八人者" },
-  { kanji: "九", reading: "く", meaning: "第九人者" },
-  { kanji: "十", reading: "じゅう", meaning: "第十人者" },
-]
-
-// 🔥 女性名前候補（画数データ確認済み）
-const FEMALE_NAMES = [
-  // 2021-2025年人気ランキング上位
-  { kanji: "紬", reading: "つむぎ", meaning: "紬のように美しい" },
-  { kanji: "翠", reading: "すい", meaning: "翠のように美しい緑" },
-  { kanji: "凛", reading: "りん", meaning: "凛々しい" },
-  { kanji: "陽葵", reading: "ひまり", meaning: "太陽のような葵" },
-  { kanji: "芽依", reading: "めい", meaning: "芽のように成長" },
-  { kanji: "葵", reading: "あおい", meaning: "葵の花" },
-  { kanji: "心陽", reading: "こはる", meaning: "心の太陽" },
-  { kanji: "陽菜", reading: "ひな", meaning: "太陽の菜" },
-  { kanji: "美咲", reading: "みさき", meaning: "美しく咲く" },
-  { kanji: "桜", reading: "さくら", meaning: "桜の花" },
-
-  // 伝統的な名前
-  { kanji: "愛子", reading: "あいこ", meaning: "愛される子" },
-  { kanji: "恵子", reading: "けいこ", meaning: "恵まれた子" },
-  { kanji: "美子", reading: "よしこ", meaning: "美しい子" },
-  { kanji: "花子", reading: "はなこ", meaning: "花のような子" },
-
-  // 花・植物系
-  { kanji: "梅", reading: "うめ", meaning: "梅の花" },
-  { kanji: "菊", reading: "きく", meaning: "菊の花" },
-  { kanji: "蘭", reading: "らん", meaning: "蘭の花" },
-  { kanji: "椿", reading: "つばき", meaning: "椿の花" },
-  { kanji: "牡丹", reading: "ぼたん", meaning: "牡丹の花" },
-  { kanji: "薔薇", reading: "ばら", meaning: "薔薇の花" },
-
-  // 現代的な名前
-  { kanji: "愛花", reading: "あいか", meaning: "愛の花" },
-  { kanji: "音羽", reading: "おとは", meaning: "音の羽" },
-  { kanji: "希子", reading: "きこ", meaning: "希望の子" },
-  { kanji: "未来", reading: "みらい", meaning: "未来" },
-  { kanji: "夢", reading: "ゆめ", meaning: "夢" },
-
-  // 美しい名前
-  { kanji: "美月", reading: "みつき", meaning: "美しい月" },
-  { kanji: "美星", reading: "みほし", meaning: "美しい星" },
-  { kanji: "美空", reading: "みそら", meaning: "美しい空" },
-  { kanji: "美海", reading: "みうみ", meaning: "美しい海" },
-
-  // 優雅な名前
-  { kanji: "雅", reading: "みやび", meaning: "雅やか" },
-  { kanji: "麗", reading: "うらら", meaning: "麗しい" },
-  { kanji: "華", reading: "はな", meaning: "華やか" },
-  { kanji: "優", reading: "ゆう", meaning: "優しい" },
-
-  // 2024年人気名前追加
-  { kanji: "美月", reading: "みつき", meaning: "美しい月" },
-  { kanji: "愛美", reading: "あいみ", meaning: "愛らしく美しい" },
-  { kanji: "彩花", reading: "あやか", meaning: "彩りの花" },
-  { kanji: "心美", reading: "ここみ", meaning: "心が美しい" },
-  { kanji: "優花", reading: "ゆうか", meaning: "優しい花" },
-  { kanji: "美咲", reading: "みさき", meaning: "美しく咲く" },
-  { kanji: "愛菜", reading: "あいな", meaning: "愛の菜" },
-  { kanji: "心愛", reading: "ここあ", meaning: "心に愛" },
-  { kanji: "美空", reading: "みそら", meaning: "美しい空" },
-  { kanji: "愛海", reading: "あいみ", meaning: "愛の海" },
-
-  // 自然・季節系追加
-  { kanji: "風花", reading: "ふうか", meaning: "風に舞う花" },
-  { kanji: "雪菜", reading: "ゆきな", meaning: "雪のような菜" },
-  { kanji: "雷花", reading: "らいか", meaning: "雷のような花" },
-  { kanji: "雲", reading: "くも", meaning: "雲のように美しい" },
-  { kanji: "虹", reading: "にじ", meaning: "虹のように美しい" },
-  { kanji: "星", reading: "ほし", meaning: "星のように輝く" },
-  { kanji: "月", reading: "つき", meaning: "月のように清らか" },
-  { kanji: "太陽", reading: "たいよう", meaning: "太陽のように明るい" },
-
-  // 現代的な名前追加
-  { kanji: "空", reading: "そら", meaning: "空のように広い心" },
-  { kanji: "心", reading: "こころ", meaning: "心の優しさ" },
-  { kanji: "愛", reading: "あい", meaning: "愛に満ちた" },
-  { kanji: "希望", reading: "きぼう", meaning: "希望に満ちた" },
-  { kanji: "未来", reading: "みらい", meaning: "未来に向かって" },
-  { kanji: "夢", reading: "ゆめ", meaning: "夢を追いかける" },
-  { kanji: "光", reading: "ひかり", meaning: "光のように明るい" },
-  { kanji: "輝", reading: "かがやき", meaning: "輝き続ける" },
-  { kanji: "笑", reading: "えみ", meaning: "笑顔が美しい" },
-  { kanji: "幸", reading: "さち", meaning: "幸せに満ちた" },
-
-  // 伝統的な名前追加
-  { kanji: "美一", reading: "みいち", meaning: "美しい第一人者" },
-  { kanji: "美二", reading: "みじ", meaning: "美しい第二人者" },
-  { kanji: "美三", reading: "みぞう", meaning: "美しい第三人者" },
-  { kanji: "美四", reading: "みし", meaning: "美しい第四人者" },
-  { kanji: "美五", reading: "みご", meaning: "美しい第五人者" },
-  { kanji: "美六", reading: "みろく", meaning: "美しい第六人者" },
-  { kanji: "美七", reading: "みしち", meaning: "美しい第七人者" },
-  { kanji: "美八", reading: "みはち", meaning: "美しい第八人者" },
-  { kanji: "美九", reading: "みく", meaning: "美しい第九人者" },
-  { kanji: "美十", reading: "みじゅう", meaning: "美しい第十人者" },
-
-  // 季節の名前追加
-  { kanji: "春美", reading: "はるみ", meaning: "春のように美しい" },
-  { kanji: "夏美", reading: "なつみ", meaning: "夏のように美しい" },
-  { kanji: "秋美", reading: "あきみ", meaning: "秋のように美しい" },
-  { kanji: "冬美", reading: "ふゆみ", meaning: "冬のように美しい" },
-  { kanji: "春花", reading: "はるか", meaning: "春の花" },
-  { kanji: "夏花", reading: "なつか", meaning: "夏の花" },
-  { kanji: "秋花", reading: "あきか", meaning: "秋の花" },
-  { kanji: "冬花", reading: "ふゆか", meaning: "冬の花" },
-
-  // 数字の名前追加
-  { kanji: "一美", reading: "いちみ", meaning: "第一の美しさ" },
-  { kanji: "二美", reading: "じみ", meaning: "第二の美しさ" },
-  { kanji: "三美", reading: "ぞうみ", meaning: "第三の美しさ" },
-  { kanji: "四美", reading: "しみ", meaning: "第四の美しさ" },
-  { kanji: "五美", reading: "ごみ", meaning: "第五の美しさ" },
-  { kanji: "六美", reading: "ろくみ", meaning: "第六の美しさ" },
-  { kanji: "七美", reading: "しちみ", meaning: "第七の美しさ" },
-  { kanji: "八美", reading: "はちみ", meaning: "第八の美しさ" },
-  { kanji: "九美", reading: "くみ", meaning: "第九の美しさ" },
-  { kanji: "十美", reading: "じゅうみ", meaning: "第十の美しさ" },
-]
+// JSONファイルから名前データを読み込み
+const MALE_NAMES = babyNamesData.male || []
+const FEMALE_NAMES = babyNamesData.female || []
 
 // 名前生成関数
 export function generateOptimalNames(request: NamingRequest, maxResults = 3): BabyNameCandidate[] {
@@ -402,7 +177,27 @@ export function generateOptimalNames(request: NamingRequest, maxResults = 3): Ba
     console.log(`${i + 1}. ${c.kanji}（${c.reading}）- ${c.totalScore}点`)
   })
 
-  return uniqueCandidates.slice(0, maxResults)
+  // 上位候補からランダムに選択する（ランダム性を確保）
+  // 上位30個または候補全体のうち、スコアが一定以上の候補から選択
+  const minScore = 50 // 最低スコアフィルター（任意で調整可能）
+  const qualifiedCandidates = uniqueCandidates.filter(c => c.totalScore >= minScore)
+  
+  let candidatesToSelectFrom: BabyNameCandidate[]
+  if (qualifiedCandidates.length >= maxResults * 3) {
+    // 十分な候補がある場合、上位（maxResults * 3）個から選択
+    candidatesToSelectFrom = qualifiedCandidates.slice(0, maxResults * 3)
+  } else if (qualifiedCandidates.length >= maxResults) {
+    // 最低限の候補がある場合、それらから選択
+    candidatesToSelectFrom = qualifiedCandidates
+  } else {
+    // 候補が少ない場合、全体から選択
+    candidatesToSelectFrom = uniqueCandidates.slice(0, maxResults * 3)
+  }
+  
+  // ランダムにシャッフルして選択
+  const shuffled = shuffleArray(candidatesToSelectFrom)
+  
+  return shuffled.slice(0, maxResults)
   } catch (error) {
     console.error("❌ 名前生成エラー:", error)
     console.error("エラー詳細:", {

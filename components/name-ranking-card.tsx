@@ -1,14 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { calculateNameRankingPoints } from "@/lib/name-ranking"
 import { useFortuneData } from "@/contexts/fortune-data-context"
-import { LockIcon, StarIcon, TrophyIcon, ZapIcon } from "lucide-react"
+import { LockIcon, StarIcon, TrophyIcon, ZapIcon, Trophy, AlertCircle } from "lucide-react"
 import { getStarLevelDescription } from "@/lib/name-ranking"
+import { useAuth } from "@/components/auth/auth-provider"
+import { submitRankingEntryFromNameAnalysis } from "@/lib/ranking-repo"
+import { getOrCreatePointsSummary } from "@/lib/kanau-points-supabase"
+import Link from "next/link"
 
 interface NameRankingCardProps {
   lastName: string
@@ -20,7 +25,45 @@ interface NameRankingCardProps {
 
 export function NameRankingCard({ lastName, firstName, gender, isPremium, premiumLevel = 0 }: NameRankingCardProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const [registering, setRegistering] = useState(false)
+  const [registerError, setRegisterError] = useState<string>("")
+  const [registerSuccess, setRegisterSuccess] = useState(false)
+  const [points, setPoints] = useState<number | null>(null)
   const { fortuneData } = useFortuneData()
+  const { user: authUser } = useAuth()
+
+  // ポイント残高を取得
+  useEffect(() => {
+    if (authUser) {
+      getOrCreatePointsSummary(authUser.id)
+        .then((s) => setPoints(s.points || 0))
+        .catch(() => {})
+    }
+  }, [authUser])
+
+  // ランキング登録処理
+  const handleRegisterRanking = async () => {
+    if (!authUser) {
+      setRegisterError("ログインが必要です")
+      return
+    }
+
+    setRegistering(true)
+    setRegisterError("")
+    setRegisterSuccess(false)
+
+    try {
+      await submitRankingEntryFromNameAnalysis(authUser.id, lastName, firstName, gender)
+      setRegisterSuccess(true)
+      // ポイント残高を更新
+      const updated = await getOrCreatePointsSummary(authUser.id)
+      setPoints(updated.points || 0)
+    } catch (e: any) {
+      setRegisterError(e.message || "ランキング登録に失敗しました")
+    } finally {
+      setRegistering(false)
+    }
+  }
 
   // 名前が入力されていない場合
   if (!lastName || !firstName) {
@@ -214,6 +257,74 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ランキング登録セクション */}
+        {isPremium && (
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    おなまえ格付けランキングに登録
+                  </h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    この名前をランキングに登録して、全国のユーザーと競い合おう（5Kp消費）
+                  </p>
+                </div>
+                {points !== null && (
+                  <div className="text-sm text-muted-foreground">
+                    所持ポイント: <span className="font-bold">{points}Kp</span>
+                  </div>
+                )}
+              </div>
+
+              {registerSuccess && (
+                <Alert className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800">
+                  <AlertDescription className="text-green-800 dark:text-green-200">
+                    ランキングへの登録が完了しました！<Link href="/ranking" className="underline ml-1">ランキングを見る</Link>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {registerError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{registerError}</AlertDescription>
+                </Alert>
+              )}
+
+              {points !== null && points < 5 && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    ポイントが不足しています。まず<Link href="/kanau-points" className="underline">ログインボーナス</Link>を受け取ってください。
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                onClick={handleRegisterRanking}
+                disabled={registering || (points !== null && points < 5) || !authUser}
+                className="w-full"
+                size="lg"
+              >
+                {registering ? (
+                  "登録中..."
+                ) : points !== null && points < 5 ? (
+                  "ポイント不足（5Kp必要）"
+                ) : !authUser ? (
+                  "ログインが必要です"
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    ランキングに登録（5Kp消費）
+                  </div>
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

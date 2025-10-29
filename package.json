@@ -44,6 +44,7 @@
     "@radix-ui/react-toggle": "latest",
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
+    "@supabase/supabase-js": "^2.77.0",
     "@types/nodemailer": "^7.0.3",
     "@vercel/analytics": "latest",
     "@vercel/speed-insights": "latest",

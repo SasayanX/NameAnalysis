@@ -183,12 +183,18 @@ export class SubscriptionManager {
 
   isSubscriptionActive(): boolean {
     try {
+      // 無料プランの場合は常にfalse（有効なサブスクリプションではない）
+      if (this.currentSubscription.plan === "free") {
+        return false
+      }
+
       if (this.currentSubscription.status === "cancelled" || this.currentSubscription.status === "failed") {
         return false
       }
 
       if (!this.currentSubscription.expiresAt) {
-        return this.currentSubscription.plan === "free"
+        // expiresAtがない場合は無効（無料プラン以外で有効なサブスクリプションにはexpiresAtが必要）
+        return false
       }
 
       return new Date() < this.currentSubscription.expiresAt

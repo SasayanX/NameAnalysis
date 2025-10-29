@@ -18,6 +18,9 @@ import { calculateSixStar } from "@/lib/six-star-fortune"
 // 1. まず、レーダーチャートコンポーネントをインポートします
 import { CompatibilityRadarChart } from "./compatibility-radar-chart"
 import { calculateSixStarFromCSV } from "@/lib/six-star"
+import { useAuth } from "@/components/auth/auth-provider"
+import { addFeatureBonus } from "@/lib/kanau-points-supabase"
+import { useToast } from "@/hooks/use-toast"
 
 interface CompatibilityAnalyzerProps {
   myName?: { lastName: string; firstName: string }
@@ -43,6 +46,9 @@ export function CompatibilityAnalyzer({
   const [error, setError] = useState<string | null>(null)
   const [usageCount, setUsageCount] = useState(0)
   const [lastUsedDate, setLastUsedDate] = useState<string | null>(null)
+  
+  const { user: authUser } = useAuth()
+  const { toast } = useToast()
 
   // 利用回数を読み込む
   useEffect(() => {
@@ -262,6 +268,27 @@ export function CompatibilityAnalyzer({
       // 無料プランの場合、利用回数を増やす
       if (!isPremium) {
         incrementUsageCount()
+      }
+
+      // ポイント付与（相性診断）
+      if (authUser) {
+        try {
+          const bonus = await addFeatureBonus(authUser.id, 2, "相性診断")
+          if (bonus.actualAmount > 0) {
+            toast({
+              title: "ポイント獲得！",
+              description: bonus.message,
+            })
+          } else if (bonus.actualAmount === 0) {
+            toast({
+              title: "本日の上限に達しました",
+              description: bonus.message,
+              variant: "default",
+            })
+          }
+        } catch (error) {
+          console.error("ポイント付与エラー:", error)
+        }
       }
     } catch (error) {
       console.error("Error during compatibility analysis:", error)

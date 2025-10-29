@@ -94,21 +94,34 @@ export function calculateDailyFortune(sixStar: { star: SixStar; type: SixStarTyp
   // +/-による変動
   const typeModifier = sixStar.type === "+" ? 5 : -5
 
-  // 日付による変動（-20〜+20）
-  const dailyVariation = Math.sin(dayOfYear * 0.1) * 20
+  // 日付による変動（-20〜+20）: 変動感を高めるため周波数を上げる
+  const dailyVariation = Math.sin(dayOfYear * 0.28) * 20
 
   // 基本スコアに日付変動と+/-変動を加える
   const baseScore = baseScores[sixStar.star] + dailyVariation + typeModifier
 
   // 各分野のスコアを計算（確定的なロジックを使用）
   // 日付と星の組み合わせで一貫した結果を生成
-  const luckVariation = Math.sin(dayOfYear * 0.3 + (sixStar.star === "水星" ? 0 : sixStar.star === "金星" ? 1 : sixStar.star === "木星" ? 2 : sixStar.star === "火星" ? 3 : sixStar.star === "土星" ? 4 : 5)) * 8
-  const healthVariation = Math.sin(dayOfYear * 0.4 + (sixStar.star === "水星" ? 1 : sixStar.star === "金星" ? 2 : sixStar.star === "木星" ? 3 : sixStar.star === "火星" ? 4 : sixStar.star === "土星" ? 5 : 0)) * 8
-  const relationshipVariation = Math.sin(dayOfYear * 0.5 + (sixStar.star === "水星" ? 2 : sixStar.star === "金星" ? 3 : sixStar.star === "木星" ? 4 : sixStar.star === "火星" ? 5 : sixStar.star === "土星" ? 0 : 1)) * 8
+  // 各分野の変動振幅を拡大（体感的な日次変化を強める）
+  const luckVariation = Math.sin(
+    dayOfYear * 0.32 + (sixStar.star === "水星" ? 0 : sixStar.star === "金星" ? 1 : sixStar.star === "木星" ? 2 : sixStar.star === "火星" ? 3 : sixStar.star === "土星" ? 4 : 5),
+  ) * 12
+  const healthVariation = Math.sin(
+    dayOfYear * 0.41 + (sixStar.star === "水星" ? 1 : sixStar.star === "金星" ? 2 : sixStar.star === "木星" ? 3 : sixStar.star === "火星" ? 4 : sixStar.star === "土星" ? 5 : 0),
+  ) * 12
+  const relationshipVariation = Math.sin(
+    dayOfYear * 0.5 + (sixStar.star === "水星" ? 2 : sixStar.star === "金星" ? 3 : sixStar.star === "木星" ? 4 : sixStar.star === "火星" ? 5 : sixStar.star === "土星" ? 0 : 1),
+  ) * 12
+
+  // 星・タイプ・通算日から決定的微小ノイズ（±4点程度）
+  const starIndex = sixStar.star === "水星" ? 0 : sixStar.star === "金星" ? 1 : sixStar.star === "木星" ? 2 : sixStar.star === "火星" ? 3 : sixStar.star === "土星" ? 4 : 5
+  const typeIndex = sixStar.type === "+" ? 1 : -1
+  const noiseSeed = dayOfYear * 7 + starIndex * 13 + typeIndex * 17
+  const tinyNoise = Math.sin(noiseSeed) * 4
   
-  const luckScore = Math.min(100, Math.max(1, Math.round(baseScore + luckVariation)))
-  const healthScore = Math.min(100, Math.max(1, Math.round(baseScore + healthVariation)))
-  const relationshipScore = Math.min(100, Math.max(1, Math.round(baseScore + relationshipVariation)))
+  const luckScore = Math.min(100, Math.max(1, Math.round(baseScore + luckVariation + tinyNoise)))
+  const healthScore = Math.min(100, Math.max(1, Math.round(baseScore + healthVariation + tinyNoise)))
+  const relationshipScore = Math.min(100, Math.max(1, Math.round(baseScore + relationshipVariation + tinyNoise)))
 
   // アドバイスを生成
   let advice = ""

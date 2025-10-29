@@ -1,3 +1,133 @@
+-- Supabase schema for Kanau Points & Ranking System
+
+-- Users (optional if using auth.users)
+create table if not exists public.users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  name text not null,
+  gender text check (gender in ('male','female')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Kanau points summary per user
+create table if not exists public.kanau_points (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  points int default 0,
+  total_earned int default 0,
+  total_spent int default 0,
+  consecutive_login_days int default 0,
+  last_login_date date,
+  last_login_bonus_date date,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Point transactions
+create table if not exists public.point_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  type text check (type in ('earn','spend')) not null,
+  amount int not null,
+  reason text not null,
+  category text check (category in ('login_bonus','ranking_reward','ranking_entry','special_reward','purchase')) not null,
+  metadata jsonb,
+  created_at timestamptz default now()
+);
+
+-- Special items
+create table if not exists public.special_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  name text not null,
+  type text check (type in ('amulet','stone','crystal','scale','pearl','soul')) not null,
+  effect_type text check (effect_type in ('score_boost','seasonal_bonus')) not null,
+  effect_value int not null,
+  description text not null,
+  obtained_at timestamptz default now(),
+  used_at timestamptz,
+  is_used boolean default false
+);
+
+-- Ranking entries
+create table if not exists public.ranking_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  season text not null,
+  name text not null,
+  power_score int not null,
+  seasonal_bonus int default 0,
+  item_bonus int default 0,
+  total_score int not null,
+  rank int,
+  reward_points int default 0,
+  created_at timestamptz default now()
+);
+
+-- Indexes
+create index if not exists idx_kanau_points_user on public.kanau_points(user_id);
+create index if not exists idx_point_tx_user_time on public.point_transactions(user_id, created_at desc);
+create index if not exists idx_special_items_user on public.special_items(user_id);
+create index if not exists idx_ranking_entries_season on public.ranking_entries(season);
+
+-- Enable RLS and basic policies (assumes auth.uid() is the user_id)
+alter table public.kanau_points enable row level security;
+alter table public.point_transactions enable row level security;
+alter table public.special_items enable row level security;
+alter table public.ranking_entries enable row level security;
+
+-- Policies: users can access only their rows
+do $$ begin
+  create policy "select_own_kanau_points" on public.kanau_points
+    for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "update_own_kanau_points" on public.kanau_points
+    for update using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "insert_own_kanau_points" on public.kanau_points
+    for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "select_own_point_tx" on public.point_transactions
+    for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "insert_own_point_tx" on public.point_transactions
+    for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "select_own_items" on public.special_items
+    for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "update_own_items" on public.special_items
+    for update using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "insert_own_items" on public.special_items
+    for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "select_ranking_entries" on public.ranking_entries
+    for select using (true);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "insert_own_ranking_entry" on public.ranking_entries
+    for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
 -- ユーザープロファイルテーブル
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE,

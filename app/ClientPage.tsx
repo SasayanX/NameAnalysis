@@ -620,8 +620,8 @@ export default function ClientPage() {
           <div className="grid gap-8 md:grid-cols-3">
             {/* メインコンテンツ */}
             <div className="md:col-span-2 order-1 md:order-2">
-              {nameType === "person"
-                ? results && (
+              {nameType === "person" ? (
+                results ? (
                     <Tabs value={activeTab} onValueChange={setActiveTab} key={tabsKey.toString()}>
                       <div className="mb-4">
                         <TabsList className="grid w-full grid-cols-4">
@@ -926,8 +926,98 @@ export default function ClientPage() {
                         </TabsContent>
                       </div>
                     </Tabs>
+                  ) : (
+                    // 結果がない時の説明・お知らせ表示
+                    <div className="space-y-6">
+                      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Settings className="h-5 w-5 text-blue-600" />
+                            このアプリについて
+                          </CardTitle>
+                          <CardDescription>
+                            姓名判断・数秘術・六星占術を組み合わせた総合的な名前分析を行います
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <h3 className="font-semibold mb-2">主要機能</h3>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                              <li>✓ <strong>かんたん鑑定</strong>: 基本的な姓名判断結果を表示</li>
+                              <li>✓ <strong>詳細鑑定</strong>: 天格・人格・地格・外格・総格の詳細分析</li>
+                              <li>✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</li>
+                              <li>✓ <strong>相性診断</strong>: パートナーとの相性を診断</li>
+                              <li>✓ <strong>赤ちゃん名付け</strong>: 最適な名前候補をご提案</li>
+                            </ul>
+                          </div>
+                          <div className="pt-4 border-t">
+                            <h3 className="font-semibold mb-2">💡 使い方</h3>
+                            <p className="text-sm text-muted-foreground">
+                              左側のフォームに「姓」と「名」を入力して「姓名判断を実行」ボタンをクリックしてください。
+                              生年月日を入力すると、より詳細な分析結果が表示されます。
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-yellow-600" />
+                            お知らせ
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="p-3 bg-white/50 rounded-lg">
+                            <h4 className="font-semibold text-sm mb-1">🎉 カナウポイントシステム開始！</h4>
+                            <p className="text-xs text-muted-foreground">
+                              各種分析を実行するとKpを獲得できます。1日最大5Kpまで獲得可能です。
+                              ログインボーナスも毎日受け取れます！
+                            </p>
+                          </div>
+                          <div className="p-3 bg-white/50 rounded-lg">
+                            <h4 className="font-semibold text-sm mb-1">📊 ランキング機能</h4>
+                            <p className="text-xs text-muted-foreground">
+                              名前の格付けをランキングに登録して、季節ごとの順位を競いましょう。
+                              プレミアム会員は5Kpでランキングに登録できます。
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   )
-                : companyResults && <CompanyNameResult result={companyResults} companyName={companyName} />}
+                ) : companyResults ? (
+                  <CompanyNameResult result={companyResults} companyName={companyName} />
+                ) : (
+                  // 会社名分析の説明
+                  <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-blue-600" />
+                        会社名鑑定について
+                      </CardTitle>
+                      <CardDescription>
+                        会社名・商品名の姓名判断分析を行います
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h3 className="font-semibold mb-2">機能</h3>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li>✓ 会社名の格数分析</li>
+                          <li>✓ 運勢判定（大吉・吉・凶など）</li>
+                          <li>✓ 経営運勢の評価</li>
+                        </ul>
+                      </div>
+                      <div className="pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                          左側のフォームに会社名を入力して「会社名鑑定を実行」ボタンをクリックしてください。
+                          「株式会社」「有限会社」などの法人格は除いて入力してください。
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
             </div>
 
             {/* サイドバー */}

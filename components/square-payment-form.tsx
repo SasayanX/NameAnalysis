@@ -42,7 +42,8 @@ const plans: Plan[] = [
 
 export function SquarePaymentForm() {
   const [selectedPlan, setSelectedPlan] = useState<string>("")
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
+  // 年額プランは無効化：常に月額のみ
+  const billingCycle: "monthly" = "monthly"
   const [isLoading, setIsLoading] = useState(false)
   const [squareLoaded, setSquareLoaded] = useState(false)
   const [card, setCard] = useState<any>(null)
@@ -154,7 +155,7 @@ export function SquarePaymentForm() {
       const result = await card.tokenize()
       if (result.status === "OK") {
         const selectedPlanData = plans.find((p) => p.id === selectedPlan)
-        const amount = billingCycle === "yearly" ? selectedPlanData?.yearlyPrice : selectedPlanData?.price
+        const amount = selectedPlanData?.price
 
         const response = await fetch("/api/create-subscription", {
           method: "POST",
@@ -203,25 +204,11 @@ export function SquarePaymentForm() {
           <CardTitle className="text-center">料金プラン</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center mb-6">
-            <div className="bg-gray-100 p-1 rounded-lg">
-              <button
-                onClick={() => setBillingCycle("monthly")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  billingCycle === "monthly" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                月額
-              </button>
-              <button
-                onClick={() => setBillingCycle("yearly")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  billingCycle === "yearly" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                年額（2ヶ月分お得）
-              </button>
-            </div>
+          {/* 月額のみ表示 */}
+          <div className="text-center mb-6">
+            <Badge variant="secondary" className="text-sm px-4 py-2">
+              月額プランのみ対応
+            </Badge>
           </div>
 
           {/* Plan Selection */}
@@ -248,16 +235,9 @@ export function SquarePaymentForm() {
                 <CardContent>
                   <div className="mb-4">
                     <div className="text-3xl font-bold">
-                      ¥{billingCycle === "yearly" ? plan.yearlyPrice.toLocaleString() : plan.price.toLocaleString()}
+                      ¥{plan.price.toLocaleString()}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      {billingCycle === "yearly" ? "年額" : "月額"}
-                      {billingCycle === "yearly" && (
-                        <span className="ml-2 text-green-600 font-medium">
-                          (月額¥{Math.round(plan.yearlyPrice / 12).toLocaleString()})
-                        </span>
-                      )}
-                    </div>
+                    <div className="text-sm text-gray-500">月額</div>
                   </div>
                   <ul className="space-y-2">
                     {plan.features.map((feature, index) => (
@@ -288,17 +268,13 @@ export function SquarePaymentForm() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium">{plans.find((p) => p.id === selectedPlan)?.name}</h3>
-                  <p className="text-sm text-gray-600">{billingCycle === "yearly" ? "年額プラン" : "月額プラン"}</p>
+                  <p className="text-sm text-gray-600">月額プラン</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold">
-                    ¥
-                    {(billingCycle === "yearly"
-                      ? plans.find((p) => p.id === selectedPlan)?.yearlyPrice
-                      : plans.find((p) => p.id === selectedPlan)?.price
-                    )?.toLocaleString()}
+                    ¥{plans.find((p) => p.id === selectedPlan)?.price.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-500">{billingCycle === "yearly" ? "年額" : "月額"}</div>
+                  <div className="text-sm text-gray-500">月額</div>
                 </div>
               </div>
             </div>
@@ -319,7 +295,7 @@ export function SquarePaymentForm() {
               <h4 className="font-medium mb-2">ご注意事項</h4>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• 決済完了後、すぐにプランが有効化されます</li>
-                <li>• {billingCycle === "yearly" ? "年額" : "月額"}で自動更新されます</li>
+                <li>• 月額で自動更新されます</li>
                 <li>• いつでもマイページから解約可能です</li>
                 <li>• 安全なSSL暗号化通信で保護されています</li>
               </ul>
@@ -339,10 +315,7 @@ export function SquarePaymentForm() {
               ) : (
                 <>
                   <Zap className="h-5 w-5 mr-2" />¥
-                  {(billingCycle === "yearly"
-                    ? plans.find((p) => p.id === selectedPlan)?.yearlyPrice
-                    : plans.find((p) => p.id === selectedPlan)?.price
-                  )?.toLocaleString()}{" "}
+                  {plans.find((p) => p.id === selectedPlan)?.price.toLocaleString()}{" "}
                   で申し込む
                 </>
               )}

@@ -10,6 +10,8 @@ import { FortuneDataProvider } from "@/contexts/fortune-data-context"
 import { StrokeDataProvider } from "@/contexts/stroke-data-context"
 import { UserPreferencesProvider } from "@/contexts/user-preferences-context"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
+import { AuthProvider } from "@/components/auth/auth-provider"
+import { LoginBonusNotification } from "@/components/login-bonus-notification"
 import { SEOHead } from "@/components/seo-head"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -110,19 +112,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <UserPreferencesProvider>
-            <FortuneDataProvider>
-              <StrokeDataProvider>
+          <AuthProvider>
+            <UserPreferencesProvider>
+              <FortuneDataProvider>
+                <StrokeDataProvider>
                 <div className="flex min-h-screen flex-col">
                   <SiteHeader />
                   <main className="flex-1">{children}</main>
                   <SiteFooter />
                 </div>
-                <Toaster />
-                <PWAInstallPrompt />
-              </StrokeDataProvider>
-            </FortuneDataProvider>
-          </UserPreferencesProvider>
+                  <Toaster />
+                  <PWAInstallPrompt />
+                  <LoginBonusNotification />
+                </StrokeDataProvider>
+              </FortuneDataProvider>
+            </UserPreferencesProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
