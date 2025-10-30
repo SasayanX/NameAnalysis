@@ -60,7 +60,7 @@ describe('/api/create-subscription', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
     expect(data.subscription.planId).toBe('basic')
-    expect(data.subscription.amount).toBe(220)
+    expect(data.subscription.amount).toBe(330)
   })
 
   test('should create premium subscription with yearly billing', async () => {

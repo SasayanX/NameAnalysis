@@ -115,7 +115,7 @@ export function WebhookStatusChecker() {
               id: "test-payment-id",
               status: "COMPLETED",
               amount_money: {
-                amount: 22000, // ¥220
+                amount: 33000, // ¥330
                 currency: "JPY",
               },
               order_id: "test-order-id",

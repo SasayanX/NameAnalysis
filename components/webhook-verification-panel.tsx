@@ -47,7 +47,7 @@ export function WebhookVerificationPanel() {
               id: "test-payment-123",
               status: "COMPLETED",
               amount_money: {
-                amount: 22000,
+                amount: 33000,
                 currency: "JPY",
               },
               order_id: "test-order-123",

@@ -9,12 +9,12 @@ export const freemiumPlanStructure = {
       concept: "基本機能を制限付きで体験",
     },
     ベーシック: {
-      price: "220円/月",
+      price: "330円/月",
       target: "日常利用ユーザー",
       concept: "実用的な機能を十分に利用",
     },
     プレミアム: {
-      price: "440円/月",
+      price: "550円/月",
       target: "本格活用ユーザー",
       concept: "全機能無制限・高度な分析",
     },

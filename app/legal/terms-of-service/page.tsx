@@ -82,10 +82,10 @@ export default function TermsOfServicePage() {
                   <strong>無料プラン</strong>：基本機能を制限付きで利用可能
                 </li>
                 <li>
-                  <strong>ベーシックプラン</strong>：月額220円（税込）
+                  <strong>ベーシックプラン</strong>：月額330円（税込）
                 </li>
                 <li>
-                  <strong>プレミアムプラン</strong>：月額440円（税込）
+                  <strong>プレミアムプラン</strong>：月額550円（税込）
                 </li>
                 <li>
                   <strong>年額プラン</strong>：年額2,200円（税込、月額183円相当）

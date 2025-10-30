@@ -10,7 +10,7 @@ export function PaymentIntegration() {
       <Card className="relative border-2 border-blue-200">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">ベーシックプラン</CardTitle>
-          <div className="text-3xl font-bold text-blue-600">¥220</div>
+          <div className="text-3xl font-bold text-blue-600">¥330</div>
           <p className="text-sm text-muted-foreground">月額（税込）</p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -44,7 +44,7 @@ export function PaymentIntegration() {
         <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-purple-600">おすすめ</Badge>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">プレミアムプラン</CardTitle>
-          <div className="text-3xl font-bold text-purple-600">¥440</div>
+          <div className="text-3xl font-bold text-purple-600">¥550</div>
           <p className="text-sm text-muted-foreground">月額（税込）</p>
         </CardHeader>
         <CardContent className="space-y-4">

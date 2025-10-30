@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         status: "active",
         planId,
         billingCycle,
-        amount: planId === "basic" ? (billingCycle === "yearly" ? 1980 : 220) : billingCycle === "yearly" ? 3960 : 440,
+        amount: planId === "basic" ? (billingCycle === "yearly" ? 3300 : 330) : billingCycle === "yearly" ? 5500 : 550,
         currency: "JPY",
         createdAt: new Date().toISOString(),
         nextBillingDate: new Date(
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       status: "active",
       planId,
       billingCycle,
-      amount: planId === "basic" ? (billingCycle === "yearly" ? 1980 : 220) : billingCycle === "yearly" ? 3960 : 440,
+      amount: planId === "basic" ? (billingCycle === "yearly" ? 3300 : 330) : billingCycle === "yearly" ? 5500 : 550,
       currency: "JPY",
       createdAt: new Date().toISOString(),
       nextBillingDate: new Date(

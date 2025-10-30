@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
       }
 
       let plan: "basic" | "premium" = "basic"
-      if (amount >= 44000) {
+      if (amount >= 55000) {
         plan = "premium"
-      } else if (amount >= 22000) {
+      } else if (amount >= 33000) {
         plan = "basic"
       }
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
       // 金額に基づいてプラン判定
       let plan: "basic" | "premium" = "basic"
-      if (amount >= 44000) {
+      if (amount >= 55000) {
         plan = "premium"
       }
 

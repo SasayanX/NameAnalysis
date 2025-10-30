@@ -127,8 +127,8 @@ export class GMOPaymentClient {
 
   private getPlanAmount(planId: string): number {
     const plans = {
-      basic: 220,
-      premium: 440,
+      basic: 330,
+      premium: 550,
     }
     return plans[planId as keyof typeof plans] || 0
   }

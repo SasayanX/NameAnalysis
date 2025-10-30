@@ -4,13 +4,13 @@ export const cleanPricingModel = {
   // 月額プラン（税込み）
   monthlyPlans: {
     ベーシック: {
-      monthly: 220, // 税込み220円（税抜200円）
+      monthly: 330, // 税込み330円
       features: ["詳細鑑定無制限", "相性診断月10回", "PDF出力無制限", "五行・三才配置分析"],
       target: "日常利用ユーザー",
     },
 
     プレミアム: {
-      monthly: 440, // 税込み440円（税抜400円）
+      monthly: 550, // 税込み550円
       features: [
         "全機能無制限",
         "運気運行表・年間カレンダー",
@@ -25,16 +25,16 @@ export const cleanPricingModel = {
   // まとめ払い割引（税込み価格）
   bulkDiscounts: {
     ベーシック: {
-      monthly: 220,
+      monthly: 330,
       quarterly: 594, // 3ヶ月 10%OFF（660円→594円）
       semiannual: 1100, // 6ヶ月 17%OFF（1320円→1100円）
       annual: 1980, // 1年 25%OFF（2640円→1980円）
     },
 
     プレミアム: {
-      monthly: 440,
+      monthly: 550,
       quarterly: 1188, // 3ヶ月 10%OFF（1320円→1188円）
-      semiannual: 2200, // 6ヶ月 17%OFF（2640円→2200円）
+      semiannual: 3300, // 6ヶ月想定（割引例）
       annual: 3960, // 1年 25%OFF（5280円→3960円）
     },
   },

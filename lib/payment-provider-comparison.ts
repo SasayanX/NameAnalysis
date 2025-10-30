@@ -100,7 +100,7 @@ export const PAYMENT_PROVIDERS: PaymentProvider[] = [
       amex: "3.74%",
     },
     additionalFees: {
-      transferFee: "220円/回",
+      transferFee: "330円/回",
       chargebackFee: "2,000円/件",
       refundFee: "無料",
     },

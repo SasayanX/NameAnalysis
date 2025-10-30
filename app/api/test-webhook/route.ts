@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
           payment: {
             status: "COMPLETED",
             amount_money: {
-              amount: amount || (plan === "premium" ? 44000 : 22000),
+              amount: amount || (plan === "premium" ? 55000 : 33000),
               currency: "JPY",
             },
             order_id: `test-order-${Date.now()}`,

@@ -121,7 +121,7 @@ export default function SubscriptionDashboard() {
               <div>
                 <p className="text-sm text-gray-500">月額料金</p>
                 <p className="font-medium">
-                  {status.plan === "basic" ? "¥220" : status.plan === "premium" ? "¥550" : "¥0"}
+                  {status.plan === "basic" ? "¥330" : status.plan === "premium" ? "¥550" : "¥0"}
                 </p>
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function SubscriptionDashboard() {
                 <tr>
                   <td className="py-2">月額料金</td>
                   <td className="text-center">無料</td>
-                  <td className="text-center">¥220</td>
+                  <td className="text-center">¥330</td>
                   <td className="text-center">¥550</td>
                 </tr>
               </tbody>

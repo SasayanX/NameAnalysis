@@ -88,14 +88,14 @@ export default function TokushoPage() {
               <div className="p-4 bg-blue-50 rounded-lg">
                 <h3 className="font-semibold mb-2">ベーシックプラン</h3>
                 <p className="text-2xl font-bold">
-                  220円<span className="text-sm">/月</span>
+                  330円<span className="text-sm">/月</span>
                 </p>
                 <p className="text-sm text-gray-600">税込価格</p>
               </div>
               <div className="p-4 bg-purple-50 rounded-lg">
                 <h3 className="font-semibold mb-2">プレミアムプラン</h3>
                 <p className="text-2xl font-bold">
-                  440円<span className="text-sm">/月</span>
+                  550円<span className="text-sm">/月</span>
                 </p>
                 <p className="text-sm text-gray-600">税込価格</p>
               </div>

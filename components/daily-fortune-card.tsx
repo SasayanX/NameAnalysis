@@ -13,7 +13,7 @@ import type { SixStar, SixStarType } from "@/lib/six-star-fortune"
 interface DailyFortuneCardProps {
   birthStar?: { star: SixStar; type: SixStarType }
   isPremium?: boolean
-  premiumLevel?: number // 0: 無料, 1: ベーシック(220円), 2: プレミアム(440円)
+  premiumLevel?: number // 0: 無料, 1: ベーシック(330円), 2: プレミアム(550円)
 }
 
 // 色名から実際のTailwindカラークラスへのマッピング
@@ -195,7 +195,7 @@ export function DailyFortuneCard({
 
         {showMore && (
           <div className="mt-4 pt-4 border-t border-dashed">
-            {/* ベーシック会員(220円)以上で表示 */}
+            {/* ベーシック会員(330円)以上で表示 */}
             {premiumLevel >= 1 && (
               <>
                 <h4 className="font-medium mb-2">今日のラッキーカラー</h4>
@@ -209,7 +209,7 @@ export function DailyFortuneCard({
               </>
             )}
 
-            {/* プレミアム会員(440円)で表示 */}
+            {/* プレミアム会員(550円)で表示 */}
             {premiumLevel >= 2 && (
               <>
                 <h4 className="font-medium mb-2">おすすめの食べ物</h4>
@@ -241,10 +241,10 @@ export function DailyFortuneCard({
           <div className="mt-4 p-3 bg-gradient-to-r from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-800/50 rounded-lg text-center">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
               {premiumLevel === 0
-                ? "ベーシック会員(220円/月)になると、今日のラッキーカラーが見られます"
-                : "プレミアム会員(440円/月)になると、おすすめの食べ物と健康アドバイスも見られます"}
+                ? "ベーシック会員(330円/月)になると、今日のラッキーカラーが見られます"
+                : "プレミアム会員(550円/月)になると、おすすめの食べ物と健康アドバイスも見られます"}
             </p>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">月額440円でプレミアム機能が使えます</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">月額550円でプレミアム機能が使えます</p>
             <Button
               variant="default"
               size="sm"

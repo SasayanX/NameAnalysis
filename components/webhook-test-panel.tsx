@@ -82,7 +82,7 @@ export function WebhookTestPanel() {
               id: "test-payment-id-" + Date.now(),
               status: "COMPLETED",
               amount_money: {
-                amount: 22000,
+                amount: 33000,
                 currency: "JPY",
               },
               order_id: "test-order-id-" + Date.now(),
@@ -114,7 +114,7 @@ export function WebhookTestPanel() {
             id: "test-invoice-id-" + Date.now(),
             status: "PAID",
             amount_money: {
-              amount: 44000,
+              amount: 55000,
               currency: "JPY",
             },
             payment_requests: [

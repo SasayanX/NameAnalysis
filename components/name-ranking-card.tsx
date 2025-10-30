@@ -226,7 +226,7 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
             <p className="text-sm font-medium text-amber-800">
               会員登録すると、格付けランク（S、SS、SSSなど）とすべての詳細な分析が見られます
             </p>
-            <p className="text-xs text-amber-700 mt-1">ベーシック(220円/月)から詳細機能が使えます</p>
+            <p className="text-xs text-amber-700 mt-1">ベーシック(330円/月)から詳細機能が使えます</p>
             <Button variant="default" size="sm" className="mt-2 bg-amber-500 hover:bg-amber-600">
               会員登録する
             </Button>

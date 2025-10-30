@@ -50,7 +50,7 @@ const SETUP_STEPS: SetupStep[] = [
   {
     id: "square-plans",
     title: "サブスクリプションプラン作成",
-    description: "ベーシック（¥220）・プレミアム（¥440）プラン作成",
+    description: "ベーシック（¥330）・プレミアム（¥550）プラン作成",
     completed: false,
     required: true,
     category: "square",

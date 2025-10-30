@@ -31,9 +31,9 @@ export function UsageLimitModal({
 }: UsageLimitModalProps) {
   const getRecommendedPlan = () => {
     if (currentPlan === "free") {
-      return { name: "ベーシック", price: "220円/月", icon: <Zap className="h-5 w-5" /> }
+      return { name: "ベーシック", price: "330円/月", icon: <Zap className="h-5 w-5" /> }
     }
-    return { name: "プレミアム", price: "440円/月", icon: <Crown className="h-5 w-5" /> }
+    return { name: "プレミアム", price: "550円/月", icon: <Crown className="h-5 w-5" /> }
   }
 
   const recommendedPlan = getRecommendedPlan()

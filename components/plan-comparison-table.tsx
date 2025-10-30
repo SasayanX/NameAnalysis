@@ -173,7 +173,7 @@ export default function PlanComparisonTable() {
                   <th className="text-center py-4 px-4">
                     <div className="flex flex-col items-center">
                       <span className="font-semibold">ベーシック</span>
-                      <span className="text-sm text-gray-500">¥220/月</span>
+                      <span className="text-sm text-gray-500">¥330/月</span>
                     </div>
                   </th>
                   <th className="text-center py-4 px-4">
@@ -182,7 +182,7 @@ export default function PlanComparisonTable() {
                         <Trophy className="h-4 w-4 text-purple-600" />
                         <span className="font-semibold">プレミアム</span>
                       </div>
-                      <span className="text-sm text-gray-500">¥440/月</span>
+                      <span className="text-sm text-gray-500">¥550/月</span>
                       <Badge variant="secondary" className="mt-1 bg-purple-100 text-purple-800">
                         おすすめ
                       </Badge>

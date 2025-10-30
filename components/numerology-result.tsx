@@ -182,7 +182,7 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
                 </ul>
               </div>
               <div className="flex justify-center">
-                <Badge className="bg-amber-600 text-white px-4 py-2">ベーシックプラン 220円/月〜</Badge>
+                <Badge className="bg-amber-600 text-white px-4 py-2">ベーシックプラン 330円/月〜</Badge>
               </div>
             </div>
           </CardContent>

@@ -26,7 +26,7 @@ export default function SquareTestPayment() {
               payment: {
                 status: "COMPLETED",
                 amount_money: {
-                  amount: 22000, // ¥220 (cents)
+                  amount: 33000, // ¥330 (cents)
                   currency: "JPY",
                 },
                 order_id: "test-order-" + Date.now(),
@@ -54,7 +54,7 @@ export default function SquareTestPayment() {
       </CardHeader>
       <CardContent className="space-y-4">
         <Button onClick={handleTestPayment} disabled={isLoading} className="w-full">
-          {isLoading ? "処理中..." : "¥220 テスト決済実行"}
+          {isLoading ? "処理中..." : "¥330 テスト決済実行"}
         </Button>
 
         {result && (
@@ -67,7 +67,7 @@ export default function SquareTestPayment() {
         <div className="text-sm text-gray-600">
           <h4 className="font-semibold">テスト内容:</h4>
           <ul className="list-disc list-inside space-y-1">
-            <li>¥220の決済完了イベントをシミュレート</li>
+            <li>¥330の決済完了イベントをシミュレート</li>
             <li>Webhook受信確認</li>
             <li>ベーシックプラン有効化確認</li>
             <li>署名検証テスト</li>

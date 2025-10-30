@@ -29,14 +29,14 @@ export const getCurrentConfig = () => {
 // マネタイズ用の料金設定
 export const pricingConfig = {
   basic: {
-    monthlyPrice: 220, // 220円/月
-    yearlyPrice: 2200, // 2200円/年（2ヶ月分お得）
+    monthlyPrice: 330, // 330円/月
+    yearlyPrice: 3300, // 年額（2ヶ月分OFF想定）
     planId: "basic-monthly",
     yearlyPlanId: "basic-yearly",
   },
   premium: {
-    monthlyPrice: 440, // 440円/月
-    yearlyPrice: 4400, // 4400円/年（2ヶ月分お得）
+    monthlyPrice: 550, // 550円/月
+    yearlyPrice: 5500, // 年額（2ヶ月分OFF想定）
     planId: "premium-monthly",
     yearlyPlanId: "premium-yearly",
   },

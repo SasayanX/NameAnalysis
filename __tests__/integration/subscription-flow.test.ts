@@ -46,7 +46,7 @@ describe('Subscription Flow Integration', () => {
         
         const plan = subscriptionManager.getCurrentPlan()
         expect(plan.id).toBe('premium')
-        expect(plan.price).toBe(440)
+        expect(plan.price).toBe(550)
       }
     })
 

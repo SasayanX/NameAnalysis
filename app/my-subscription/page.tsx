@@ -79,7 +79,7 @@ export default function MySubscriptionPage() {
                   <div className="text-sm text-gray-500">2024年1月1日</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium">¥440</div>
+                  <div className="font-medium">¥550</div>
                   <Badge className="bg-green-100 text-green-800">完了</Badge>
                 </div>
               </div>
@@ -90,7 +90,7 @@ export default function MySubscriptionPage() {
                   <div className="text-sm text-gray-500">2023年12月1日</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium">¥440</div>
+                  <div className="font-medium">¥550</div>
                   <Badge className="bg-green-100 text-green-800">完了</Badge>
                 </div>
               </div>

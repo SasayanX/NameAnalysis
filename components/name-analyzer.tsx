@@ -513,7 +513,7 @@ export function NameAnalyzer() {
                   <Lock className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800">
                     個人名分析の回数制限に達しました。
-                    {currentPlan === "free" ? "ベーシックプラン（220円/月）" : "プレミアムプラン（440円/月）"}
+                    {currentPlan === "free" ? "ベーシックプラン（330円/月）" : "プレミアムプラン（550円/月）"}
                     で無制限利用できます。
                   </AlertDescription>
                 </Alert>
@@ -580,7 +580,7 @@ export function NameAnalyzer() {
                   <Lock className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800">
                     会社名分析の回数制限に達しました。
-                    {currentPlan === "free" ? "ベーシックプラン（220円/月）" : "プレミアムプラン（440円/月）"}
+                    {currentPlan === "free" ? "ベーシックプラン（330円/月）" : "プレミアムプラン（550円/月）"}
                     で無制限利用できます。
                   </AlertDescription>
                 </Alert>

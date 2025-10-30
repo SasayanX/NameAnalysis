@@ -54,7 +54,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
   {
     id: "subscription-plans",
     title: "サブスクリプションプラン作成",
-    description: "ベーシック（¥220）とプレミアム（¥440）プランを作成",
+    description: "ベーシック（¥330）とプレミアム（¥550）プランを作成",
     completed: false,
     required: true,
   },

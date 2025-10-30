@@ -57,7 +57,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "basic",
     name: "ベーシックプラン",
-    price: 220,
+    price: 330,
     currency: "JPY",
     interval: "month",
     features: ["個人名分析 1日10回", "会社名分析 1日10回", "赤ちゃん名付け 1日5回", "詳細レポート", "PDF出力"],
@@ -73,7 +73,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "premium",
     name: "プレミアムプラン",
-    price: 440,
+    price: 550,
     currency: "JPY",
     interval: "month",
     features: [

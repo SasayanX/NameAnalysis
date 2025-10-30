@@ -18,7 +18,7 @@ export function SubscriptionNotice() {
             <strong>現在の仕組み：</strong>毎月手動でお支払いいただく形式です
           </p>
           <ul className="space-y-1 ml-4">
-            <li>• ¥220/¥440を毎月お支払い</li>
+            <li>• ¥330/¥550を毎月お支払い</li>
             <li>• 支払い忘れの場合は無料プランに戻ります</li>
             <li>• いつでも支払い停止可能</li>
           </ul>

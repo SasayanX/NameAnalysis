@@ -127,8 +127,8 @@ export default function LegalPage() {
                 <h3 className="font-semibold text-gray-700">販売商品・サービス</h3>
                 <ul className="list-disc list-inside space-y-1 mt-2">
                   <li>姓名判断サービス（基本鑑定：無料）</li>
-                  <li>ベーシックプラン：月額220円（税込）</li>
-                  <li>プレミアムプラン：月額440円（税込）</li>
+                  <li>ベーシックプラン：月額330円（税込）</li>
+                  <li>プレミアムプラン：月額550円（税込）</li>
                   <li>年額プラン：年額2,200円（税込、月額183円相当）</li>
                 </ul>
               </div>

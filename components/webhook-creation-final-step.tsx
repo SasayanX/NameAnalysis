@@ -251,8 +251,8 @@ NODE_ENV=production`
                 <h4 className="font-medium text-purple-800 mb-2">完成後の機能:</h4>
                 <ul className="text-sm text-purple-600 space-y-1">
                   <li>• 無料ユーザー: 1日3回まで姓名判断</li>
-                  <li>• ベーシックプラン（220円/月）: 1日10回まで</li>
-                  <li>• プレミアムプラン（440円/月）: 無制限</li>
+                  <li>• ベーシックプラン（330円/月）: 1日10回まで</li>
+                  <li>• プレミアムプラン（550円/月）: 無制限</li>
                   <li>• 自動課金・プラン管理</li>
                   <li>• 決済完了時の自動プラン有効化</li>
                 </ul>

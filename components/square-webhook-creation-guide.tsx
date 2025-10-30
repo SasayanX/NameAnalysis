@@ -324,14 +324,14 @@ NODE_ENV=production`
           <CardContent>
             <div className="space-y-3">
               <p className="text-purple-700">
-                環境変数設定とデプロイ完了後、月額220円・440円プランでの収益化が開始されます。
+                環境変数設定とデプロイ完了後、月額330円・550円プランでの収益化が開始されます。
               </p>
               <div className="space-y-2">
                 <h4 className="font-medium text-purple-800">完成後の機能:</h4>
                 <ul className="text-sm text-purple-600 space-y-1">
                   <li>• 無料ユーザー: 1日3回まで姓名判断</li>
-                  <li>• ベーシックプラン（220円/月）: 1日10回まで</li>
-                  <li>• プレミアムプラン（440円/月）: 無制限</li>
+                  <li>• ベーシックプラン（330円/月）: 1日10回まで</li>
+                  <li>• プレミアムプラン（550円/月）: 無制限</li>
                   <li>• 自動課金・プラン管理</li>
                   <li>• 決済完了時の自動プラン有効化</li>
                 </ul>

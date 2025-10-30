@@ -31,7 +31,7 @@ export default function PricingPage() {
     },
     basic: {
       name: "ベーシックプラン",
-      price: { monthly: 220, yearly: 1980 },
+      price: { monthly: 330, yearly: 3300 },
       description: "日常的に姓名判断を活用したい方に",
       features: [
         "個人名判断: 1日10回",
@@ -52,7 +52,7 @@ export default function PricingPage() {
     },
     premium: {
       name: "プレミアムプラン",
-      price: { monthly: 440, yearly: 3960 },
+      price: { monthly: 550, yearly: 5500 },
       description: "全機能を無制限で利用したいプロフェッショナル向け",
       features: [
         "全機能無制限利用",
