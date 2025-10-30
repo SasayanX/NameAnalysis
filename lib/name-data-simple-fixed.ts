@@ -1,4 +1,4 @@
-import { customFortuneData } from "./fortune-data-custom"
+import { customFortuneData as defaultFortuneData } from "./fortune-data-custom"
 import { getCharStrokeWithContext } from "./name-data-simple"
 
 const DEBUG_MODE = false
@@ -91,7 +91,7 @@ function calculateStrokesWithReisuu(text: string): { count: number; hasReisuu: b
 // カスタムデータから吉凶を取得する関数（性別考慮）
 function getFortuneFromCustomDataWithGender(
   strokeCount: number,
-  customData: Record<string, any>,
+  customData: Record<string, any> | undefined,
   gender: string
 ): any {
   if (DEBUG_MODE) {
@@ -101,6 +101,12 @@ function getFortuneFromCustomDataWithGender(
       customDataExists: !!customData,
       customDataKeys: customData ? Object.keys(customData).length : 0
     })
+  }
+
+  // customDataがundefinedまたはnullの場合はnullを返す
+  if (!customData) {
+    if (DEBUG_MODE) console.log(`❌ customDataが設定されていません`)
+    return null
   }
 
   const key = strokeCount.toString()
@@ -224,8 +230,8 @@ export function analyzeNameFortune(
     totalFormat
   })
 
-  // カスタムデータを使用するかどうか
-  const fortuneData = customFortuneData || customFortuneData
+  // カスタムデータを使用するかどうか（パラメータが渡されていない場合はインポートしたデフォルトデータを使用）
+  const fortuneData = customFortuneData || defaultFortuneData
 
   // 各格の運勢を取得
   const tenFortune = getFortuneFromCustomDataWithGender(tenFormat, fortuneData, gender)

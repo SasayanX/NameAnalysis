@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useMemo, useCallback, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { PdfExportButton } from "@/components/pdf-export-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -600,19 +601,14 @@ export default function ClientPage() {
           </div>
 
           {results && (
-            <Button
-              onClick={() => handlePdfExport("results-content", "姓名判断結果_" + lastName + firstName)}
-              disabled={currentPlan === "free"}
-            >
-              {currentPlan === "free" ? (
-                <>
-                  <LockIcon className="h-4 w-4 mr-2" />
-                  PDF出力（有料限定）
-                </>
-              ) : (
-                "PDF出力"
-              )}
-            </Button>
+            currentPlan === "free" ? (
+              <Button disabled>
+                <LockIcon className="h-4 w-4 mr-2" />
+                PDF出力（有料限定）
+              </Button>
+            ) : (
+              <PdfExportButton contentId="results-content" fileName={`姓名判断結果_${lastName}${firstName}`} />
+            )
           )}
         </div>
 
@@ -1173,8 +1169,10 @@ export default function ClientPage() {
         ) : activeSection === "compatibility" ? (
           <div className="max-w-4xl mx-auto">
             <CompatibilityAnalyzer
+              myName={lastName && firstName ? { lastName, firstName } : undefined}
+              myGender={gender}
+              myBirthdate={birthdate ? new Date(birthdate) : undefined}
               isPremium={currentPlan !== "free"}
-              premiumLevel={currentPlan === "premium" ? 3 : currentPlan === "basic" ? 1 : 0}
             />
           </div>
         ) : (

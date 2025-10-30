@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { ThemeToggle } from "./theme-toggle"
-import { BookOpen, CreditCard, Settings } from "lucide-react"
+import { BookOpen, CreditCard, Settings, Gift, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSubscription } from "@/lib/subscription-manager"
 import { KanauPointsHeader } from "@/components/kanau-points-header"
@@ -96,6 +96,22 @@ export function SiteHeader() {
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">コラム</span>
               <span className="sm:hidden">記事</span>
+            </Link>
+            <Link
+              href="/amulets-exchange"
+              className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
+            >
+              <Gift className="h-4 w-4" />
+              <span className="hidden sm:inline">お守り交換所</span>
+              <span className="sm:hidden">お守り</span>
+            </Link>
+            <Link
+              href="/point-shop"
+              className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span className="hidden sm:inline">ポイントショップ</span>
+              <span className="sm:hidden">ショップ</span>
             </Link>
             <Link
               href="/pricing"

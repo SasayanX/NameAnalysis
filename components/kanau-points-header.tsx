@@ -5,6 +5,7 @@ import { Coins } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth/auth-provider"
 import { getOrCreatePointsSummary } from "@/lib/kanau-points-supabase"
+import { KanauPointsManager } from "@/lib/kanau-points-system"
 import Link from "next/link"
 
 export function KanauPointsHeader() {
@@ -14,14 +15,22 @@ export function KanauPointsHeader() {
 
   useEffect(() => {
     const loadPoints = async () => {
-      if (!authUser) {
-        setIsLoading(false)
-        return
-      }
-
       try {
-        const summary = await getOrCreatePointsSummary(authUser.id)
-        setPoints(summary.points)
+        if (authUser) {
+          const summary = await getOrCreatePointsSummary(authUser.id)
+          setPoints(summary.points)
+        } else {
+          // ゲストKp（ローカル保存）を表示
+          const manager = KanauPointsManager.getInstance()
+          manager.loadFromStorage()
+          const guestId = "guest"
+          let user = manager.getUser(guestId)
+          if (!user) {
+            user = manager.initializeUser(guestId)
+            manager.saveToStorage()
+          }
+          setPoints(user.points)
+        }
       } catch (error) {
         console.error("ポイント読み込みエラー:", error)
       } finally {
@@ -35,11 +44,6 @@ export function KanauPointsHeader() {
     const interval = setInterval(loadPoints, 30000)
     return () => clearInterval(interval)
   }, [authUser])
-
-  // 未ログイン時は表示しない
-  if (!authUser) {
-    return null
-  }
 
   return (
     <Link href="/points" className="flex items-center gap-2 hover:opacity-80 transition-opacity">

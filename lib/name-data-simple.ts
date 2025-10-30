@@ -76,6 +76,16 @@ export function getCharStrokeWithContext(
     return { stroke: 15, isDefault: false }
   }
   
+  // アルファベット文字の画数を取得（大文字・小文字別）
+  if (REGEX_PATTERNS.english.test(char)) {
+    const stroke = strokeCountData[char]
+    if (stroke !== undefined) {
+      return { stroke, isDefault: false }
+    }
+    // データベースにない場合はデフォルト値
+    return { stroke: 1, isDefault: true }
+  }
+  
   if (char === "々") {
     if (position > 0) {
       const prevChar = fullText.charAt(position - 1)

@@ -130,7 +130,7 @@ export const katakanaData: Record<string, number> = {
   ボ: 6,
   パ: 6,
   ピ: 7,
-  プ: 7,
+  プ: 2,
   ペ: 4,
   ポ: 7,
   マ: 3,
