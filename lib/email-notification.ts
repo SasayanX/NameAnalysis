@@ -1,5 +1,5 @@
-// メール通知システム（開発用簡易版）
-// import nodemailer from 'nodemailer'
+// メール通知システム（開発/本番切替）
+import nodemailer from 'nodemailer'
 
 export interface EmailConfig {
   host: string
@@ -24,7 +24,7 @@ export class EmailNotificationManager {
 
   constructor(config: EmailConfig) {
     this.config = config
-    console.log('📧 メール通知マネージャー初期化完了（開発モード）')
+    console.log('📧 メール通知マネージャー初期化完了')
   }
 
   // ハッシュタグ生成
@@ -99,11 +99,47 @@ export class EmailNotificationManager {
     return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`
   }
 
-  // メール送信（開発用：コンソール出力のみ）
+  // メール送信（資格情報があれば実送信、無ければログ出力）
   async sendShareNotification(shareableResult: ShareableResult): Promise<void> {
     const { name, result, shareContent, hashtags, tweetUrl } = shareableResult
     
-    console.log('📧 メール通知（開発モード）')
+    const canSend = !!(this.config.auth.user && this.config.auth.pass)
+    if (canSend) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: this.config.host,
+          port: this.config.port,
+          secure: this.config.secure,
+          auth: this.config.auth,
+        })
+
+        const subject = `【自動姓名判断】投稿準備完了 - ${name}`
+        const text = [
+          `総合スコア: ${result.totalScore}点`,
+          `運勢: ${result.fortune}`,
+          `五格: 天格${result.tenFormat}画, 人格${result.jinFormat}画, 地格${result.chiFormat}画, 外格${result.gaiFormat}画, 総格${result.totalFormat}画`,
+          '',
+          `投稿内容:\n${shareContent.title}\n${shareContent.description}`,
+          '',
+          `ハッシュタグ:\n${hashtags.join(' ')}`,
+          '',
+          `投稿リンク:\n${tweetUrl}`,
+        ].join('\n')
+
+        await transporter.sendMail({
+          from: this.config.auth.user,
+          to: process.env.NOTIFY_EMAIL_TO || 'kanaukiryu@gmail.com',
+          subject,
+          text,
+        })
+        console.log(`✅ メール送信完了: ${subject}`)
+        return
+      } catch (err) {
+        console.warn('⚠️ メール送信に失敗したためログ出力に切替:', err)
+      }
+    }
+
+    console.log('📧 メール通知（ログ出力）')
     console.log('='.repeat(50))
     console.log(`件名: 【自動姓名判断】投稿準備完了 - ${name}さん`)
     console.log('')
@@ -122,8 +158,26 @@ export class EmailNotificationManager {
     console.log('🐦 投稿リンク')
     console.log(tweetUrl)
     console.log('='.repeat(50))
-    
-    console.log(`✅ メール通知完了（開発モード）: ${name}さん`)
+    console.log(`✅ メール通知ログ出力完了: ${name}さん`)
+  }
+
+  // プレーンテキスト送信（件名/本文）
+  async sendPlainEmail(subject: string, text: string, to?: string): Promise<void> {
+    const recipient = to || process.env.NOTIFY_EMAIL_TO || 'kanaukiryu@gmail.com'
+    const canSend = !!(this.config.auth.user && this.config.auth.pass)
+    if (!canSend) {
+      console.log('📧 [ログ出力] 件名:', subject)
+      console.log(text)
+      return
+    }
+    const transporter = nodemailer.createTransport({
+      host: this.config.host,
+      port: this.config.port,
+      secure: this.config.secure,
+      auth: this.config.auth,
+    })
+    await transporter.sendMail({ from: this.config.auth.user, to: recipient, subject, text })
+    console.log(`✅ メール送信完了: ${subject} → ${recipient}`)
   }
 
   // テスト送信

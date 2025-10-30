@@ -1,7 +1,7 @@
 // オートパイロット化システム
 import { StrokeDataExpansionManager, type DataExpansionResult } from './stroke-data-expansion'
 import { AutoShareManager, DEFAULT_AUTO_SHARE_CONFIG } from './auto-share-manager'
-import { sendShareNotification } from './email-notification'
+import { sendShareNotification, sendPlainEmail } from './email-notification'
 
 export interface AutopilotConfig {
   // 実行間隔
@@ -224,10 +224,7 @@ ${error}
   // メール送信
   private async sendEmail(subject: string, message: string): Promise<void> {
     if (!this.config.notifications.email) return
-
-    // 実際の実装では、メール送信サービスを使用
-    console.log(`📧 メール送信: ${subject}`)
-    console.log(message)
+    await sendPlainEmail(subject, message, this.config.notifications.email)
   }
 
   // 次回実行時刻の取得

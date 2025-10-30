@@ -25,10 +25,10 @@ function getYinYangSymbol(yinYang: "陽" | "陰"): string {
 function getYinYangColor(yinYang: "陽" | "陰"): string {
   if (yinYang === "陽") {
     // 陽（○白丸）：ライトモードでは黒い枠線、ダークモードでは白い枠線
-    return "text-gray-800 dark:text-white"
+    return "text-gray-800 dark:text-gray-300"
   } else {
     // 陰（●黒丸）：ライトモードでは黒、ダークモードでは濃いグレー
-    return "text-black dark:text-gray-600"
+    return "text-black dark:text-gray-300"
   }
 }
 
