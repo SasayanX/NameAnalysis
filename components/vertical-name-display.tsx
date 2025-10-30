@@ -25,10 +25,10 @@ function getYinYangSymbol(yinYang: "陽" | "陰"): string {
 function getYinYangColor(yinYang: "陽" | "陰"): string {
   if (yinYang === "陽") {
     // 陽（○白丸）：ライトモードでは黒い枠線、ダークモードでは白い枠線
-    return "text-gray-800 dark:text-gray-300"
+    return "text-gray-800 dark:text-gray-600"
   } else {
     // 陰（●黒丸）：ライトモードでは黒、ダークモードでは濃いグレー
-    return "text-black dark:text-gray-300"
+    return "text-black dark:text-gray-600"
   }
 }
 
@@ -178,7 +178,7 @@ export function VerticalNameDisplay({
               )}
 
               {/* 中央：文字 */}
-              <div className="w-14 h-14 flex items-center justify-center text-3xl font-medium border-2 border-gray-300 bg-white rounded-lg shadow-sm relative">
+              <div className="w-14 h-14 flex items-center justify-center text-3xl font-medium border-2 border-gray-300 bg-white rounded-lg shadow-sm relative text-black dark:text-gray-600">
                 {item.char}
                 {item.isReisuu && (
                   <span className="absolute -top-2 -right-2 text-xs text-red-500 bg-red-100 rounded-full px-1.5 py-0.5 font-bold">
