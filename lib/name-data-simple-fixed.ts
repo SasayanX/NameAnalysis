@@ -147,6 +147,9 @@ export function analyzeNameFortune(
       customDataExists: !!customFortuneData
     })
   }
+  // 入力の正規化（undefined/非文字列/空白を防御）
+  lastName = (typeof lastName === 'string' ? lastName : '').trim()
+  firstName = (typeof firstName === 'string' ? firstName : '').trim()
 
   // 霊数ルールを適用した画数計算
   const lastNameResult = calculateStrokesWithReisuu(lastName)
@@ -168,12 +171,14 @@ export function analyzeNameFortune(
   const tenFormat = lastNameCount  // 天格：姓の画数の合計
   const chiFormat = firstNameCount  // 地格：名の画数の合計
   
-  // 人格：姓の最後の文字 + 名の最初の文字
-  const lastCharStroke = getStrokeCount(lastName[lastName.length - 1])
-  const firstCharStroke = firstName.length > 0 ? getStrokeCount(firstName[0]) : 1
+  // 人格：姓の最後の文字 + 名の最初の文字（防御）
+  const lastNameLastChar = lastName.length > 0 ? lastName[lastName.length - 1] : ''
+  const firstNameFirstChar = firstName.length > 0 ? firstName[0] : ''
+  const lastCharStroke = lastNameLastChar ? getStrokeCount(lastNameLastChar) : 1
+  const firstCharStroke = firstNameFirstChar ? getStrokeCount(firstNameFirstChar) : 1
   const jinFormat = lastCharStroke + firstCharStroke
 
-  console.log(`🔍 人格計算: 姓の最後"${lastName[lastName.length - 1]}"(${lastCharStroke}画) + 名の最初"${firstName[0]}"(${firstCharStroke}画) = ${jinFormat}画`)
+  console.log(`🔍 人格計算: 姓の最後"${lastNameLastChar || '（なし）'}"(${lastCharStroke}画) + 名の最初"${firstNameFirstChar || '（なし）'}"(${firstCharStroke}画) = ${jinFormat}画`)
 
   // 総格：姓と名の基本画数の合計（霊数は含めない）
   // 天格・地格ではなく、文字の基本画数を直接計算

@@ -61,7 +61,7 @@ export default function SubscriptionSuccessPage() {
 
             <div className="space-y-3">
               <Button asChild className="w-full" size="lg">
-                <Link href="/name-analyzer">
+                <Link href="/">
                   <ArrowRight className="h-5 w-5 mr-2" />
                   姓名判断を始める
                 </Link>

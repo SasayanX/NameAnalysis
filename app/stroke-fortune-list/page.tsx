@@ -485,7 +485,7 @@ export default function StrokeFortuneListPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <p className="font-medium">画数別吉凶データエディタ</p>
-              <a href="/name-analyzer" className="text-primary underline">
+              <a href="/" className="text-primary underline">
                 名前分析ツールへ
               </a>
             </div>

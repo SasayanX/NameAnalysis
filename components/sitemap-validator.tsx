@@ -20,7 +20,7 @@ export function SitemapValidator() {
 
   const expectedPages = [
     { url: "https://seimei.kanau-kiryu.com/", priority: 1.0, type: "ホーム" },
-    { url: "https://seimei.kanau-kiryu.com/name-analyzer", priority: 0.9, type: "メイン機能" },
+    { url: "https://seimei.kanau-kiryu.com/", priority: 0.9, type: "メイン機能" },
     { url: "https://seimei.kanau-kiryu.com/articles", priority: 0.8, type: "記事一覧" },
     { url: "https://seimei.kanau-kiryu.com/articles/kyujitai-seimeihandan", priority: 0.9, type: "SEO記事" },
     { url: "https://seimei.kanau-kiryu.com/articles/tengaku-kyousuu-myouji", priority: 0.9, type: "SEO記事" },

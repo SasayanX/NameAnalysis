@@ -284,7 +284,7 @@ export default function BabyNamesRanking2025() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="text-lg px-8">
-                <Link href="/name-analyzer">無料で姓名判断を始める</Link>
+                <Link href="/">無料で姓名判断を始める</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="text-lg px-8">
                 <Link href="/subscribe">詳細分析プランを見る</Link>

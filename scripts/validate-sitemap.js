@@ -3,7 +3,7 @@ const siteUrl = "https://nameanalysis216.vercel.app"
 
 const urlsToCheck = [
   "/",
-  "/name-analyzer",
+  "/",
   "/articles",
   "/articles/kyujitai-seimeihandan",
   "/articles/gogyo-five-elements",

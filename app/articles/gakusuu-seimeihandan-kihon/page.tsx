@@ -478,7 +478,7 @@ export default function GakusuuSeimeihandanKihonPage() {
         <CardContent className="p-6 text-center">
           <h3 className="text-xl font-bold mb-4">あなたの名前を実際に分析してみませんか？</h3>
           <p className="mb-4 opacity-90">学んだ知識を活用して、実際にあなたの名前を姓名判断で分析してみましょう。</p>
-          <Link href="/name-analyzer">
+          <Link href="/">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
               <Calculator className="h-4 w-4 mr-2" />
               無料で姓名判断を始める

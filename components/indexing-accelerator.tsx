@@ -18,7 +18,7 @@ export function IndexingAccelerator() {
     },
     {
       title: "姓名判断ツール",
-      url: "https://seimei.kanau-kiryu.com/name-analyzer",
+      url: "https://seimei.kanau-kiryu.com/",
       status: "not-indexed",
       priority: "最高",
     },

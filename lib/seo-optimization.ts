@@ -78,7 +78,7 @@ export function generateInternalLinks() {
   return [
     {
       text: "姓名判断を始める",
-      url: "/name-analyzer",
+      url: "/",
       description: "無料で姓名判断を体験",
     },
     {

@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, AlertCircle, ExternalLink } from "lucide-react"
 
 const SITEMAP_URLS = [
   { url: "/", priority: 1.0, type: "ホーム" },
-  { url: "/name-analyzer", priority: 0.9, type: "メイン機能" },
+  { url: "/", priority: 0.9, type: "メイン機能" },
   { url: "/articles", priority: 0.8, type: "記事一覧" },
   { url: "/articles/gakusuu-seimeihandan-kihon", priority: 0.9, type: "新記事" },
   { url: "/articles/kyujitai-seimeihandan", priority: 0.9, type: "SEO記事" },

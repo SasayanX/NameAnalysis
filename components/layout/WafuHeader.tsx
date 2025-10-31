@@ -28,7 +28,7 @@ export function WafuHeader() {
               <a href="/" className="text-gray-700 hover:text-orange-600 px-3 py-2 rounded-md text-sm font-medium">
                 ホーム
               </a>
-              <a href="/name-analyzer" className="text-gray-700 hover:text-orange-600 px-3 py-2 rounded-md text-sm font-medium">
+              <a href="/" className="text-gray-700 hover:text-orange-600 px-3 py-2 rounded-md text-sm font-medium">
                 姓名判断
               </a>
               <a href="/compatibility" className="text-gray-700 hover:text-orange-600 px-3 py-2 rounded-md text-sm font-medium">

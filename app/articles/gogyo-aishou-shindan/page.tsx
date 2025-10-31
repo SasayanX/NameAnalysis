@@ -524,7 +524,7 @@ export default function GogyoAishouShindan() {
               ただし、診断結果に固執せず、あくまで参考として捉え、
               実際の人間関係では相互理解と努力が最も重要であることを忘れてはいけません。
             </p>
-            <Link href="/name-analyzer">
+            <Link href="/">
               <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
                 <Heart className="h-5 w-5 mr-2" />
                 あなたの五行相性を診断する
@@ -571,7 +571,7 @@ export default function GogyoAishouShindan() {
               記事で学んだ知識を活用して、実際にあなたの名前を姓名判断で分析し、五行相性を確認してみませんか？
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/name-analyzer">
+              <Link href="/">
                 <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
                   <Star className="h-4 w-4 mr-2" />
                   無料で姓名判断を始める

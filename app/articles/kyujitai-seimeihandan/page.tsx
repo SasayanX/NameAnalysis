@@ -178,7 +178,7 @@ export default function KyujitaiArticlePage() {
             <div id="section1" className="bg-muted/50 p-6 rounded-lg mb-8">
               <h2 className="text-2xl font-bold mb-4 text-primary">1. 姓名判断のルーツは旧字体にあり</h2>
               <p className="text-base leading-relaxed">
-                <Link href="/name-analyzer" className="text-primary hover:underline">
+                <Link href="/" className="text-primary hover:underline">
                   姓名判断
                 </Link>
                 は明治時代から大正・昭和初期にかけて体系化されました。当時使われていた漢字は、今の「新字体」ではなく、画数の多い「旧字体」が主流です。姓名判断の基本理論や吉凶判断の法則は、この旧字体の画数をもとに作られているのです。
@@ -200,7 +200,7 @@ export default function KyujitaiArticlePage() {
               </div>
               <p className="text-base leading-relaxed">
                 このように、旧字体と新字体では画数が大きく異なります。姓名判断は画数のバランスや
-                <Link href="/name-analyzer" className="text-primary hover:underline">
+                <Link href="/" className="text-primary hover:underline">
                   五格（天格・人格・地格・外格・総格）
                 </Link>
                 で運勢を読み解くため、1画でもズレると全く違う結果になることがあります。つまり、旧字体を使わないと、本来の運命を正しく読み解けなくなってしまうのです。
@@ -211,7 +211,7 @@ export default function KyujitaiArticlePage() {
               <h2 className="text-2xl font-bold mb-4 text-primary">3. 旧字体は「本来の意味」と「エネルギー」を持つ</h2>
               <p className="text-base leading-relaxed">
                 漢字は、本来の形にその意味や力が込められていると考えられています。旧字体は長い歴史の中で受け継がれてきた「本来の漢字の姿」です。新字体は戦後の簡略化で生まれたもので、画数も意味合いも異なる場合があります。
-                <Link href="/name-analyzer" className="text-primary hover:underline">
+                <Link href="/" className="text-primary hover:underline">
                   姓名判断
                 </Link>
                 では「その人が持つ本質や運命」を読み解くため、漢字本来のエネルギーを重視し、旧字体で占うのが正しいとされているのです。
@@ -222,7 +222,7 @@ export default function KyujitaiArticlePage() {
               <h2 className="text-2xl font-bold mb-4 text-primary">4. 多くの専門家や流派が旧字体を採用</h2>
               <p className="text-base leading-relaxed">
                 実際に有名な姓名判断の流派や専門家は、ほとんどが旧字体での鑑定を採用しています。これは「本来の姓名判断の理論に忠実であること」「より正確な運勢判断ができること」が理由です。当サイトでも、この伝統的な手法を採用し、
-                <Link href="/name-analyzer" className="text-primary hover:underline">
+                <Link href="/" className="text-primary hover:underline">
                   正確な姓名判断
                 </Link>
                 を提供しています。
@@ -281,7 +281,7 @@ export default function KyujitaiArticlePage() {
                 この記事で学んだ知識を活かして、正確な姓名判断を体験してください
               </p>
               <Button size="lg" asChild>
-                <Link href="/name-analyzer">無料で姓名判断を始める</Link>
+                <Link href="/">無料で姓名判断を始める</Link>
               </Button>
             </CardContent>
           </Card>

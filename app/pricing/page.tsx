@@ -5,9 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Check, X, Trophy, Star, Crown, Sparkles } from "lucide-react"
+import { useSubscription } from "@/lib/subscription-manager"
 import Link from "next/link"
 
 export default function PricingPage() {
+  const subscription = useSubscription()
+  const currentPlan = subscription.getCurrentPlan()
   // 年額プランは無効化：常に月額のみ
   const billingCycle: "monthly" = "monthly"
 
@@ -88,6 +91,13 @@ export default function PricingPage() {
             <Badge variant="secondary" className="text-lg px-4 py-2">
               月額プランのみ対応
             </Badge>
+          </div>
+
+          {/* 現在のプラン（ヘッダーと連動） */}
+          <div className="mt-4 flex justify-center">
+            <span className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 border border-gray-300">
+              現在のプラン: {currentPlan.name}
+            </span>
           </div>
         </div>
 
@@ -197,7 +207,7 @@ export default function PricingPage() {
                 <div className="mt-8">
                   {key === "free" ? (
                     <Button variant={plan.buttonVariant} className="w-full" asChild>
-                      <Link href="/name-analyzer">{plan.buttonText}</Link>
+                      <Link href="/">{plan.buttonText}</Link>
                     </Button>
                   ) : (
                     <Button
@@ -319,7 +329,7 @@ export default function PricingPage() {
               <p className="text-purple-100 mb-6">無料プランから始めて、必要に応じてアップグレードできます</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button variant="secondary" size="lg" asChild>
-                  <Link href="/name-analyzer">無料で試してみる</Link>
+                  <Link href="/">無料で試してみる</Link>
                 </Button>
                 <Button
                   variant="outline"

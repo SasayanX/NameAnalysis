@@ -158,7 +158,7 @@ export function CsvPostEditGuide() {
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline">
-              <a href="/name-analyzer" target="_blank" rel="noreferrer">
+              <a href="/" target="_blank" rel="noreferrer">
                 🔍 名前分析ツールを開く
               </a>
             </Button>
@@ -290,7 +290,7 @@ export function CsvPostEditGuide() {
                   </p>
                   <div className="flex gap-2 justify-center">
                     <Button asChild>
-                      <a href="/name-analyzer">🔍 名前分析ツールを確認</a>
+                      <a href="/">🔍 名前分析ツールを確認</a>
                     </Button>
                     <Button asChild variant="outline">
                       <a href="/baby-naming-validation">📊 最終検証を実行</a>

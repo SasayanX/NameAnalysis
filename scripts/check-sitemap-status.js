@@ -23,7 +23,7 @@ async function checkSitemapStatus() {
       const checkPages = [
         "/articles/tengaku-kyousuu-myouji",
         "/articles/2025-baby-names-ranking",
-        "/name-analyzer",
+        "/",
         "/pricing",
       ]
 

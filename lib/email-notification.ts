@@ -27,6 +27,33 @@ export class EmailNotificationManager {
     console.log('📧 メール通知マネージャー初期化完了')
   }
 
+  private async sendWithResend(to: string, subject: string, text: string): Promise<boolean> {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) return false
+
+    const from = process.env.EMAIL_FROM || this.config.auth.user || 'no-reply@example.com'
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from, to, subject, text }),
+      })
+      if (!response.ok) {
+        const err = await response.text().catch(() => '')
+        console.warn('⚠️ Resend送信失敗:', response.status, err)
+        return false
+      }
+      console.log(`✅ Resend送信完了: ${subject} → ${to}`)
+      return true
+    } catch (e) {
+      console.warn('⚠️ Resend送信エラー:', e)
+      return false
+    }
+  }
+
   // ハッシュタグ生成
   generateHashtags(result: any, nameData: any): string[] {
     const baseTags = ['#姓名判断', '#占い', '#運勢', '#名前', '#画数', '#旧字体', '#無料占い']
@@ -104,6 +131,30 @@ export class EmailNotificationManager {
     const { name, result, shareContent, hashtags, tweetUrl } = shareableResult
     
     const canSend = !!(this.config.auth.user && this.config.auth.pass)
+
+    // 0) まずResendが設定されていれば優先してAPIで送信
+    try {
+      const subject = `【自動姓名判断】投稿準備完了 - ${name}`
+      const text = [
+        `総合スコア: ${result.totalScore}点`,
+        `運勢: ${result.fortune}`,
+        `五格: 天格${result.tenFormat}画, 人格${result.jinFormat}画, 地格${result.chiFormat}画, 外格${result.gaiFormat}画, 総格${result.totalFormat}画`,
+        '',
+        `投稿内容:\n${shareContent.title}\n${shareContent.description}`,
+        '',
+        `ハッシュタグ:\n${hashtags.join(' ')}`,
+        '',
+        `投稿リンク:\n${tweetUrl}`,
+      ].join('\n')
+
+      const to = process.env.NOTIFY_EMAIL_TO || 'kanaukiryu@gmail.com'
+      const sentViaResend = await this.sendWithResend(to, subject, text)
+      if (sentViaResend) return
+    } catch (e) {
+      console.warn('⚠️ Resend送信前処理エラー:', e)
+    }
+
+    // 1) Resend未使用/失敗時は、SMTP資格があればSMTPで送信
     if (canSend) {
       try {
         const transporter = nodemailer.createTransport({
@@ -126,12 +177,8 @@ export class EmailNotificationManager {
           `投稿リンク:\n${tweetUrl}`,
         ].join('\n')
 
-        await transporter.sendMail({
-          from: this.config.auth.user,
-          to: process.env.NOTIFY_EMAIL_TO || 'kanaukiryu@gmail.com',
-          subject,
-          text,
-        })
+        const to = process.env.NOTIFY_EMAIL_TO || 'kanaukiryu@gmail.com'
+        await transporter.sendMail({ from: this.config.auth.user, to, subject, text })
         console.log(`✅ メール送信完了: ${subject}`)
         return
       } catch (err) {
@@ -165,6 +212,11 @@ export class EmailNotificationManager {
   async sendPlainEmail(subject: string, text: string, to?: string): Promise<void> {
     const recipient = to || process.env.NOTIFY_EMAIL_TO || 'kanaukiryu@gmail.com'
     const canSend = !!(this.config.auth.user && this.config.auth.pass)
+    // 1) Resendが設定されていればAPIで送信
+    const sentViaResend = await this.sendWithResend(recipient, subject, text)
+    if (sentViaResend) return
+
+    // 2) SMTP資格があればSMTPで送信、なければログ
     if (!canSend) {
       console.log('📧 [ログ出力] 件名:', subject)
       console.log(text)

@@ -9,7 +9,7 @@ export const indexingStrategy = {
       keywords: ["姓名判断", "無料", "占い"],
     },
     {
-      url: "/name-analyzer",
+      url: "/",
       reason: "メイン機能ページ",
       keywords: ["姓名判断", "画数計算", "旧字体"],
     },

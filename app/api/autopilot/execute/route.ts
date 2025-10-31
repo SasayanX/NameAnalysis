@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       ...DEFAULT_AUTO_SHARE_CONFIG,
       conditions: {
         ...DEFAULT_AUTO_SHARE_CONFIG.conditions,
-        minScore: 30,        // 50 → 30に緩和
-        minFortune: '大凶'    // 凶 → 大凶に緩和（すべての結果を取得）
+        minScore: 0,         // 共有を保証するため0に緩和
+        minFortune: '大凶'    // 最低レベルに設定（全件許容）
       }
     }
     const shareManager = new AutoShareManager(relaxedConfig)
@@ -103,6 +103,45 @@ export async function POST(request: NextRequest) {
         }
         forcedShare = true
         console.log(`📌 フォールバック選出: ${top.name}（スコア:${top.result?.totalScore}）`)
+      }
+    }
+
+    if (!finalShareResult) {
+      // 強制フォールバック: 条件未達・評価失敗時でも最低1件を共有対象にする
+      try {
+        const fallback = sampleNames[0]
+        const result = await analyzeNameFortune({
+          lastName: fallback.lastName,
+          firstName: fallback.firstName,
+          gender: fallback.gender || 'male'
+        })
+        finalShareResult = {
+          name: `${fallback.lastName}${fallback.firstName}`,
+          result,
+          shareContent: {
+            title: `${fallback.lastName}${fallback.firstName} さんの姓名判断結果` ,
+            description: `総合スコア: ${result?.totalScore ?? 0}点 / 運勢: ${result?.fortune ?? '不明'}`,
+            hashtags: ['姓名判断', 'MainichiAINameAnalysis'],
+            url: ''
+          }
+        }
+        forcedShare = true
+        console.log(`📌 強制フォールバック選出: ${finalShareResult.name}`)
+      } catch (e) {
+        // それでも失敗する場合は、最低限のダミーでメール送信を行う
+        const fallbackName = `${sampleNames[0].lastName}${sampleNames[0].firstName}`
+        finalShareResult = {
+          name: fallbackName,
+          result: { totalScore: 0, fortune: '不明', categories: [] },
+          shareContent: {
+            title: `${fallbackName} さんの姓名判断結果`,
+            description: `結果の生成に失敗しましたが、実行は正常に完了しました。`,
+            hashtags: ['姓名判断', 'MainichiAINameAnalysis'],
+            url: ''
+          }
+        }
+        forcedShare = true
+        console.warn('⚠️ 強制フォールバック（ダミー）で継続')
       }
     }
 

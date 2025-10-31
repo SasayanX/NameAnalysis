@@ -331,7 +331,7 @@ export default async function ArticlesPage() {
           <p className="mb-6 opacity-90">
             記事で学んだ知識を活用して、実際にあなたの名前を姓名判断で分析してみませんか？
           </p>
-          <Link href="/name-analyzer">
+          <Link href="/">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
               <Star className="h-4 w-4 mr-2" />
               無料で姓名判断を始める
