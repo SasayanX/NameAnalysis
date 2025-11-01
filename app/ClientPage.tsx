@@ -24,6 +24,9 @@ import { FortuneFlowTable } from "@/components/fortune-flow-table"
 import { CompanyNameResult } from "@/components/company-name-result"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { TrialBanner } from "@/components/trial-banner"
+import { KanauPointsHeader } from "@/components/kanau-points-header"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { useSubscription } from "@/lib/subscription-manager"
 import { NumerologyResultComponent } from "@/components/numerology-result"
 import { BabyNamingTool } from "@/components/baby-naming-tool"
 
@@ -49,6 +52,9 @@ const DEFAULT_USAGE = {
 }
 
 export default function ClientPage() {
+  // サブスクリプション状態（ヘッダー表示用）
+  const subscription = useSubscription()
+
   // 基本的な状態管理
   const [lastName, setLastName] = useState("")
   const [firstName, setFirstName] = useState("")
@@ -466,6 +472,63 @@ export default function ClientPage() {
     }
   }, [currentPlan, isInTrial, trialDaysRemaining])
 
+  // ヒーロー右側のプラン表示は実サブスクに追従させる
+  const headerPlanInfo = useMemo(() => {
+    try {
+      const current = subscription.getCurrentPlan()
+      const inTrial = subscription.isInTrial()
+      const trialDays = subscription.getTrialDaysRemaining()
+
+      if (inTrial) {
+        return {
+          text: `プレミアム（トライアル残り${trialDays}日）`,
+          style: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
+        }
+      }
+
+      switch (current.id) {
+        case "free":
+          return {
+            text: "無料プラン",
+            style: "bg-gray-100 text-gray-700 border border-gray-300",
+          }
+        case "basic":
+          return {
+            text: "ベーシックプラン",
+            style: "bg-gradient-to-r from-blue-600 to-blue-700 text-white",
+          }
+        case "premium":
+          return {
+            text: "プレミアムプラン",
+            style: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
+          }
+        default:
+          return {
+            text: "無料プラン",
+            style: "bg-gray-100 text-gray-700 border border-gray-300",
+          }
+      }
+    } catch (e) {
+      return {
+        text: "無料プラン",
+        style: "bg-gray-100 text-gray-700 border border-gray-300",
+      }
+    }
+  }, [subscription])
+
+  const handleHeaderPlanClick = useCallback(() => {
+    try {
+      const current = subscription.getCurrentPlan()
+      if (current.id === "free") {
+        window.location.href = "/pricing"
+      } else {
+        window.location.href = "/my-subscription"
+      }
+    } catch (e) {
+      window.location.href = "/pricing"
+    }
+  }, [subscription])
+
   // DailyFortuneCardに渡すpropsを安定化
   const dailyFortuneProps = useMemo(() => {
     return {
@@ -502,74 +565,18 @@ export default function ClientPage() {
             <h1 className="text-3xl font-bold mb-2">まいにちAI姓名判断</h1>
             <p className="text-muted-foreground">旧字体による正確な画数計算で、あなたの運命を詳しく鑑定</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className={planInfo.style}>
+          <div className="flex items-center gap-3">
+            <KanauPointsHeader />
+            <Button variant="outline" className={headerPlanInfo.style} onClick={handleHeaderPlanClick}>
               <Settings className="h-4 w-4 mr-2" />
-              {planInfo.text}
+              {headerPlanInfo.text}
             </Button>
+            <ThemeToggle />
           </div>
         </div>
 
         {/* 開発環境用：デバッグコントロール */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="font-medium text-yellow-800 mb-3">🛠️ 開発環境：デバッグコントロール</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* プラン切り替え */}
-              <div>
-                <h4 className="text-sm font-medium text-yellow-700 mb-2">プラン切り替え</h4>
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => handlePlanChange("free")}>
-                    無料プラン
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handlePlanChange("basic")}>
-                    ベーシックプラン
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handlePlanChange("premium")}>
-                    プレミアムプラン
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleStartTrial}>
-                    トライアル開始
-                  </Button>
-                </div>
-              </div>
-
-              {/* 使用回数リセット */}
-              <div>
-                <h4 className="text-sm font-medium text-yellow-700 mb-2">使用回数管理</h4>
-                <div className="flex gap-2 flex-wrap">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      usageTracker.resetUsage()
-                      setUsageStatus(usageTracker.getUsageStatus())
-                    }}
-                  >
-                    使用回数リセット
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* 現在の状態表示 */}
-            <div className="mt-3 p-3 bg-yellow-100 rounded text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <strong>現在のプラン:</strong> {currentPlan}
-                  {isInTrial && ` (トライアル残り${trialDaysRemaining}日)`}
-                </div>
-              </div>
-              <div className="mt-2">
-                <strong>今日の使用回数:</strong>
-                <span className="ml-2">
-                  個人名分析: {getTodayUsage().personalAnalysis}, 
-                  会社名分析: {getTodayUsage().companyAnalysis}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 開発用のデバッグコントロールは非表示化（モバイルの視認性優先） */}
 
         {/* セクション選択 */}
         <div className="flex justify-between items-center mb-6">
@@ -925,20 +932,20 @@ export default function ClientPage() {
                   ) : (
                     // 結果がない時の説明・お知らせ表示
                     <div className="space-y-6">
-                      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 dark:bg-neutral-800 dark:border-neutral-700">
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Settings className="h-5 w-5 text-blue-600" />
+                          <CardTitle className="flex items-center gap-2 dark:text-neutral-100">
+                            <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                             このアプリについて
                           </CardTitle>
                           <CardDescription>
-                            姓名判断・数秘術・六星占術を組み合わせた総合的な名前分析を行います
+                            <span className="dark:text-gray-300">姓名判断・数秘術・六星占術を組み合わせた総合的な名前分析を行います</span>
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <div>
-                            <h3 className="font-semibold mb-2">主要機能</h3>
-                            <ul className="space-y-2 text-sm text-muted-foreground">
+                            <h3 className="font-semibold mb-2 dark:text-neutral-100">主要機能</h3>
+                            <ul className="space-y-2 text-sm text-muted-foreground dark:text-gray-300">
                               <li>✓ <strong>かんたん鑑定</strong>: 基本的な姓名判断結果を表示</li>
                               <li>✓ <strong>詳細鑑定</strong>: 天格・人格・地格・外格・総格の詳細分析</li>
                               <li>✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</li>
@@ -947,8 +954,8 @@ export default function ClientPage() {
                             </ul>
                           </div>
                           <div className="pt-4 border-t">
-                            <h3 className="font-semibold mb-2">💡 使い方</h3>
-                            <p className="text-sm text-muted-foreground">
+                            <h3 className="font-semibold mb-2 dark:text-neutral-100">💡 使い方</h3>
+                            <p className="text-sm text-muted-foreground dark:text-gray-300">
                               左側のフォームに「姓」と「名」を入力して「姓名判断を実行」ボタンをクリックしてください。
                               生年月日を入力すると、より詳細な分析結果が表示されます。
                             </p>
@@ -956,24 +963,24 @@ export default function ClientPage() {
                         </CardContent>
                       </Card>
 
-                      <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
+                      <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50 dark:bg-neutral-800 dark:border-neutral-700">
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-yellow-600" />
+                          <CardTitle className="flex items-center gap-2 dark:text-neutral-100">
+                            <Sparkles className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                             お知らせ
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          <div className="p-3 bg-white/50 rounded-lg">
-                            <h4 className="font-semibold text-sm mb-1">🎉 カナウポイントシステム開始！</h4>
-                            <p className="text-xs text-muted-foreground">
+                          <div className="p-3 bg-white/50 rounded-lg dark:bg-white/5">
+                            <h4 className="font-semibold text-sm mb-1 dark:text-neutral-100">🎉 カナウポイントシステム開始！</h4>
+                            <p className="text-xs text-muted-foreground dark:text-gray-300">
                               各種分析を実行するとKpを獲得できます。1日最大5Kpまで獲得可能です。
                               ログインボーナスも毎日受け取れます！
                             </p>
                           </div>
-                          <div className="p-3 bg-white/50 rounded-lg">
-                            <h4 className="font-semibold text-sm mb-1">📊 ランキング機能</h4>
-                            <p className="text-xs text-muted-foreground">
+                          <div className="p-3 bg-white/50 rounded-lg dark:bg-white/5">
+                            <h4 className="font-semibold text-sm mb-1 dark:text-neutral-100">📊 ランキング機能</h4>
+                            <p className="text-xs text-muted-foreground dark:text-gray-300">
                               名前の格付けをランキングに登録して、季節ごとの順位を競いましょう。
                               プレミアム会員は5Kpでランキングに登録できます。
                             </p>

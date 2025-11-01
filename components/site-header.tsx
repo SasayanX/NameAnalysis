@@ -2,82 +2,9 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ThemeToggle } from "./theme-toggle"
-import { BookOpen, CreditCard, Settings, Gift, ShoppingBag } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useSubscription } from "@/lib/subscription-manager"
-import { KanauPointsHeader } from "@/components/kanau-points-header"
-import { useState, useEffect } from "react"
+import { BookOpen, CreditCard, Gift, ShoppingBag } from "lucide-react"
 
 export function SiteHeader() {
-  const subscription = useSubscription()
-  const [planInfo, setPlanInfo] = useState({
-    text: "無料プラン",
-    style: "bg-gray-100 text-gray-700 border border-gray-300",
-  })
-
-  useEffect(() => {
-    const updatePlanInfo = () => {
-      try {
-        const currentPlan = subscription.getCurrentPlan()
-        const isInTrial = subscription.isInTrial()
-        const trialDays = subscription.getTrialDaysRemaining()
-
-        if (isInTrial) {
-          setPlanInfo({
-            text: `プレミアム（トライアル残り${trialDays}日）`,
-            style: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
-          })
-        } else {
-          switch (currentPlan.id) {
-            case "free":
-              setPlanInfo({
-                text: "無料プラン",
-                style: "bg-gray-100 text-gray-700 border border-gray-300",
-              })
-              break
-            case "basic":
-              setPlanInfo({
-                text: "ベーシックプラン",
-                style: "bg-gradient-to-r from-blue-600 to-blue-700 text-white",
-              })
-              break
-            case "premium":
-              setPlanInfo({
-                text: "プレミアムプラン",
-                style: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
-              })
-              break
-            default:
-              setPlanInfo({
-                text: "無料プラン",
-                style: "bg-gray-100 text-gray-700 border border-gray-300",
-              })
-          }
-        }
-      } catch (error) {
-        console.error("Error getting plan info:", error)
-        setPlanInfo({
-          text: "無料プラン",
-          style: "bg-gray-100 text-gray-700 border border-gray-300",
-        })
-      }
-    }
-
-    updatePlanInfo()
-  }, [subscription.getCurrentPlan, subscription.isInTrial, subscription.getTrialDaysRemaining])
-
-  const handlePlanClick = () => {
-    const currentPlan = subscription.getCurrentPlan()
-    if (currentPlan.id === "free") {
-      // 無料プランの場合は料金ページに遷移
-      window.location.href = "/pricing"
-    } else {
-      // 有料プランの場合はサブスクリプション管理ページに遷移
-      window.location.href = "/my-subscription"
-    }
-  }
-
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between py-4">
@@ -123,14 +50,7 @@ export function SiteHeader() {
             </Link>
           </nav>
         </div>
-        <div className="flex items-center gap-4">
-          <KanauPointsHeader />
-          <Button variant="outline" className={planInfo.style} onClick={handlePlanClick}>
-            <Settings className="h-4 w-4 mr-2" />
-            {planInfo.text}
-          </Button>
-          <ThemeToggle />
-        </div>
+        <div />
       </div>
     </header>
   )
