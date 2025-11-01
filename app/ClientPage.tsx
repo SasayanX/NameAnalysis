@@ -559,13 +559,15 @@ export default function ClientPage() {
       )}
 
       <main className="container mx-auto py-10 px-4 md:px-6 pb-16">
-        {/* ヘッダー */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">まいにちAI姓名判断</h1>
-            <p className="text-muted-foreground">旧字体による正確な画数計算で、あなたの運命を詳しく鑑定</p>
+        {/* ヘッダー（モバイルは中央寄せ、md以上で左右配置） */}
+        <div className="mb-8 md:flex md:items-center md:justify-between">
+          <div className="text-center md:text-left mx-auto max-w-[22rem] sm:max-w-none">
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-2">まいにちAI姓名判断</h1>
+            <p className="text-muted-foreground md:max-w-[34rem] mx-auto md:mx-0">
+              旧字体による正確な画数計算で、あなたの運命を詳しく鑑定
+            </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="mt-4 md:mt-0 flex items-center justify-center md:justify-end gap-3">
             <KanauPointsHeader />
             <Button variant="outline" className={headerPlanInfo.style} onClick={handleHeaderPlanClick}>
               <Settings className="h-4 w-4 mr-2" />
