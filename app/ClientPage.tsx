@@ -115,6 +115,9 @@ export default function ClientPage() {
   })
   const [isInTrial, setIsInTrial] = useState(() => usageStatus.isInTrial || false)
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(() => usageStatus.trialDaysRemaining || 0)
+  
+  // クライアントサイドでマウントされたかどうか（ハイドレーションエラー回避用）
+  const [mounted, setMounted] = useState(false)
 
   // URLパラメータでプレミアムモードを強制（スクリーンショット用）
   useEffect(() => {
@@ -122,68 +125,151 @@ export default function ClientPage() {
     
     const params = new URLSearchParams(window.location.search)
     const premiumParam = params.get("premium")
-    const planParam = params.get("plan")
+    const planParam = params.get("plan")?.toLowerCase() // タイポ対応のため小文字化
     
-    if (premiumParam === "true" || planParam === "premium") {
-      // プレミアムプランを強制設定（開発環境チェックをバイパス）
-      const expiresAt = new Date()
-      expiresAt.setMonth(expiresAt.getMonth() + 1)
-      
-      const premiumSubscription = {
-        plan: "premium" as const,
-        expiresAt,
-        isActive: true,
-        trialEndsAt: null,
-        status: "active" as const,
-        paymentMethod: "square" as const,
-        amount: 550,
-        nextBillingDate: expiresAt,
-        lastPaymentDate: new Date(),
+    // タイポ対応: "premiun" → "premium"
+    const normalizedPlan = planParam === "premiun" ? "premium" : planParam
+    
+    // 既存のプラン設定を確認
+    let shouldUpdate = false
+    let targetPlan: "free" | "basic" | "premium" | null = null
+    
+    if (premiumParam === "true" || normalizedPlan === "premium") {
+      targetPlan = "premium"
+      // 既存のプランが既にpremiumで有効な場合はスキップ
+      try {
+        const existing = localStorage.getItem("userSubscription")
+        if (existing) {
+          const sub = JSON.parse(existing)
+          if (sub.plan === "premium" && sub.isActive && new Date(sub.expiresAt) > new Date()) {
+            // 既に有効なpremiumプランが設定されている場合は何もしない
+            // URLパラメータだけ削除して終了
+            if (params.has("premium") || params.has("plan")) {
+              params.delete("premium")
+              params.delete("plan")
+              const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "")
+              window.history.replaceState({}, "", newUrl)
+            }
+            return
+          }
+        }
+      } catch (e) {
+        // エラー時は続行
+      }
+      shouldUpdate = true
+    } else if (normalizedPlan === "basic") {
+      targetPlan = "basic"
+      // 既存のプランが既にbasicで有効な場合はスキップ
+      try {
+        const existing = localStorage.getItem("userSubscription")
+        if (existing) {
+          const sub = JSON.parse(existing)
+          if (sub.plan === "basic" && sub.isActive && new Date(sub.expiresAt) > new Date()) {
+            // 既に有効なbasicプランが設定されている場合は何もしない
+            if (params.has("plan")) {
+              params.delete("plan")
+              const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "")
+              window.history.replaceState({}, "", newUrl)
+            }
+            return
+          }
+        }
+      } catch (e) {
+        // エラー時は続行
+      }
+      shouldUpdate = true
+    } else if (normalizedPlan === "free") {
+      targetPlan = "free"
+      // 既存のプランが既にfreeの場合はスキップ
+      try {
+        const existing = localStorage.getItem("userSubscription")
+        if (existing) {
+          const sub = JSON.parse(existing)
+          if (sub.plan === "free") {
+            // 既にfreeプランが設定されている場合は何もしない
+            if (params.has("plan")) {
+              params.delete("plan")
+              const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "")
+              window.history.replaceState({}, "", newUrl)
+            }
+            return
+          }
+        }
+      } catch (e) {
+        // エラー時は続行
+      }
+      shouldUpdate = true
+    }
+    
+    if (shouldUpdate && targetPlan) {
+      if (targetPlan === "premium") {
+        // プレミアムプランを強制設定（開発環境チェックをバイパス）
+        const expiresAt = new Date()
+        expiresAt.setMonth(expiresAt.getMonth() + 1)
+        
+        const premiumSubscription = {
+          plan: "premium" as const,
+          expiresAt,
+          isActive: true,
+          trialEndsAt: null,
+          status: "active" as const,
+          paymentMethod: "square" as const,
+          amount: 550,
+          nextBillingDate: expiresAt,
+          lastPaymentDate: new Date(),
+        }
+        
+        localStorage.setItem("userSubscription", JSON.stringify({
+          ...premiumSubscription,
+          expiresAt: premiumSubscription.expiresAt.toISOString(),
+          nextBillingDate: premiumSubscription.nextBillingDate.toISOString(),
+          lastPaymentDate: premiumSubscription.lastPaymentDate.toISOString(),
+        }))
+      } else if (targetPlan === "basic") {
+        const expiresAt = new Date()
+        expiresAt.setMonth(expiresAt.getMonth() + 1)
+        
+        const basicSubscription = {
+          plan: "basic" as const,
+          expiresAt,
+          isActive: true,
+          trialEndsAt: null,
+          status: "active" as const,
+          paymentMethod: "square" as const,
+          amount: 330,
+          nextBillingDate: expiresAt,
+          lastPaymentDate: new Date(),
+        }
+        
+        localStorage.setItem("userSubscription", JSON.stringify({
+          ...basicSubscription,
+          expiresAt: basicSubscription.expiresAt.toISOString(),
+          nextBillingDate: basicSubscription.nextBillingDate.toISOString(),
+          lastPaymentDate: basicSubscription.lastPaymentDate.toISOString(),
+        }))
+      } else if (targetPlan === "free") {
+        localStorage.setItem("userSubscription", JSON.stringify({
+          plan: "free",
+          expiresAt: null,
+          isActive: false,
+          trialEndsAt: null,
+        }))
       }
       
-      localStorage.setItem("userSubscription", JSON.stringify({
-        ...premiumSubscription,
-        expiresAt: premiumSubscription.expiresAt.toISOString(),
-        nextBillingDate: premiumSubscription.nextBillingDate.toISOString(),
-        lastPaymentDate: premiumSubscription.lastPaymentDate.toISOString(),
-      }))
+      // URLパラメータを削除してから再読み込み（無限ループを防ぐ）
+      params.delete("premium")
+      params.delete("plan")
+      const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "")
+      window.history.replaceState({}, "", newUrl)
       
       // SubscriptionManagerをリフレッシュ
       window.location.reload()
-    } else if (planParam === "basic") {
-      const expiresAt = new Date()
-      expiresAt.setMonth(expiresAt.getMonth() + 1)
-      
-      const basicSubscription = {
-        plan: "basic" as const,
-        expiresAt,
-        isActive: true,
-        trialEndsAt: null,
-        status: "active" as const,
-        paymentMethod: "square" as const,
-        amount: 330,
-        nextBillingDate: expiresAt,
-        lastPaymentDate: new Date(),
-      }
-      
-      localStorage.setItem("userSubscription", JSON.stringify({
-        ...basicSubscription,
-        expiresAt: basicSubscription.expiresAt.toISOString(),
-        nextBillingDate: basicSubscription.nextBillingDate.toISOString(),
-        lastPaymentDate: basicSubscription.lastPaymentDate.toISOString(),
-      }))
-      
-      window.location.reload()
-    } else if (planParam === "free") {
-      localStorage.setItem("userSubscription", JSON.stringify({
-        plan: "free",
-        expiresAt: null,
-        isActive: false,
-        trialEndsAt: null,
-      }))
-      
-      window.location.reload()
     }
+  }, [])
+
+  // クライアントサイドでマウント済みフラグを設定
+  useEffect(() => {
+    setMounted(true)
   }, [])
 
   // usageStatusのplanが変更されたらcurrentPlanを更新
@@ -643,8 +729,8 @@ export default function ClientPage() {
       {/* トライアルバナー */}
       {isInTrial && <TrialBanner daysRemaining={trialDaysRemaining} />}
 
-      {/* アップグレード促進バナー */}
-      {currentPlan === "free" && !isInTrial && (
+      {/* アップグレード促進バナー（クライアントサイドでマウント後にのみ表示） */}
+      {mounted && currentPlan === "free" && !isInTrial && (
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-4 text-center">
           <div className="flex items-center justify-center gap-2">
             <Sparkles className="h-5 w-5" />
