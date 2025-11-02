@@ -767,7 +767,7 @@ export default function ClientPage() {
         {/* 開発用のデバッグコントロールは非表示化（モバイルの視認性優先） */}
 
         {/* セクション選択 */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 gap-2">
           <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
             <Button
               variant="ghost"
@@ -795,14 +795,19 @@ export default function ClientPage() {
             </Button>
           </div>
 
+          {/* PDFダウンロードボタン：短縮テキストで同じ行に配置 */}
           {results && (
             currentPlan === "free" ? (
-              <Button disabled>
-                <LockIcon className="h-4 w-4 mr-2" />
-                PDF出力（有料限定）
+              <Button disabled size="sm" className="whitespace-nowrap">
+                <LockIcon className="h-4 w-4 mr-1" />
+                PDF取得
               </Button>
             ) : (
-              <PdfExportButton contentId="results-content" fileName={`姓名判断結果_${lastName}${firstName}`} />
+              <PdfExportButton 
+                contentId="results-content" 
+                fileName={`姓名判断結果_${lastName}${firstName}`}
+                buttonText="PDF取得"
+              />
             )
           )}
         </div>
