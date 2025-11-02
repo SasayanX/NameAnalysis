@@ -1,0 +1,18 @@
+# Android build outputs
+*.apk
+*.aab
+app/build/
+.idea/
+*.iml
+
+# Signing keys
+android-signing-key.json
+android-keystore.jks
+
+# Node modules (if any)
+node_modules/
+
+# Build artifacts
+build/
+dist/
+

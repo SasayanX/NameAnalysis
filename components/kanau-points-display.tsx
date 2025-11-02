@@ -18,6 +18,7 @@ import {
 import { KanauPointsManager, type KanauPointsUser, type SpecialItem } from "@/lib/kanau-points-system"
 import { useAuth } from "@/components/auth/auth-provider"
 import { processLoginBonusSupa, getOrCreatePointsSummary, addPointsSupa } from "@/lib/kanau-points-supabase"
+import { SubscriptionManager } from "@/lib/subscription-manager"
 
 interface KanauPointsDisplayProps {
   userId: string
@@ -97,7 +98,12 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
 
   const handleLoginBonus = async () => {
     if (authUser) {
-      const result = await processLoginBonusSupa(authUser.id)
+      // 現在のプランを取得
+      const manager = SubscriptionManager.getInstance()
+      const currentPlan = manager.getCurrentPlan()
+      const plan = currentPlan.id as "free" | "basic" | "premium"
+      
+      const result = await processLoginBonusSupa(authUser.id, plan)
       const mapped: KanauPointsUser = {
         userId: authUser.id,
         points: result.user.points,
@@ -161,7 +167,24 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
   return (
     <div className="space-y-4">
       {/* ログインボーナスモーダル */}
-      {showLoginBonus && (
+      {showLoginBonus && (() => {
+        // 現在のプランを取得して基礎ポイントを計算
+        const manager = SubscriptionManager.getInstance()
+        const currentPlan = manager.getCurrentPlan()
+        const plan = currentPlan.id as "free" | "basic" | "premium"
+        const basePoints = plan === "free" ? 1 : plan === "basic" ? 2 : 3
+        const planNames = {
+          free: "無料",
+          basic: "ベーシック",
+          premium: "プレミアム",
+        }
+        const planName = planNames[plan] || "無料"
+        // 基礎Kp × 連続日数で計算（30日で上限）
+        const consecutiveDays = user.consecutiveLoginDays + 1
+        const effectiveConsecutiveDays = Math.min(consecutiveDays, 30)
+        const totalPoints = basePoints * effectiveConsecutiveDays
+        
+        return (
         <Card className="border-2 border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-yellow-800">
@@ -172,10 +195,13 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
           <CardContent className="space-y-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-800 mb-2">
-                連続{user.consecutiveLoginDays + 1}日目
+                連続{consecutiveDays}日目
+              </div>
+              <div className="text-sm text-yellow-600 mb-2">
+                {planName}プラン特典
               </div>
               <div className="text-lg text-yellow-700">
-                基本1Kp + 連続ボーナス{Math.min(user.consecutiveLoginDays, 100)}Kp = 合計{1 + Math.min(user.consecutiveLoginDays, 100)}Kp
+                基礎{basePoints}Kp × {effectiveConsecutiveDays}日{consecutiveDays > 30 ? "（上限）" : ""} = 合計{totalPoints}Kp
               </div>
             </div>
             <Button 
@@ -186,7 +212,8 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
             </Button>
           </CardContent>
         </Card>
-      )}
+        )
+      })()}
 
       {/* ログインボーナス結果表示 */}
       {loginBonusResult && (

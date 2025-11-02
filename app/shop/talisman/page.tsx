@@ -1,0 +1,455 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import Image from "next/image"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { 
+  Coins, 
+  Gift, 
+  Star,
+  Sparkles,
+  Share2,
+  Crown,
+  PenTool,
+  Zap
+} from "lucide-react"
+import { KanauPointsManager, type KanauPointsUser } from "@/lib/kanau-points-system"
+import { useAuth } from "@/components/auth/auth-provider"
+import { getOrCreatePointsSummary, addPointsSupa, spendPointsSupa } from "@/lib/kanau-points-supabase"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+
+// 金龍護符のデータ
+const GOLDEN_DRAGON_TALISMAN = {
+  id: "golden-dragon-opening",
+  name: "金龍護符 - 開運上昇",
+  price: 5000,
+  rarity: 4, // ⭐⭐⭐⭐
+  attribute: "光属性",
+  category: "幸運系",
+  description: "金龍護符は、創造と調和の象徴。AIリディアが筆に込めた「叶う力」が、あなたの名前の波動を共鳴させ、運命を好転へと導きます。",
+  effects: ["行動力向上", "金運向上", "信頼運向上"],
+  image: "/images/golden-talisman.png", // プレースホルダー
+  exchangeRate: "1 Kp = 1行動力"
+}
+
+// AIリディアのメッセージ
+const RYDIA_MESSAGES = {
+  purchaseSuccess: [
+    "あなたの名に、今…金龍の力が宿りました✨",
+    "この護符が、あなたの運命を好転へと導きます",
+    "開運の波が、あなたの周りに広がっていくでしょう",
+  ],
+  insufficientPoints: "残念ながら、Kpが不足しています。ログインボーナスや毎日の行動でKpを獲得できます。",
+  specialReward: "おめでとうございます！特別な護符（季節限定）を授かりました🎁"
+}
+
+export default function TalismanShopPage() {
+  const { user: authUser } = useAuth()
+  const [user, setUser] = useState<KanauPointsUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isPurchasing, setIsPurchasing] = useState(false)
+  const [showPurchaseEffect, setShowPurchaseEffect] = useState(false)
+  const [purchaseMessage, setPurchaseMessage] = useState<string>("")
+  const [showShareBonus, setShowShareBonus] = useState(false)
+  const [imageError, setImageError] = useState(false)
+
+  useEffect(() => {
+    const init = async () => {
+      if (authUser) {
+        try {
+          const summary = await getOrCreatePointsSummary(authUser.id)
+          const mapped: KanauPointsUser = {
+            userId: authUser.id,
+            points: summary.points,
+            totalEarned: summary.total_earned,
+            totalSpent: summary.total_spent,
+            consecutiveLoginDays: summary.consecutive_login_days,
+            lastLoginDate: summary.last_login_date || "",
+            lastLoginBonusDate: summary.last_login_bonus_date || "",
+            specialItems: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+          setUser(mapped)
+        } catch (e) {
+          console.error("Failed to load user points:", e)
+        } finally {
+          setIsLoading(false)
+        }
+      } else {
+        // ゲストモード（ローカルストレージ）
+        const pointsManager = KanauPointsManager.getInstance()
+        pointsManager.loadFromStorage()
+        const userId = "demo_user_001"
+        let userData = pointsManager.getUser(userId)
+        if (!userData) {
+          userData = pointsManager.initializeUser(userId)
+        }
+        setUser(userData)
+        setIsLoading(false)
+      }
+    }
+    init()
+  }, [authUser])
+
+  const handlePurchase = async () => {
+    if (!user || user.points < GOLDEN_DRAGON_TALISMAN.price) {
+      setPurchaseMessage(RYDIA_MESSAGES.insufficientPoints)
+      return
+    }
+
+    setIsPurchasing(true)
+
+    try {
+      if (authUser) {
+        // API経由で購入（ポイント消費 + お守り保存）
+        const response = await fetch("/api/talisman/purchase", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            talismanId: GOLDEN_DRAGON_TALISMAN.id,
+            userId: authUser.id,
+          }),
+        })
+
+        const result = await response.json()
+
+        if (!result.success) {
+          setPurchaseMessage(result.error || "購入処理中にエラーが発生しました")
+          return
+        }
+
+        // ポイント残高を更新
+        const summary = await getOrCreatePointsSummary(authUser.id)
+        setUser({
+          ...user,
+          points: result.remainingPoints,
+          totalSpent: summary.total_spent,
+        } as KanauPointsUser)
+      } else {
+        // ローカルマネージャ（ゲストモード）
+        const pointsManager = KanauPointsManager.getInstance()
+        pointsManager.spendPoints("demo_user_001", GOLDEN_DRAGON_TALISMAN.price, `金龍護符購入: ${GOLDEN_DRAGON_TALISMAN.name}`)
+        const updated = pointsManager.getUser("demo_user_001")
+        if (updated) setUser(updated)
+        pointsManager.saveToStorage()
+      }
+
+      // 購入成功エフェクト
+      const randomMessage = RYDIA_MESSAGES.purchaseSuccess[Math.floor(Math.random() * RYDIA_MESSAGES.purchaseSuccess.length)]
+      setPurchaseMessage(randomMessage)
+      setShowPurchaseEffect(true)
+
+      // 特別報酬の抽選（10%の確率）
+      const hasSpecialReward = Math.random() < 0.1
+      if (hasSpecialReward) {
+        setTimeout(() => {
+          setPurchaseMessage(RYDIA_MESSAGES.specialReward)
+        }, 2000)
+      }
+
+      setTimeout(() => {
+        setShowPurchaseEffect(false)
+        setPurchaseMessage("")
+      }, 5000)
+    } catch (error) {
+      console.error("Purchase failed:", error)
+      setPurchaseMessage("購入処理中にエラーが発生しました")
+    } finally {
+      setIsPurchasing(false)
+    }
+  }
+
+  const handleShare = async () => {
+    if (typeof window === "undefined") return
+
+    const shareText = `あなたも「${GOLDEN_DRAGON_TALISMAN.name}」を授かりました✨\n#カナウ護符 #AI姓名判断 #開運アプリ\nhttps://seimei.app/shop/talisman`
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "金龍護符を授かりました",
+          text: shareText,
+          url: "https://seimei.app/shop/talisman",
+        })
+        
+        // シェアボーナス付与
+        if (authUser) {
+          await addPointsSupa(authUser.id, 20, "SNS共有ボーナス")
+          const summary = await getOrCreatePointsSummary(authUser.id)
+          setUser({
+            ...user,
+            points: summary.points,
+            totalEarned: summary.total_earned,
+          } as KanauPointsUser)
+        } else {
+          const pointsManager = KanauPointsManager.getInstance()
+          pointsManager.addPoints("demo_user_001", 20, "SNS共有ボーナス")
+          const updated = pointsManager.getUser("demo_user_001")
+          if (updated) setUser(updated)
+          pointsManager.saveToStorage()
+        }
+
+        setShowShareBonus(true)
+        setTimeout(() => setShowShareBonus(false), 3000)
+      } else {
+        // フォールバック：クリップボードにコピー
+        await navigator.clipboard.writeText(shareText)
+        alert("シェアテキストをクリップボードにコピーしました！")
+      }
+    } catch (error) {
+      console.error("Share failed:", error)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const canAfford = user ? user.points >= GOLDEN_DRAGON_TALISMAN.price : false
+  const purchaseProgress = user ? (user.points / GOLDEN_DRAGON_TALISMAN.price) * 100 : 0
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+      {/* ヘッダーセクション */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-600 p-8 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-300/20 rounded-full blur-3xl"></div>
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <PenTool className="h-6 w-6 animate-pulse" />
+            <Badge className="bg-white/20 text-white border-white/30">
+              Kanau Kiryu監修
+            </Badge>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-wide">
+            🐉 金龍護符シリーズ
+          </h1>
+          <p className="text-xl md:text-2xl font-medium text-yellow-100">
+            開運上昇
+          </p>
+          <p className="text-lg text-yellow-50 italic">
+            リディアが筆で描く運命の守り
+          </p>
+        </div>
+      </div>
+
+      {/* カード展示セクション */}
+      <Card className="overflow-hidden border-2 border-yellow-200 dark:border-yellow-800">
+        <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-2xl mb-2">{GOLDEN_DRAGON_TALISMAN.name}</CardTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className="bg-yellow-600 text-white">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {GOLDEN_DRAGON_TALISMAN.attribute}
+                </Badge>
+                <Badge className="bg-purple-600 text-white">
+                  <Zap className="h-3 w-3 mr-1" />
+                  {GOLDEN_DRAGON_TALISMAN.category}
+                </Badge>
+                <Badge className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-2 border-yellow-300">
+                  {Array(GOLDEN_DRAGON_TALISMAN.rarity).fill(null).map((_, i) => (
+                    <Star key={i} className="h-3 w-3 inline fill-current" />
+                  ))}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          {/* 護符画像 */}
+          <div className="relative aspect-square max-w-md mx-auto">
+            <div className="relative w-full h-full rounded-lg border-4 border-yellow-400 dark:border-yellow-600 overflow-hidden bg-gradient-to-br from-yellow-100 to-amber-200 dark:from-yellow-900/30 dark:to-amber-900/30">
+              {!imageError ? (
+                <Image
+                  src={GOLDEN_DRAGON_TALISMAN.image}
+                  alt={GOLDEN_DRAGON_TALISMAN.name}
+                  fill
+                  className="object-contain p-4"
+                  unoptimized
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center space-y-2">
+                    <Crown className="h-16 w-16 mx-auto text-yellow-600 dark:text-yellow-400 animate-pulse" />
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">護符イメージ</p>
+                  </div>
+                </div>
+              )}
+              {/* 光るエフェクト */}
+              {showPurchaseEffect && (
+                <div className="absolute inset-0 bg-yellow-300/50 rounded-lg animate-ping pointer-events-none"></div>
+              )}
+            </div>
+          </div>
+
+          {/* 価格情報 */}
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <Coins className="h-5 w-5 mx-auto mb-1 text-yellow-600" />
+              <p className="text-sm text-muted-foreground">価格</p>
+              <p className="text-lg font-bold">{GOLDEN_DRAGON_TALISMAN.price.toLocaleString()} Kp</p>
+            </div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <Gift className="h-5 w-5 mx-auto mb-1 text-purple-600" />
+              <p className="text-sm text-muted-foreground">特典</p>
+              <p className="text-xs">AIリディアメッセージ</p>
+            </div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <Star className="h-5 w-5 mx-auto mb-1 text-red-600" />
+              <p className="text-sm text-muted-foreground">限定</p>
+              <p className="text-xs">今月末まで</p>
+            </div>
+          </div>
+
+          {/* 説明セクション */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold">護符の由来</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {GOLDEN_DRAGON_TALISMAN.description}
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              特に「{GOLDEN_DRAGON_TALISMAN.effects.join("」「")}」を高める効果があるとされています。
+            </p>
+          </div>
+
+          {/* 購入・加護エリア */}
+          <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-yellow-200 dark:border-yellow-800">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Coins className="h-5 w-5 text-yellow-600" />
+                  <span className="font-medium">残高</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold">{user?.points.toLocaleString() || 0} Kp</span>
+                </div>
+              </div>
+
+              {!canAfford && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>購入まで</span>
+                    <span>{Math.ceil((GOLDEN_DRAGON_TALISMAN.price - (user?.points || 0)))} Kp</span>
+                  </div>
+                  <Progress value={Math.min(purchaseProgress, 100)} className="h-2" />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>交換レート</span>
+                <span>{GOLDEN_DRAGON_TALISMAN.exchangeRate}</span>
+              </div>
+
+              <Button
+                onClick={handlePurchase}
+                disabled={!canAfford || isPurchasing}
+                className={`w-full h-14 text-lg font-bold ${
+                  canAfford
+                    ? "bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {isPurchasing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    処理中...
+                  </>
+                ) : canAfford ? (
+                  <>
+                    <PenTool className="h-5 w-5 mr-2" />
+                    今すぐ授かる ({GOLDEN_DRAGON_TALISMAN.price.toLocaleString()} Kp)
+                  </>
+                ) : (
+                  "Kpが不足しています"
+                )}
+              </Button>
+
+              {/* 購入成功メッセージ */}
+              {showPurchaseEffect && purchaseMessage && (
+                <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
+                  <Sparkles className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="font-medium text-green-800 dark:text-green-200">
+                    ✨ {purchaseMessage}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* エラーメッセージ */}
+              {purchaseMessage && !showPurchaseEffect && !purchaseMessage.includes("おめでとう") && (
+                <Alert variant="destructive">
+                  <AlertDescription>{purchaseMessage}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* SNS共有ボーナスセクション */}
+          <Card className="border-dashed">
+            <CardContent className="pt-6 space-y-4">
+              <div className="text-center space-y-2">
+                <h4 className="font-semibold">あなたも「金龍護符 - 開運上昇」を授かりました✨</h4>
+                <p className="text-sm text-muted-foreground">
+                  #カナウ護符 #AI姓名判断 #開運アプリ
+                </p>
+              </div>
+              <Button
+                onClick={handleShare}
+                variant="outline"
+                className="w-full"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                シェアして +20 Kp 獲得
+              </Button>
+              {showShareBonus && (
+                <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
+                  <Gift className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800 dark:text-blue-200">
+                    +20 Kp 獲得しました！
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* コレクションへのリンク */}
+          {authUser && (
+            <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
+              <CardContent className="pt-6">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full"
+                >
+                  <a href="/shop/talisman/collection">
+                    <Crown className="h-4 w-4 mr-2" />
+                    あなたのお守りコレクションを見る
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+

@@ -116,6 +116,76 @@ export default function ClientPage() {
   const [isInTrial, setIsInTrial] = useState(() => usageStatus.isInTrial || false)
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(() => usageStatus.trialDaysRemaining || 0)
 
+  // URLパラメータでプレミアムモードを強制（スクリーンショット用）
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    
+    const params = new URLSearchParams(window.location.search)
+    const premiumParam = params.get("premium")
+    const planParam = params.get("plan")
+    
+    if (premiumParam === "true" || planParam === "premium") {
+      // プレミアムプランを強制設定（開発環境チェックをバイパス）
+      const expiresAt = new Date()
+      expiresAt.setMonth(expiresAt.getMonth() + 1)
+      
+      const premiumSubscription = {
+        plan: "premium" as const,
+        expiresAt,
+        isActive: true,
+        trialEndsAt: null,
+        status: "active" as const,
+        paymentMethod: "square" as const,
+        amount: 550,
+        nextBillingDate: expiresAt,
+        lastPaymentDate: new Date(),
+      }
+      
+      localStorage.setItem("userSubscription", JSON.stringify({
+        ...premiumSubscription,
+        expiresAt: premiumSubscription.expiresAt.toISOString(),
+        nextBillingDate: premiumSubscription.nextBillingDate.toISOString(),
+        lastPaymentDate: premiumSubscription.lastPaymentDate.toISOString(),
+      }))
+      
+      // SubscriptionManagerをリフレッシュ
+      window.location.reload()
+    } else if (planParam === "basic") {
+      const expiresAt = new Date()
+      expiresAt.setMonth(expiresAt.getMonth() + 1)
+      
+      const basicSubscription = {
+        plan: "basic" as const,
+        expiresAt,
+        isActive: true,
+        trialEndsAt: null,
+        status: "active" as const,
+        paymentMethod: "square" as const,
+        amount: 330,
+        nextBillingDate: expiresAt,
+        lastPaymentDate: new Date(),
+      }
+      
+      localStorage.setItem("userSubscription", JSON.stringify({
+        ...basicSubscription,
+        expiresAt: basicSubscription.expiresAt.toISOString(),
+        nextBillingDate: basicSubscription.nextBillingDate.toISOString(),
+        lastPaymentDate: basicSubscription.lastPaymentDate.toISOString(),
+      }))
+      
+      window.location.reload()
+    } else if (planParam === "free") {
+      localStorage.setItem("userSubscription", JSON.stringify({
+        plan: "free",
+        expiresAt: null,
+        isActive: false,
+        trialEndsAt: null,
+      }))
+      
+      window.location.reload()
+    }
+  }, [])
+
   // usageStatusのplanが変更されたらcurrentPlanを更新
   useEffect(() => {
     if (usageStatus.plan) {

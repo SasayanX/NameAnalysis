@@ -141,7 +141,21 @@ export async function getSeasonalItemBonus(userId: string): Promise<number> {
   return Math.min(sum, 50)
 }
 
-export async function processLoginBonusSupa(userId: string) {
+// プラン別の基礎ポイント設定
+function getBasePointsByPlan(plan: "free" | "basic" | "premium" = "free"): number {
+  switch (plan) {
+    case "free":
+      return 1
+    case "basic":
+      return 2
+    case "premium":
+      return 3
+    default:
+      return 1
+  }
+}
+
+export async function processLoginBonusSupa(userId: string, plan?: "free" | "basic" | "premium") {
   const supabase = getSupabaseClient()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
@@ -162,13 +176,35 @@ export async function processLoginBonusSupa(userId: string) {
   yesterday.setDate(yesterday.getDate() - 1)
   const yesterdayStr = yesterday.toISOString().split("T")[0]
 
-  let consecutiveDays = summary.consecutive_login_days || 0
-  if (lastLoginDate === yesterdayStr) consecutiveDays += 1
-  else consecutiveDays = 1
+  // 連続ログイン日数の計算
+  let consecutiveDays: number
+  if (lastLoginDate === yesterdayStr) {
+    // 昨日ログインしていた場合は連続日数を継続
+    consecutiveDays = (summary.consecutive_login_days || 0) + 1
+  } else {
+    // ログインが途切れた場合は1日目にリセット（倍率も1に戻る）
+    consecutiveDays = 1
+  }
 
-  const basePoints = 1
-  const consecutiveBonus = Math.min(consecutiveDays - 1, 100)
-  const totalPoints = basePoints + consecutiveBonus
+  // プラン情報が渡されていない場合はSubscriptionManagerから取得を試みる
+  let userPlan: "free" | "basic" | "premium" = plan || "free"
+  if (!plan && typeof window !== "undefined") {
+    try {
+      const { SubscriptionManager } = await import("@/lib/subscription-manager")
+      const manager = SubscriptionManager.getInstance()
+      const currentPlan = manager.getCurrentPlan()
+      userPlan = currentPlan.id as "free" | "basic" | "premium"
+    } catch (error) {
+      console.warn("プラン情報の取得に失敗しました。デフォルト（無料プラン）を使用します。", error)
+      userPlan = "free"
+    }
+  }
+
+  const basePoints = getBasePointsByPlan(userPlan)
+  // 基礎Kp × 連続日数で計算（連続ボーナスではなく、毎日基礎Kpを連続日数分受け取る）
+  // 連続日数は30日で上限（30日以降は30倍で固定）
+  const effectiveConsecutiveDays = Math.min(consecutiveDays, 30)
+  const totalPoints = basePoints * effectiveConsecutiveDays
 
   const { data: updated, error: upErr } = await supabase
     .from("kanau_points")
@@ -188,16 +224,32 @@ export async function processLoginBonusSupa(userId: string) {
   await addTransaction(userId, "earn", totalPoints, "ログインボーナス", "login_bonus", {
     consecutiveDays,
     basePoints,
-    consecutiveBonus,
+    totalPoints,
   })
+
+  // プラン名を取得
+  const planNames = {
+    free: "無料",
+    basic: "ベーシック",
+    premium: "プレミアム",
+  }
+  const planName = planNames[userPlan] || "無料"
+
+  // メッセージ生成（30日上限の表示）
+  let message: string
+  if (consecutiveDays > 30) {
+    message = `連続${consecutiveDays}日目のログインボーナス！ ${planName}プラン特典: 基礎${basePoints}Kp × 30日（上限） = 合計${totalPoints}Kp`
+  } else {
+    message = `連続${consecutiveDays}日目のログインボーナス！ ${planName}プラン特典: 基礎${basePoints}Kp × ${consecutiveDays}日 = 合計${totalPoints}Kp`
+  }
 
   return {
     user: updated as SupaPointsSummary,
     bonus: {
       basePoints,
-      consecutiveBonus,
+      consecutiveBonus: 0, // 連続ボーナスは廃止（後方互換性のため0を返す）
       totalPoints,
-      message: `連続${consecutiveDays}日目のログインボーナス！ 基本${basePoints}Kp + 連続${consecutiveBonus}Kp = 合計${totalPoints}Kp`,
+      message,
     },
   }
 }

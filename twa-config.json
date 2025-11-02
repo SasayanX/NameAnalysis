@@ -1,0 +1,49 @@
+{
+  "packageId": "com.nameanalysis.ai",
+  "host": "seimei.app",
+  "name": "まいにちAI姓名判断",
+  "launcherName": "まいにちAI姓名判断",
+  "display": "standalone",
+  "themeColor": "#D4AF37",
+  "navigationColor": "#2D5016",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://seimei.app/icons/icon-512x512.png",
+  "maskableIconUrl": "https://seimei.app/icons/icon-512x512.png",
+  "monochromeIconUrl": "https://seimei.app/icons/icon-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android-signing-key.json",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "姓名判断",
+      "short_name": "鑑定",
+      "description": "お名前の運命を鑑定",
+      "url": "/name-analyzer",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "今日の運勢",
+      "short_name": "運勢",
+      "description": "今日の運勢を確認",
+      "url": "/fortune-comprehensive",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "shareTarget": {
+    "action": "/api/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
+

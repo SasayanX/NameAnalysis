@@ -8,6 +8,7 @@ import { Gift, Sparkles, X } from "lucide-react"
 import { processLoginBonusSupa } from "@/lib/kanau-points-supabase"
 import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
+import { SubscriptionManager } from "@/lib/subscription-manager"
 
 interface LoginBonusData {
   basePoints: number
@@ -33,7 +34,12 @@ export function LoginBonusNotification() {
 
       setIsProcessing(true)
       try {
-        const result = await processLoginBonusSupa(user.id)
+        // 現在のプランを取得
+        const manager = SubscriptionManager.getInstance()
+        const currentPlan = manager.getCurrentPlan()
+        const plan = currentPlan.id as "free" | "basic" | "premium"
+        
+        const result = await processLoginBonusSupa(user.id, plan)
         
         // 今日既に受け取っている場合は表示しない
         if (result.bonus.totalPoints === 0) {
@@ -108,7 +114,7 @@ export function LoginBonusNotification() {
             <div className="flex items-center justify-center gap-2 text-sm text-yellow-700">
               <span>連続{bonusData.consecutiveDays}日目</span>
               <Badge variant="outline" className="bg-white/50 border-yellow-300">
-                基本{bonusData.basePoints}Kp + 連続{bonusData.consecutiveBonus}Kp
+                基礎{bonusData.basePoints}Kp × {bonusData.consecutiveDays}日
               </Badge>
             </div>
           </div>

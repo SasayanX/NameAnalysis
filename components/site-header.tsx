@@ -25,11 +25,11 @@ export function SiteHeader() {
               <span className="sm:hidden">記事</span>
             </Link>
             <Link
-              href="/amulets-exchange"
+              href="/shop/talisman"
               className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
             >
               <Gift className="h-4 w-4" />
-              <span className="hidden sm:inline">お守り交換所</span>
+              <span className="hidden sm:inline">お守りショップ</span>
               <span className="sm:hidden">お守り</span>
             </Link>
             <Link
