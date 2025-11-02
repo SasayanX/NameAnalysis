@@ -31,10 +31,12 @@ export function NameAnalysisResult({
 }: NameAnalysisResultProps) {
   const [isAdviceOpen, setIsAdviceOpen] = useState(false)
 
-  // プランに基づく機能制限
-  const canViewDetailedAnalysis = currentPlan !== "free"
+  // プランに基づく機能制限（確実に制限をかける）
+  const isFreePlan = currentPlan === "free" || !currentPlan || currentPlan === undefined
+  const canViewDetailedAnalysis = !isFreePlan
   const canViewRanking = currentPlan === "premium"
-  const canViewAllCategories = currentPlan !== "free"
+  const canViewAllCategories = !isFreePlan
+  const isPreviewMode = isFreePlan // プレビュー版フラグ
 
   // Function to determine badge color based on fortune
   const getBadgeVariant = (fortune: string) => {
@@ -312,16 +314,12 @@ ${gender === "female" ? "女性らしい強さと優しさ" : "男性らしい�
     return advice
   }
 
-  // プランに基づくカテゴリ表示制御
+  // プランに基づくカテゴリ表示制御（プレビュー版対応）
   const getDisplayCategories = () => {
     if (!results.categories) return []
 
-    if (currentPlan === "free") {
-      // 無料プランでは総格のみ表示
-      return results.categories.filter((cat: any) => cat.name === "総格")
-    }
-
-    // ベーシック・プレミアムプランでは全カテゴリ表示
+    // 無料プランでも全カテゴリを表示（プレビュー版）
+    // ただし、詳細な解説は別途isPreviewModeで制御
     return results.categories
   }
 
@@ -329,8 +327,10 @@ ${gender === "female" ? "女性らしい強さと優しさ" : "男性らしい�
   console.log("=== NameAnalysisResult デバッグ ===")
   console.log("results:", results)
   console.log("currentPlan:", currentPlan)
+  console.log("isFreePlan:", isFreePlan)
   console.log("canViewDetailedAnalysis:", canViewDetailedAnalysis)
   console.log("canViewRanking:", canViewRanking)
+  console.log("isPreviewMode:", isPreviewMode)
 
   const displayCategories = getDisplayCategories()
   
@@ -343,8 +343,13 @@ ${gender === "female" ? "女性らしい強さと優しさ" : "男性らしい�
       <CardHeader>
         <CardTitle>「{name}」さんの姓名判断結果</CardTitle>
         <CardDescription>
-          {currentPlan === "free" ? "基本鑑定" : "詳細鑑定（全ての格）"} - {gender === "male" ? "男性" : "女性"} -
+          {currentPlan === "free" ? "詳細鑑定（プレビュー版）" : "詳細鑑定（全ての格）"} - {gender === "male" ? "男性" : "女性"} -
           当姓名判断は、全て旧字体での鑑定となっております。
+          {currentPlan === "free" && (
+            <span className="block mt-2 text-xs text-purple-600">
+              ※ プレビュー版では各格の数値と運勢のみ表示されます。詳細な解説は有料プランでご利用いただけます。
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -394,8 +399,21 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
                     value={Math.min(100, ((calculateFortuneScore(category.fortune) || 0) / 100) * 100)}
                     className="h-2"
                   />
-                  {category.description && <p className="text-sm text-muted-foreground">{category.description}</p>}
-                  {category.explanation && <p className="text-sm italic">{category.explanation}</p>}
+                  {/* プレビュー版では詳細な解説を非表示 */}
+                  {isFreePlan ? (
+                    <p className="text-xs text-purple-600 italic">
+                      詳細な解説は有料プランでご覧いただけます
+                    </p>
+                  ) : (
+                    <>
+                      {category.description && (
+                        <p className="text-sm text-muted-foreground">{category.description}</p>
+                      )}
+                      {category.explanation && (
+                        <p className="text-sm italic">{category.explanation}</p>
+                      )}
+                    </>
+                  )}
                 </div>
               )
             })}
@@ -477,8 +495,8 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
           </div>
         )}
 
-        {/* 文字別画数表示 */}
-        {results.characterDetails && (
+        {/* 文字別画数表示（有料プランのみ） */}
+        {results.characterDetails && canViewDetailedAnalysis && (
           <div className="mt-4 pt-4 border-t">
             <h3 className="font-medium mb-2">文字別画数</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -525,8 +543,8 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
           </div>
         )}
 
-        {/* 霊数情報表示 */}
-        {results.reisuuInfo && (results.reisuuInfo.hasReisuuInLastName || results.reisuuInfo.hasReisuuInFirstName) && (
+        {/* 霊数情報表示（有料プランのみ） */}
+        {results.reisuuInfo && canViewDetailedAnalysis && (results.reisuuInfo.hasReisuuInLastName || results.reisuuInfo.hasReisuuInFirstName) && (
           <div className="mt-4 pt-4 border-t">
             <Alert>
               <InfoIcon className="h-4 w-4" />
@@ -546,8 +564,8 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
           </div>
         )}
 
-        {/* 推測マーク案内 */}
-        {results.characterDetails && results.characterDetails.some((detail: any) => detail.isDefault) && (
+        {/* 推測マーク案内（有料プランのみ） */}
+        {results.characterDetails && canViewDetailedAnalysis && results.characterDetails.some((detail: any) => detail.isDefault) && (
           <div className="mt-4 pt-4 border-t">
             <Alert className="border-orange-200 bg-orange-50">
               <InfoIcon className="h-4 w-4 text-orange-600" />
@@ -619,8 +637,8 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
           </div>
         )}
 
-        {/* 旧字体変換情報 */}
-        {results.kanjiInfo && results.kanjiInfo.hasChanged && (
+        {/* 旧字体変換情報（有料プランのみ） */}
+        {results.kanjiInfo && canViewDetailedAnalysis && results.kanjiInfo.hasChanged && (
           <div className="mt-4 pt-4 border-t">
             <Alert>
               <InfoIcon className="h-4 w-4" />
@@ -633,18 +651,20 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
           </div>
         )}
 
-        {/* AI開運アドバイス（無料で利用可能） */}
-        <div className="mt-6">
-          <AIFortuneAdvisor 
-            analysisData={{
-              name,
-              gender: gender as "male" | "female",
-              categories: results.categories || [],
-              totalScore: results.totalScore || 0,
-              elements: results.elements
-            }}
-          />
-        </div>
+        {/* AI開運アドバイス（有料プランのみ） */}
+        {canViewDetailedAnalysis && (
+          <div className="mt-6">
+            <AIFortuneAdvisor 
+              analysisData={{
+                name,
+                gender: gender as "male" | "female",
+                categories: results.categories || [],
+                totalScore: results.totalScore || 0,
+                elements: results.elements
+              }}
+            />
+          </div>
+        )}
 
         {/* デバッグ情報表示（開発時のみ） */}
         {process.env.NODE_ENV === "development" && (

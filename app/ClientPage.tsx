@@ -75,10 +75,6 @@ export default function ClientPage() {
   const [forceUpdateKey, setForceUpdateKey] = useState(0)
   const [tabsKey, setTabsKey] = useState(0)
 
-  const [currentPlan, setCurrentPlan] = useState<"free" | "basic" | "premium">("basic")
-  const [isInTrial, setIsInTrial] = useState(false)
-  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0)
-
   const resultsRef = useRef<HTMLDivElement>(null)
 
   // 使用制限管理
@@ -89,7 +85,7 @@ export default function ClientPage() {
     } catch (error) {
       console.error("Failed to get usage status:", error)
       return {
-        plan: "premium" as const,
+        plan: "free" as const,
         isInTrial: false,
         trialDaysRemaining: 0,
         todayUsage: DEFAULT_USAGE,
@@ -106,6 +102,28 @@ export default function ClientPage() {
       }
     }
   })
+
+  // プラン状態をusageStatusから取得（確実に初期値を設定）
+  const [currentPlan, setCurrentPlan] = useState<"free" | "basic" | "premium">(() => {
+    const plan = usageStatus?.plan || "free"
+    // 無効な値の場合は"free"にフォールバック
+    if (plan !== "free" && plan !== "basic" && plan !== "premium") {
+      console.warn("Invalid plan value:", plan, "falling back to 'free'")
+      return "free"
+    }
+    return plan as "free" | "basic" | "premium"
+  })
+  const [isInTrial, setIsInTrial] = useState(() => usageStatus.isInTrial || false)
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(() => usageStatus.trialDaysRemaining || 0)
+
+  // usageStatusのplanが変更されたらcurrentPlanを更新
+  useEffect(() => {
+    if (usageStatus.plan) {
+      setCurrentPlan(usageStatus.plan)
+    }
+    setIsInTrial(usageStatus.isInTrial || false)
+    setTrialDaysRemaining(usageStatus.trialDaysRemaining || 0)
+  }, [usageStatus.plan, usageStatus.isInTrial, usageStatus.trialDaysRemaining])
 
   // 計算されたプロパティ
   const fullName = useMemo(() => `${lastName} ${firstName}`, [lastName, firstName])
@@ -411,7 +429,17 @@ export default function ClientPage() {
     }
   }, [sixStar, selectedStarType])
 
-  // イベントハンドラー
+  // タブ切り替えハンドラー（プレビュー版対応）
+  const handleTabChange = useCallback(
+    (tabValue: string) => {
+      // 詳細鑑定タブは無料プランでもアクセス可能（プレビュー版表示）
+      // その他のタブは通常通り切り替え
+      setActiveTab(tabValue)
+    },
+    [],
+  )
+
+  // 旧handleTabClick（互換性のため保持）
   const handleTabClick = useCallback(
     (tabValue: string, requiredPlan: "basic" | "premium") => {
       return (e: React.MouseEvent) => {
@@ -422,6 +450,8 @@ export default function ClientPage() {
 
           if (!hasAccess) {
             e.preventDefault()
+            e.stopPropagation()
+            window.location.href = "/pricing"
           }
         } catch (error) {
           console.error("Error in tab click handler:", error)
@@ -627,13 +657,13 @@ export default function ClientPage() {
             <div className="md:col-span-2 order-1 md:order-2">
               {nameType === "person" ? (
                 results ? (
-                    <Tabs value={activeTab} onValueChange={setActiveTab} key={tabsKey.toString()}>
+                    <Tabs value={activeTab} onValueChange={handleTabChange} key={tabsKey.toString()}>
                       <div className="mb-4">
                         <TabsList className="grid w-full grid-cols-4">
                           <TabsTrigger value="simple">かんたん鑑定</TabsTrigger>
-                          <TabsTrigger value="detailed" onClick={handleTabClick("detailed", "basic")}>
+                          <TabsTrigger value="detailed">
                             {currentPlan === "free" && <LockIcon className="h-3 w-3 mr-1" />}
-                            詳細鑑定
+                            詳細鑑定{currentPlan === "free" && "（プレビュー）"}
                           </TabsTrigger>
                           <TabsTrigger value="advanced">総合分析</TabsTrigger>
                           <TabsTrigger value="others">その他</TabsTrigger>
@@ -658,6 +688,29 @@ export default function ClientPage() {
                             gender={gender} 
                             currentPlan={currentPlan}
                           />
+                          {/* 無料プランでのアップグレード誘導 */}
+                          {currentPlan === "free" && (
+                            <Card className="mt-6 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+                              <CardContent className="pt-6 text-center py-8">
+                                <LockIcon className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                                <h3 className="font-semibold text-purple-800 mb-2">
+                                  詳細な解説とアドバイスを見るには？
+                                </h3>
+                                <p className="text-sm text-purple-600 mb-4">
+                                  ベーシックプラン以上で、各格の詳細な意味、運勢解説、
+                                  改善アドバイス、五行バランス分析をご利用いただけます
+                                </p>
+                                <Button 
+                                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
+                                  asChild
+                                >
+                                  <Link href="/pricing">
+                                    プランを確認する
+                                  </Link>
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
                         </TabsContent>
 
                         <TabsContent value="advanced">
