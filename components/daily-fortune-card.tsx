@@ -77,6 +77,27 @@ const getStyleForItem = (item: string): string => {
   return "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
 }
 
+// スコアから吉凶を判定する関数
+function getFortuneFromScore(score: number): string {
+  if (score >= 80) return "大吉"
+  if (score >= 60) return "中吉"
+  if (score >= 40) return "吉"
+  if (score >= 20) return "凶"
+  return "大凶"
+}
+
+// 吉凶に応じたバッジスタイルを取得する関数
+function getFortuneBadgeStyle(fortune: string): string {
+  if (fortune.includes("大吉")) return "bg-red-600 hover:bg-red-700 text-white border-red-700"
+  if (fortune.includes("中吉")) return "bg-pink-700 hover:bg-pink-800 text-white border-pink-800"
+  if (fortune.includes("吉")) return "bg-pink-200 hover:bg-pink-300 text-pink-800 border-pink-300"
+  if (fortune.includes("凶") && !fortune.includes("大凶") && !fortune.includes("中凶"))
+    return "bg-white hover:bg-gray-50 text-gray-800 border border-gray-300"
+  if (fortune.includes("中凶")) return "bg-gray-400 hover:bg-gray-500 text-white border-gray-500"
+  if (fortune.includes("大凶")) return "bg-gray-700 hover:bg-gray-800 text-white border-gray-800"
+  return "bg-gray-100 text-gray-800 border-gray-300"
+}
+
 export function DailyFortuneCard({
   birthStar = { star: "水星", type: "+" },
   isPremium = false,
@@ -162,7 +183,14 @@ export function DailyFortuneCard({
               <ActivityIcon className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
               <span className="font-medium">運気スコア</span>
             </div>
-            <span className="font-bold">{fortune.luckScore}点</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="font-bold whitespace-nowrap">{fortune.luckScore}点</span>
+              <Badge 
+                className={`${getFortuneBadgeStyle(getFortuneFromScore(fortune.luckScore))} whitespace-nowrap text-xs px-2 py-0.5`}
+              >
+                {getFortuneFromScore(fortune.luckScore)}
+              </Badge>
+            </div>
           </div>
           <Progress value={fortune.luckScore} className="h-2 bg-gray-100 dark:bg-gray-700" />
         </div>
