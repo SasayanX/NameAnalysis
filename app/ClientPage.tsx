@@ -663,7 +663,7 @@ export default function ClientPage() {
                           <TabsTrigger value="simple">かんたん鑑定</TabsTrigger>
                           <TabsTrigger value="detailed">
                             {currentPlan === "free" && <LockIcon className="h-3 w-3 mr-1" />}
-                            詳細鑑定{currentPlan === "free" && "（プレビュー）"}
+                            詳細鑑定
                           </TabsTrigger>
                           <TabsTrigger value="advanced">総合分析</TabsTrigger>
                           <TabsTrigger value="others">その他</TabsTrigger>
