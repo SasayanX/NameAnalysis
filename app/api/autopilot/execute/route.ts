@@ -29,72 +29,128 @@ export async function POST(request: NextRequest) {
     }
     const shareManager = new AutoShareManager(relaxedConfig)
     
-    // 実データソースから姓名を取得
-    const getRealNameData = async () => {
+    // 上位検索されている有名人の名前データを取得（X投稿用、投稿履歴チェック付き）
+    const getCelebrityNameData = async () => {
       try {
-        // baby-names.jsonから名前データを読み込み
-        const babyNames = await import('@/data/baby-names.json')
+        // 既に投稿済みの姓名を取得
+        const { getSupabaseClient } = await import('@/lib/supabase-client')
+        const supabase = getSupabaseClient()
         
-        // 一般的な姓のリスト
-        const commonLastNames = [
-          '田中', '佐藤', '鈴木', '高橋', '渡辺', '伊藤', '山田', '中村', '小林', '加藤',
-          '吉田', '山本', '松本', '井上', '木村', '林', '斎藤', '清水', '山口', '森',
-          '池田', '橋本', '齊藤', '坂本', '石川', '前田', '小川', '藤田', '後藤', '近藤',
-          '長谷川', '村上', '遠藤', '青木', '坂口', '藤原', '岡田', '太田', '福田', '西村',
-          '三浦', '竹内', '松田', '原田', '中島', '藤井', '上田', '小林', '新井', '武田'
-        ]
-        
-        // 男性名と女性名を別々に取得
-        const maleNames = (babyNames.default?.male || []).slice(0, 100) // 上位100件
-        const femaleNames = (babyNames.default?.female || []).slice(0, 100) // 上位100件
-        
-        // ランダムに5組の姓名を生成
-        const selectedNames: Array<{ lastName: string, firstName: string, gender: 'male' | 'female' }> = []
-        
-        // 男性名3組
-        for (let i = 0; i < 3; i++) {
-          const lastName = commonLastNames[Math.floor(Math.random() * commonLastNames.length)]
-          const firstNameData = maleNames[Math.floor(Math.random() * maleNames.length)]
-          if (firstNameData && firstNameData.kanji) {
-            selectedNames.push({
-              lastName,
-              firstName: firstNameData.kanji,
-              gender: 'male'
-            })
+        let postedNames = new Set<string>()
+        try {
+          // 過去の投稿履歴を取得（全件取得してチェック）
+          const { data: postedHistory, error: historyError } = await supabase
+            .from('twitter_posts')
+            .select('last_name, first_name')
+          
+          if (!historyError && postedHistory) {
+            // 姓名の組み合わせをSetに追加（重複チェック用）
+            postedNames = new Set(
+              postedHistory
+                .filter((p: any) => p.last_name && p.first_name)
+                .map((p: any) => `${p.last_name}${p.first_name}`)
+            )
+            console.log(`📋 投稿済み姓名数: ${postedNames.size}件`)
+          } else {
+            console.warn('⚠️ 投稿履歴取得エラー（初回実行の可能性）:', historyError?.message)
           }
+        } catch (error) {
+          console.warn('⚠️ 投稿履歴チェックスキップ:', error)
         }
         
-        // 女性名2組
-        for (let i = 0; i < 2; i++) {
-          const lastName = commonLastNames[Math.floor(Math.random() * commonLastNames.length)]
-          const firstNameData = femaleNames[Math.floor(Math.random() * femaleNames.length)]
-          if (firstNameData && firstNameData.kanji) {
-            selectedNames.push({
-              lastName,
-              firstName: firstNameData.kanji,
-              gender: 'female'
-            })
-          }
+        // celebrity-names.jsonから有名人データを読み込み
+        const celebrityNames = await import('@/data/celebrity-names.json')
+        
+        const maleCelebrities = celebrityNames.default?.male || []
+        const femaleCelebrities = celebrityNames.default?.female || []
+        
+        // 投稿済みの人物を除外
+        const filterPosted = (list: any[]) => {
+          return list.filter(celebrity => {
+            const fullName = `${celebrity.lastName}${celebrity.firstName}`
+            return !postedNames.has(fullName)
+          })
         }
         
-        console.log(`📋 実データから姓名を生成: ${selectedNames.length}件`)
-        console.log(`📋 選択された姓名:`, selectedNames.map(n => `${n.lastName}${n.firstName}`))
+        const availableMales = filterPosted(maleCelebrities)
+        const availableFemales = filterPosted(femaleCelebrities)
+        
+        console.log(`📊 有名人リスト: 男性${maleCelebrities.length}件 → 未投稿${availableMales.length}件、女性${femaleCelebrities.length}件 → 未投稿${availableFemales.length}件`)
+        
+        // 未投稿の人物が少ない場合は警告
+        if (availableMales.length < 3 || availableFemales.length < 2) {
+          console.warn(`⚠️ 未投稿の有名人が少ないです（男性${availableMales.length}件、女性${availableFemales.length}件）`)
+        }
+        
+        // 検索ランク順にソート（上位検索されている人物を優先）
+        const sortedMales = [...availableMales].sort((a, b) => (a.searchRank || 999) - (b.searchRank || 999))
+        const sortedFemales = [...availableFemales].sort((a, b) => (a.searchRank || 999) - (b.searchRank || 999))
+        
+        // 上位検索されている人物を優先的に選択（トレンド中はさらに優先）
+        const selectCelebrityWithPriority = (list: any[], count: number) => {
+          const selected: any[] = []
+          const trending = list.filter(c => c.trending === true)
+          const others = list.filter(c => c.trending !== true)
+          
+          // トレンド中の人物を優先的に選択
+          const trendingCount = Math.min(count, trending.length)
+          for (let i = 0; i < trendingCount; i++) {
+            selected.push(trending[i])
+          }
+          
+          // 残りを上位検索ランクから選択
+          const remaining = count - selected.length
+          for (let i = 0; i < remaining && i < others.length; i++) {
+            selected.push(others[i])
+          }
+          
+          return selected
+        }
+        
+        const selectedNames: Array<{ lastName: string, firstName: string, gender: 'male' | 'female', category?: string, searchRank?: number }> = []
+        
+        // 男性有名人3組（上位検索者優先、未投稿のみ）
+        const selectedMales = selectCelebrityWithPriority(sortedMales, 3)
+        for (const celebrity of selectedMales) {
+          selectedNames.push({
+            lastName: celebrity.lastName,
+            firstName: celebrity.firstName,
+            gender: 'male',
+            category: celebrity.category,
+            searchRank: celebrity.searchRank
+          })
+        }
+        
+        // 女性有名人2組（上位検索者優先、未投稿のみ）
+        const selectedFemales = selectCelebrityWithPriority(sortedFemales, 2)
+        for (const celebrity of selectedFemales) {
+          selectedNames.push({
+            lastName: celebrity.lastName,
+            firstName: celebrity.firstName,
+            gender: 'female',
+            category: celebrity.category,
+            searchRank: celebrity.searchRank
+          })
+        }
+        
+        console.log(`⭐ 上位検索有名人から姓名を選択（投稿履歴チェック済み）: ${selectedNames.length}件`)
+        console.log(`⭐ 選択された有名人:`, selectedNames.map(n => `${n.lastName}${n.firstName}（${n.category}、検索ランク${n.searchRank}）`))
         
         return selectedNames
       } catch (error) {
-        console.warn('⚠️ 実データ読み込みエラー、フォールバックデータを使用:', error)
-        // フォールバック：サンプルデータ
+        console.warn('⚠️ 有名人データ読み込みエラー、フォールバックデータを使用:', error)
+        // フォールバック：上位検索の有名人（投稿履歴チェックなし）
         return [
-          { lastName: '田中', firstName: '大翔', gender: 'male' as const },
-          { lastName: '佐藤', firstName: '結衣', gender: 'female' as const },
-          { lastName: '鈴木', firstName: '蓮', gender: 'male' as const },
-          { lastName: '高橋', firstName: '美咲', gender: 'female' as const },
-          { lastName: '渡辺', firstName: '悠真', gender: 'male' as const }
+          { lastName: '大谷', firstName: '翔平', gender: 'male' as const, category: 'athlete', searchRank: 1 },
+          { lastName: '広瀬', firstName: 'すず', gender: 'female' as const, category: 'actress', searchRank: 1 },
+          { lastName: '横浜', firstName: '流星', gender: 'male' as const, category: 'actor', searchRank: 4 },
+          { lastName: '橋本', firstName: '環奈', gender: 'female' as const, category: 'actress', searchRank: 2 },
+          { lastName: '村上', firstName: '宗隆', gender: 'male' as const, category: 'athlete', searchRank: 2 }
         ]
       }
     }
     
-    const sampleNames = await getRealNameData()
+    const sampleNames = await getCelebrityNameData()
     
     // 共有可能な結果を抽出
     console.log('🔍 共有可能な結果を抽出中...')
@@ -223,7 +279,26 @@ export async function POST(request: NextRequest) {
         console.log(`🐦 Xへの投稿開始: ${finalShareResult.name}さん`)
         console.log(`📝 ツイート内容:`, tweetText)
         
-        tweetId = await postToTwitter(tweetText)
+        // 縦書き名前画像を生成（オプション）
+        let imageBuffer: Buffer | undefined = undefined
+        try {
+          const { generateNameResultImage } = await import('@/lib/name-result-image-generator')
+          
+          // 有名人データから姓名を取得（正しい分割）
+          const selectedCelebrity = sampleNames.find(n => `${n.lastName}${n.firstName}` === finalShareResult.name)
+          const lastName = selectedCelebrity?.lastName || finalShareResult.name.substring(0, 2) || ''
+          const firstName = selectedCelebrity?.firstName || finalShareResult.name.substring(2) || ''
+          
+          console.log(`🖼️ 画像生成開始: ${lastName}${firstName}さん`)
+          imageBuffer = await generateNameResultImage(lastName, firstName, finalShareResult.result)
+          console.log(`✅ 画像生成完了: ${imageBuffer.length} bytes`)
+        } catch (imageError: any) {
+          console.warn('⚠️ 画像生成に失敗しましたが、テキストのみで投稿します:', imageError.message)
+          // 画像生成失敗時はテキストのみで投稿
+        }
+        
+        // 画像付きまたはテキストのみで投稿
+        tweetId = await postToTwitter(tweetText, imageBuffer)
         
         // 開発環境のシミュレーションかどうかチェック
         if (tweetId && tweetId.startsWith('dev_')) {
