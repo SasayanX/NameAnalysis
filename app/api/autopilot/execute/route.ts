@@ -163,12 +163,12 @@ export async function POST(request: NextRequest) {
     // 各姓名の詳細結果をログ出力
     for (const nameData of sampleNames) {
       try {
-        const result = await analyzeNameFortune({
-          lastName: nameData.lastName,
-          firstName: nameData.firstName,
-          gender: nameData.gender || 'male'
-        })
-        console.log(`📝 ${nameData.lastName}${nameData.firstName}: スコア${result.totalScore}, 運勢${result.fortune}`)
+        const result = analyzeNameFortune(
+          nameData.lastName,
+          nameData.firstName,
+          nameData.gender || 'male'
+        )
+        console.log(`📝 ${nameData.lastName}${nameData.firstName}: スコア${result.totalScore}, 運勢${result.totalFortune?.運勢 || '不明'}`)
       } catch (error) {
         console.error(`❌ ${nameData.lastName}${nameData.firstName}の分析エラー:`, error)
       }
@@ -191,11 +191,11 @@ export async function POST(request: NextRequest) {
       const evaluated = [] as Array<{ name: string, result: any }>
       for (const nameData of sampleNames) {
         try {
-          const result = await analyzeNameFortune({
-            lastName: nameData.lastName,
-            firstName: nameData.firstName,
-            gender: nameData.gender || 'male'
-          })
+          const result = analyzeNameFortune(
+            nameData.lastName,
+            nameData.firstName,
+            nameData.gender || 'male'
+          )
           evaluated.push({ name: `${nameData.lastName}${nameData.firstName}`, result })
         } catch (e) {
           console.error('フォールバック評価エラー:', e)
@@ -224,11 +224,11 @@ export async function POST(request: NextRequest) {
       // 強制フォールバック: 条件未達・評価失敗時でも最低1件を共有対象にする
       try {
         const fallback = sampleNames[0]
-        const result = await analyzeNameFortune({
-          lastName: fallback.lastName,
-          firstName: fallback.firstName,
-          gender: fallback.gender || 'male'
-        })
+        const result = analyzeNameFortune(
+          fallback.lastName,
+          fallback.firstName,
+          fallback.gender || 'male'
+        )
         finalShareResult = {
           name: `${fallback.lastName}${fallback.firstName}`,
           result,
@@ -302,9 +302,29 @@ export async function POST(request: NextRequest) {
         
         // 開発環境のシミュレーションかどうかチェック
         if (tweetId && tweetId.startsWith('dev_')) {
-          console.warn('⚠️ 開発環境モード: 実際のX投稿は行われていません（TWITTER_BEARER_TOKENが設定されていません）')
+          // 環境変数の状態を確認
+          const apiKey = process.env.TWITTER_API_KEY
+          const apiSecret = process.env.TWITTER_API_SECRET
+          const accessToken = process.env.TWITTER_ACCESS_TOKEN
+          const accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET
+          
+          console.warn('⚠️ 開発環境モード: 実際のX投稿は行われていません')
+          console.warn('📋 環境変数の状態:')
+          console.warn('  - TWITTER_API_KEY:', apiKey ? '✅ 設定済み' : '❌ 未設定')
+          console.warn('  - TWITTER_API_SECRET:', apiSecret ? '✅ 設定済み' : '❌ 未設定')
+          console.warn('  - TWITTER_ACCESS_TOKEN:', accessToken ? '✅ 設定済み' : '❌ 未設定')
+          console.warn('  - TWITTER_ACCESS_TOKEN_SECRET:', accessTokenSecret ? '✅ 設定済み' : '❌ 未設定')
+          
+          const missing = []
+          if (!apiKey) missing.push('TWITTER_API_KEY')
+          if (!apiSecret) missing.push('TWITTER_API_SECRET')
+          if (!accessToken) missing.push('TWITTER_ACCESS_TOKEN')
+          if (!accessTokenSecret) missing.push('TWITTER_ACCESS_TOKEN_SECRET')
+          
           twitterSent = false
-          twitterError = '開発環境モード：Twitter API認証情報が設定されていません'
+          twitterError = missing.length > 0 
+            ? `開発環境モード：Twitter API認証情報が不足しています。不足している環境変数: ${missing.join(', ')}。.env.localファイルを確認し、開発サーバーを再起動してください。`
+            : '開発環境モード：認証情報は設定されていますが、開発環境のためシミュレーションモードになっています。'
         } else {
           twitterSent = true
           console.log(`✅ X投稿成功: Tweet ID ${tweetId}`)
@@ -333,23 +353,30 @@ export async function POST(request: NextRequest) {
       }
       
       // ブログ記事を自動生成して保存（重要：失敗しても処理は継続）
+      let articleId: string | null = null
+      let articleError: string | null = null
       try {
         const { generateBlogArticleFromAnalysis, saveBlogArticle } = await import('@/lib/blog-article-generator')
-        const lastName = finalShareResult.name.substring(0, 1)
-        const firstName = finalShareResult.name.substring(1)
         
-        console.log(`📝 ブログ記事生成開始: ${finalShareResult.name}さん`)
-        const article = generateBlogArticleFromAnalysis(
+        // 有名人データから姓名を正しく取得（正しい分割）
+        const selectedCelebrity = sampleNames.find(n => `${n.lastName}${n.firstName}` === finalShareResult.name)
+        const lastName = selectedCelebrity?.lastName || finalShareResult.name.substring(0, 1)
+        const firstName = selectedCelebrity?.firstName || finalShareResult.name.substring(1)
+        
+        console.log(`📝 ブログ記事生成開始: ${lastName}${firstName}さん（姓: ${lastName}, 名: ${firstName}）`)
+        const article = await generateBlogArticleFromAnalysis(
           lastName,
           firstName,
           finalShareResult.result,
           tweetId
         )
         
-        const articleId = await saveBlogArticle(article)
+        articleId = await saveBlogArticle(article)
         console.log(`✅ ブログ記事保存完了: ${article.slug} (ID: ${articleId})`)
-      } catch (articleError: any) {
-        console.error('❌ ブログ記事生成エラー:', articleError.message)
+      } catch (articleErr: any) {
+        articleError = articleErr.message || '不明なエラー'
+        console.error('❌ ブログ記事生成エラー:', articleError)
+        console.error('❌ エラー詳細:', articleErr)
         // ブログ記事生成に失敗しても処理は続行
       }
       
@@ -389,6 +416,12 @@ export async function POST(request: NextRequest) {
           sent: twitterSent,
           tweetId: tweetId || null,
           error: twitterError
+        },
+        // ブログ記事生成状態を明示的に記録
+        blog: {
+          generated: articleId !== null,
+          articleId: articleId || null,
+          error: articleError
         },
         // メール送信状態を明示的に記録（任意機能）
         email: {

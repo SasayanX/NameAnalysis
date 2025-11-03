@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { runStrokeDataExpansion, type DataExpansionResult } from '@/lib/stroke-data-expansion'
-import { Bot, Database, CheckCircle, AlertCircle, Loader2, Rocket, Mail } from 'lucide-react'
+import { Bot, Database, CheckCircle, AlertCircle, Loader2, Rocket, Mail, FileText } from 'lucide-react'
 
 export function StrokeDataExpansionPanel() {
   const [isRunning, setIsRunning] = useState(false)
@@ -194,7 +194,7 @@ export function StrokeDataExpansionPanel() {
                           エラー: {autopilotResult.sharing.twitter.error}
                         </div>
                         <div className="text-xs text-red-400 mt-2">
-                          💡 Twitter API認証情報（TWITTER_BEARER_TOKEN）を設定してください
+                          💡 解決方法: .env.localファイルにOAuth 1.0a認証情報（TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET）を設定し、開発サーバーを再起動してください
                         </div>
                       </>
                     ) : (
@@ -204,6 +204,55 @@ export function StrokeDataExpansionPanel() {
                         </div>
                         <div className="text-sm text-gray-600">
                           X投稿は実行されませんでした
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* ブログ記事生成状態 */}
+                  <div className={`text-center p-3 rounded-lg ${
+                    autopilotResult.sharing.blog?.generated 
+                      ? 'bg-purple-100' 
+                      : autopilotResult.sharing.blog?.error
+                      ? 'bg-orange-100'
+                      : 'bg-gray-100'
+                  }`}>
+                    {autopilotResult.sharing.blog?.generated ? (
+                      <>
+                        <FileText className="h-5 w-5 mx-auto text-purple-600 mb-2" />
+                        <div className="font-semibold text-purple-700">
+                          ✅ ブログ記事生成完了
+                        </div>
+                        <div className="text-sm text-purple-600">
+                          {autopilotResult.sharing.sharedName}さんの鑑定記事を生成しました
+                        </div>
+                        {autopilotResult.sharing.blog.articleId && (
+                          <div className="text-xs text-purple-500 mt-1">
+                            記事ID: {autopilotResult.sharing.blog.articleId}
+                          </div>
+                        )}
+                      </>
+                    ) : autopilotResult.sharing.blog?.error ? (
+                      <>
+                        <FileText className="h-5 w-5 mx-auto text-orange-600 mb-2" />
+                        <div className="font-semibold text-orange-700">
+                          ⚠️ ブログ記事生成失敗（オートパイロットは成功）
+                        </div>
+                        <div className="text-sm text-orange-600">
+                          {autopilotResult.sharing.sharedName}さんの結果は処理されましたが、記事生成は失敗しました
+                        </div>
+                        <div className="text-xs text-orange-500 mt-1">
+                          エラー: {autopilotResult.sharing.blog.error}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-5 w-5 mx-auto text-gray-600 mb-2" />
+                        <div className="font-semibold text-gray-700">
+                          ⏸️ ブログ記事生成スキップ
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          ブログ記事生成は実行されませんでした
                         </div>
                       </>
                     )}

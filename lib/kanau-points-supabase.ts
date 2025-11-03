@@ -325,4 +325,116 @@ export async function addFeatureBonus(
   }
 }
 
+// ポイント取引履歴を取得
+export interface PointTransaction {
+  id: string
+  user_id: string
+  type: "earn" | "spend"
+  amount: number
+  reason: string
+  category: "login_bonus" | "ranking_reward" | "ranking_entry" | "special_reward" | "purchase"
+  metadata: Record<string, any> | null
+  created_at: string
+}
+
+export async function getPointTransactions(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0,
+): Promise<PointTransaction[]> {
+  const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
+
+  const { data, error } = await supabase
+    .from("point_transactions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) throw error
+  return (data || []) as PointTransaction[]
+}
+
+// ポイント統計を取得
+export interface PointStatistics {
+  totalEarned: number
+  totalSpent: number
+  currentBalance: number
+  transactionCount: number
+  earnCount: number
+  spendCount: number
+  byCategory: Record<string, number>
+  byDay: Array<{ date: string; earned: number; spent: number }>
+}
+
+export async function getPointStatistics(userId: string, days: number = 30): Promise<PointStatistics> {
+  const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
+
+  const summary = await getOrCreatePointsSummary(userId)
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - days)
+
+  const { data: transactions, error } = await supabase
+    .from("point_transactions")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("created_at", startDate.toISOString())
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+
+  const transactionsList = (transactions || []) as PointTransaction[]
+
+  // カテゴリ別集計
+  const byCategory: Record<string, number> = {}
+  let earnCount = 0
+  let spendCount = 0
+
+  transactionsList.forEach((tx) => {
+    if (tx.type === "earn") {
+      earnCount++
+      byCategory[tx.category] = (byCategory[tx.category] || 0) + tx.amount
+    } else {
+      spendCount++
+      byCategory[tx.category] = (byCategory[tx.category] || 0) + tx.amount
+    }
+  })
+
+  // 日別集計
+  const byDayMap = new Map<string, { earned: number; spent: number }>()
+  transactionsList.forEach((tx) => {
+    const date = tx.created_at.split("T")[0]
+    if (!byDayMap.has(date)) {
+      byDayMap.set(date, { earned: 0, spent: 0 })
+    }
+    const dayData = byDayMap.get(date)!
+    if (tx.type === "earn") {
+      dayData.earned += tx.amount
+    } else {
+      dayData.spent += tx.amount
+    }
+  })
+
+  const byDay = Array.from(byDayMap.entries())
+    .map(([date, data]) => ({ date, ...data }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  return {
+    totalEarned: summary.total_earned || 0,
+    totalSpent: summary.total_spent || 0,
+    currentBalance: summary.points || 0,
+    transactionCount: transactionsList.length,
+    earnCount,
+    spendCount,
+    byCategory,
+    byDay,
+  }
+}
+
 
