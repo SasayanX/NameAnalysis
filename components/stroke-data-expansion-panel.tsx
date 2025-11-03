@@ -159,13 +159,98 @@ export function StrokeDataExpansionPanel() {
               </div>
               
               {autopilotResult.sharing.sharedName && (
-                <div className="text-center p-3 bg-green-100 rounded-lg">
-                  <Mail className="h-5 w-5 mx-auto text-green-600 mb-2" />
-                  <div className="font-semibold text-green-700">
-                    📧 メール通知送信完了
+                <div className="space-y-2">
+                  {/* X投稿状態 */}
+                  <div className={`text-center p-3 rounded-lg ${
+                    autopilotResult.sharing.twitter?.sent 
+                      ? 'bg-blue-100' 
+                      : autopilotResult.sharing.twitter?.error
+                      ? 'bg-red-100'
+                      : 'bg-gray-100'
+                  }`}>
+                    {autopilotResult.sharing.twitter?.sent ? (
+                      <>
+                        <div className="font-semibold text-blue-700">
+                          ✅ X投稿成功
+                        </div>
+                        <div className="text-sm text-blue-600">
+                          {autopilotResult.sharing.sharedName}さんの結果をXに投稿しました
+                        </div>
+                        {autopilotResult.sharing.twitter.tweetId && (
+                          <div className="text-xs text-blue-500 mt-1">
+                            Tweet ID: {autopilotResult.sharing.twitter.tweetId}
+                          </div>
+                        )}
+                      </>
+                    ) : autopilotResult.sharing.twitter?.error ? (
+                      <>
+                        <div className="font-semibold text-red-700">
+                          ❌ X投稿失敗
+                        </div>
+                        <div className="text-sm text-red-600">
+                          {autopilotResult.sharing.sharedName}さんの結果のX投稿に失敗しました
+                        </div>
+                        <div className="text-xs text-red-500 mt-1">
+                          エラー: {autopilotResult.sharing.twitter.error}
+                        </div>
+                        <div className="text-xs text-red-400 mt-2">
+                          💡 Twitter API認証情報（TWITTER_BEARER_TOKEN）を設定してください
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-semibold text-gray-700">
+                          ⏸️ X投稿スキップ
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          X投稿は実行されませんでした
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="text-sm text-green-600">
-                    {autopilotResult.sharing.sharedName}さんの結果を送信しました
+
+                  {/* メール送信状態 */}
+                  <div className={`text-center p-3 rounded-lg ${
+                    autopilotResult.sharing.email?.sent 
+                      ? 'bg-green-100' 
+                      : autopilotResult.sharing.email?.error
+                      ? 'bg-yellow-100'
+                      : 'bg-gray-100'
+                  }`}>
+                    {autopilotResult.sharing.email?.sent ? (
+                      <>
+                        <Mail className="h-5 w-5 mx-auto text-green-600 mb-2" />
+                        <div className="font-semibold text-green-700">
+                          📧 メール通知送信完了
+                        </div>
+                        <div className="text-sm text-green-600">
+                          {autopilotResult.sharing.sharedName}さんの結果を送信しました
+                        </div>
+                      </>
+                    ) : autopilotResult.sharing.email?.error ? (
+                      <>
+                        <Mail className="h-5 w-5 mx-auto text-yellow-600 mb-2" />
+                        <div className="font-semibold text-yellow-700">
+                          ⚠️ メール通知送信失敗（オートパイロットは成功）
+                        </div>
+                        <div className="text-sm text-yellow-600">
+                          {autopilotResult.sharing.sharedName}さんの結果は処理されましたが、メール送信は失敗しました
+                        </div>
+                        <div className="text-xs text-yellow-500 mt-1">
+                          エラー: {autopilotResult.sharing.email.error}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-5 w-5 mx-auto text-gray-600 mb-2" />
+                        <div className="font-semibold text-gray-700">
+                          ⏸️ メール送信スキップ
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          メール送信は実行されませんでした
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

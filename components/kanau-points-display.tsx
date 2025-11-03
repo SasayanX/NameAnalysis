@@ -179,10 +179,8 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
           premium: "プレミアム",
         }
         const planName = planNames[plan] || "無料"
-        // 基礎Kp × 連続日数で計算（30日で上限）
-        const consecutiveDays = user.consecutiveLoginDays + 1
-        const effectiveConsecutiveDays = Math.min(consecutiveDays, 30)
-        const totalPoints = basePoints * effectiveConsecutiveDays
+        // 連続ログインボーナスを廃止：基礎Kpのみ毎日獲得
+        const totalPoints = basePoints
         
         return (
         <Card className="border-2 border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
@@ -194,14 +192,11 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-800 mb-2">
-                連続{consecutiveDays}日目
-              </div>
               <div className="text-sm text-yellow-600 mb-2">
                 {planName}プラン特典
               </div>
               <div className="text-lg text-yellow-700">
-                基礎{basePoints}Kp × {effectiveConsecutiveDays}日{consecutiveDays > 30 ? "（上限）" : ""} = 合計{totalPoints}Kp
+                基礎{basePoints}Kp獲得
               </div>
             </div>
             <Button 

@@ -29,17 +29,17 @@ export function GMOSubscriptionForm({ onSuccess, onError }: GMOSubscriptionFormP
   const plans = {
     basic: {
       name: "ベーシックプラン",
-      monthly: 220,
-      quarterly: 594, // 10%割引
-      biannual: 1188, // 10%割引
-      annual: 2376, // 10%割引
+      monthly: 330, // 正しい価格に修正
+      quarterly: 891, // 10%割引 (330 * 3 * 0.9)
+      biannual: 1782, // 10%割引 (330 * 6 * 0.9)
+      annual: 3564, // 10%割引 (330 * 12 * 0.9)
     },
     premium: {
       name: "プレミアムプラン",
-      monthly: 440,
-      quarterly: 1188, // 10%割引
-      biannual: 2376, // 10%割引
-      annual: 4752, // 10%割引
+      monthly: 550, // 正しい価格に修正
+      quarterly: 1485, // 10%割引 (550 * 3 * 0.9)
+      biannual: 2970, // 10%割引 (550 * 6 * 0.9)
+      annual: 5940, // 10%割引 (550 * 12 * 0.9)
     },
   }
 

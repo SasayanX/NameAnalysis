@@ -659,7 +659,16 @@ export default function ClientPage() {
   }, [currentPlan, isInTrial, trialDaysRemaining])
 
   // ヒーロー右側のプラン表示は実サブスクに追従させる
+  // ハイドレーションエラー回避のため、マウント後にのみ実際のプラン情報を取得
   const headerPlanInfo = useMemo(() => {
+    // サーバーサイドレンダリング時やマウント前はデフォルト値を返す
+    if (!mounted || typeof window === "undefined") {
+      return {
+        text: "無料プラン",
+        style: "bg-gray-100 text-gray-700 border border-gray-300",
+      }
+    }
+
     try {
       const current = subscription.getCurrentPlan()
       const inTrial = subscription.isInTrial()
@@ -700,7 +709,7 @@ export default function ClientPage() {
         style: "bg-gray-100 text-gray-700 border border-gray-300",
       }
     }
-  }, [subscription])
+  }, [subscription, mounted])
 
   const handleHeaderPlanClick = useCallback(() => {
     try {

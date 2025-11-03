@@ -1,161 +1,159 @@
-# Twitter API トークン取得ガイド
+# Twitter (X) API設定ガイド
 
-X（旧Twitter）APIを使用して自動投稿するための認証情報を取得する方法です。
+## 📋 現在の状態確認
 
-## 前提条件
+あなたのTwitter Developer Portal情報：
+- **Project**: Default project-1983660111185752064
+- **App**: 1983660111185752064kanaukiryu
+- **プラン**: Free
+- **投稿制限**: 100件/月（読み取り）、500件/月（書き込み）
 
-- Xアカウントを持っていること
-- メールアドレス認証済みであること
+## 🔑 APIキーとBearer Tokenの取得手順
 
-## 手順1: Twitter Developer Portal にアクセス
+### ステップ1: キーとトークンを確認
 
-1. [Twitter Developer Portal](https://developer.twitter.com/) にアクセス
-2. 既存のXアカウントでログイン
+1. Twitter Developer Portal → **Apps** → **1983660111185752064kanaukiryu** → **Keys**をクリック
+2. 以下の情報が表示されます：
+   - **API Key**（Consumer Key）
+   - **API Key Secret**（Consumer Secret）
+   - **Bearer Token**（作成されている場合）
 
-## 手順2: Developer Account を作成
+### ステップ2: Bearer Tokenの作成（推奨）
 
-1. 「Apply for a Developer Account」をクリック
-2. 「Making a bot」を選択（または「Exploring the API」）
-3. アカウント情報を入力：
-   - **Account name**: アプリケーション名（例: "姓名判断自動投稿ボット"）
-   - **Use case**: 「I am making a bot」を選択
-   - **App description**: 使用目的を説明（例: "毎日姓名判断の結果を自動で投稿するボットです"）
-4. 利用規約に同意して送信
-5. メール確認（数分〜数時間で承認されることが多い）
+Bearer Tokenが表示されていない場合：
 
-## 手順3: Appを作成
+1. **Keys**タブで「**Generate**」ボタンをクリック
+2. Bearer Tokenをコピー（一度しか表示されないので注意！）
+3. `.env.local`ファイルに追加：
+   ```
+   TWITTER_BEARER_TOKEN=your_bearer_token_here
+   ```
 
-1. [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard) のダッシュボードにアクセス
-2. 左メニューから「Projects & Apps」→「Overview」を選択
-3. 「+ Create App」または「+ Create」をクリック
-4. App名を入力（例: "seimei-handan-bot"）
-5. 作成
+### ステップ3: OAuth認証情報の取得（オプション）
 
-## 手順4: API Keys & Tokens を取得
+Bearer Tokenの代わりにOAuth 1.0aを使用する場合：
 
-### Bearer Token方式（推奨：シンプル）
+1. **Keys and tokens**タブを開く
+2. 以下をコピー：
+   - **API Key** → `TWITTER_API_KEY`
+   - **API Key Secret** → `TWITTER_API_SECRET`
+3. **Access Token and Secret**セクションで以下を生成：
+   - **Access Token** → `TWITTER_ACCESS_TOKEN`
+   - **Access Token Secret** → `TWITTER_ACCESS_TOKEN_SECRET`
 
-1. 作成したAppの「Keys and tokens」タブを開く
-2. 「Bearer Token」セクションを確認
-3. 「Generate」をクリック（既にある場合は表示される）
-4. **重要**: Bearer Tokenは一度しか表示されないので、必ずコピーして保存
+### ステップ4: 環境変数の設定
 
-### OAuth 1.0a方式（ユーザー認証が必要な場合）
+#### 開発環境（`.env.local`）
+```env
+# Bearer Token方式（推奨・シンプル）
+TWITTER_BEARER_TOKEN=AAAAAAAAAAAAAAAAAAAAAH...（実際のトークン）
 
-1. 「Consumer Keys」セクション
-   - **API Key** をコピー → `TWITTER_API_KEY`
-   - **API Key Secret** をコピー → `TWITTER_API_SECRET`
-
-2. 「Authentication Tokens」セクション
-   - 「Generate」をクリックしてAccess TokenとSecretを生成
-   - **Access Token** をコピー → `TWITTER_ACCESS_TOKEN`
-   - **Access Token Secret** をコピー → `TWITTER_ACCESS_TOKEN_SECRET`
-
-## 手順5: App権限の設定
-
-1. 「Settings」タブを開く
-2. **App permissions** を確認・変更：
-   - **Read and Write** または **Read and write and Direct message** を選択
-   - ツイート投稿には「Write」権限が必要
-
-3. 「Save」をクリック
-4. **重要**: 権限を変更した場合は、Access Tokenを再生成する必要があります
-
-## 手順6: 環境変数に設定
-
-### Vercelの場合
-
-1. [Vercel Dashboard](https://vercel.com/dashboard) にアクセス
-2. プロジェクトを選択
-3. 「Settings」→「Environment Variables」を開く
-4. 以下の環境変数を追加：
-
-#### Bearer Token方式（推奨）
-
-```
-TWITTER_BEARER_TOKEN=your_bearer_token_here
-```
-
-#### OAuth 1.0a方式
-
-```
+# または OAuth 1.0a方式
 TWITTER_API_KEY=your_api_key_here
 TWITTER_API_SECRET=your_api_secret_here
 TWITTER_ACCESS_TOKEN=your_access_token_here
 TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret_here
 ```
 
-5. 環境（Production, Preview, Development）を選択
-6. 「Save」をクリック
-7. **デプロイを再実行**（環境変数はデプロイ時に読み込まれるため）
+#### 本番環境（Vercel/Netlify）
 
-### ローカル開発環境の場合
+**Vercelの場合**:
+1. Vercel Dashboard → Project → **Settings** → **Environment Variables**
+2. 以下を追加：
+   - `TWITTER_BEARER_TOKEN` = （実際のトークン）
 
-`.env.local` ファイルに追加：
+**Netlifyの場合**:
+1. Netlify Dashboard → Site → **Site settings** → **Environment variables**
+2. 以下を追加：
+   - `TWITTER_BEARER_TOKEN` = （実際のトークン）
 
-```env
-TWITTER_BEARER_TOKEN=your_bearer_token_here
+## ✅ 動作確認
+
+### 1. 環境変数の確認
+```bash
+# 開発サーバーを再起動（環境変数の変更を反映）
+npm run dev
 ```
 
-## 手順7: Twitter API v2のアクセスレベル確認
+### 2. オートパイロットを実行
+1. ブラウザで `/data-expansion` にアクセス
+2. 「オートパイロット実行」ボタンをクリック
+3. 結果画面で「✅ X投稿成功」と表示されればOK
 
-Twitter API v2には無料プランと有料プランがあります：
+### 3. ログの確認
+開発サーバーのコンソールで以下のようなログが表示されます：
 
-### Free Tier（無料プラン）
-- 月間ツイート投稿: 1,500件まで
-- 毎日7時・19時の2回投稿なら月60件程度なので十分です
+```
+🐦 Xへの投稿開始: 田中大翔さん
+📝 ツイート内容: 🔮【田中大翔さんの姓名判断】...
+✅ X投稿成功: Tweet ID 1234567890123456789
+```
 
-### Basic Tier（有料プラン）
-- $100/月から
-- より多くの制限
+## 📊 使用制限の確認
 
-## トラブルシューティング
+### 現在の制限（Freeプラン）
+- **読み取り**: 100件/月
+- **書き込み**: 500件/月
+- **リセット**: 毎月29日 00:00 UTC
 
-### 「Unauthorized」エラー
+### オートパイロットの使用量
+- オートパイロットは1日2回実行（07:00 JST / 19:00 JST）
+- 1回の実行で1件のツイート = 月60件程度
+- **Freeプランの制限内で十分動作します** ✅
 
-- Bearer TokenまたはAccess Tokenが正しく設定されているか確認
-- 環境変数名が正確か確認（大文字小文字も含む）
-- デプロイを再実行（環境変数が反映されていない可能性）
+## 🔒 セキュリティ注意事項
 
-### 「Forbidden」エラー
+⚠️ **重要**: Bearer Tokenは**秘密情報**です。以下の点に注意してください：
 
-- App権限が「Read and Write」になっているか確認
-- 権限変更後はAccess Tokenを再生成
+1. **GitHubにコミットしない**
+   - `.env.local`は`.gitignore`に含まれていることを確認
+   - トークンが公開リポジトリに上がらないように注意
 
-### 「Rate limit exceeded」エラー
+2. **トークンの再生成**
+   - 万が一トークンが漏洩した場合は、すぐにTwitter Developer Portalで再生成
 
-- APIの使用制限に達しています
-- 無料プランでも十分な制限があるので、通常は問題ありません
+3. **権限の確認**
+   - Twitter Developer Portal → **User authentication settings**で権限を確認
+   - **Read and write**権限が必要です
 
-### Bearer Tokenが見つからない
+## ❌ エラー対処
 
-- 一部のAppではBearer Tokenが表示されない場合があります
-- その場合はOAuth 1.0a方式を使用してください
-- または、新しくAppを作成してみてください
+### エラー: "Twitter API credentials are not configured"
+→ `TWITTER_BEARER_TOKEN`が設定されていないか、環境変数が読み込まれていません
 
-## セキュリティ注意事項
+**解決方法**:
+1. `.env.local`ファイルを確認
+2. 開発サーバーを再起動
+3. 本番環境の場合は、Vercel/Netlifyの環境変数を確認
 
-⚠️ **重要**:
+### エラー: "Twitter API error: 401 Unauthorized"
+→ Bearer Tokenが無効です
 
-1. **API KeysやTokensは絶対に公開しないでください**
-   - GitHubにコミットしない
-   - `.env.local` は `.gitignore` に追加済みのはず
-   - 共有や公開の場所に貼り付けない
+**解決方法**:
+1. Twitter Developer Portalで新しいBearer Tokenを生成
+2. 環境変数を更新
+3. サーバーを再起動
 
-2. **定期ローテーション**
-   - 定期的にTokenを更新することを推奨
-   - 漏洩が疑われる場合は即座に再生成
+### エラー: "Twitter API error: 403 Forbidden"
+→ アプリの権限が不足しています
 
-3. **最小権限の原則**
-   - 必要最小限の権限のみ付与
-   - この場合は「Read and Write」で十分
+**解決方法**:
+1. Twitter Developer Portal → **User authentication settings**
+2. **Read and write**権限を有効化
+3. **Callback URL**を設定（必要に応じて）
 
-## テスト方法
+## 📚 参考リンク
 
-環境変数を設定後、以下でテストできます：
+- [Twitter API v2 Documentation](https://developer.twitter.com/en/docs/twitter-api)
+- [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
+- [API Rate Limits](https://developer.twitter.com/en/docs/twitter-api/rate-limits)
 
-1. Vercel Dashboardの「Functions」→「View Function Logs」
-2. または `/api/autopilot/execute` に直接GETリクエスト（開発環境）
+## 🎯 次のステップ
 
-正常に動作すれば、Xアカウントにツイートが投稿されます。
+1. ✅ Bearer Tokenを取得
+2. ✅ `.env.local`に設定
+3. ✅ 開発サーバーを再起動
+4. ✅ オートパイロットを実行してテスト
+5. ✅ 本番環境に環境変数を設定
 
+設定が完了すれば、オートパイロット実行時に実際にXに投稿されます！

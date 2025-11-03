@@ -201,17 +201,15 @@ export async function processLoginBonusSupa(userId: string, plan?: "free" | "bas
   }
 
   const basePoints = getBasePointsByPlan(userPlan)
-  // 基礎Kp × 連続日数で計算（連続ボーナスではなく、毎日基礎Kpを連続日数分受け取る）
-  // 連続日数は30日で上限（30日以降は30倍で固定）
-  const effectiveConsecutiveDays = Math.min(consecutiveDays, 30)
-  const totalPoints = basePoints * effectiveConsecutiveDays
+  // 連続ログインボーナスを廃止：基礎Kpのみ毎日獲得
+  const totalPoints = basePoints
 
   const { data: updated, error: upErr } = await supabase
     .from("kanau_points")
     .update({
       points: (summary.points || 0) + totalPoints,
       total_earned: (summary.total_earned || 0) + totalPoints,
-      consecutive_login_days: consecutiveDays,
+      consecutive_login_days: consecutiveDays, // 連続日数はカウントは継続（表示用）
       last_login_date: new Date().toISOString(),
       last_login_bonus_date: today,
     })
@@ -235,20 +233,16 @@ export async function processLoginBonusSupa(userId: string, plan?: "free" | "bas
   }
   const planName = planNames[userPlan] || "無料"
 
-  // メッセージ生成（30日上限の表示）
-  let message: string
-  if (consecutiveDays > 30) {
-    message = `連続${consecutiveDays}日目のログインボーナス！ ${planName}プラン特典: 基礎${basePoints}Kp × 30日（上限） = 合計${totalPoints}Kp`
-  } else {
-    message = `連続${consecutiveDays}日目のログインボーナス！ ${planName}プラン特典: 基礎${basePoints}Kp × ${consecutiveDays}日 = 合計${totalPoints}Kp`
-  }
+  // メッセージ生成（基礎KPのみ）
+  const message = `ログインボーナス！ ${planName}プラン特典: 基礎${basePoints}Kp獲得`
 
   return {
     user: updated as SupaPointsSummary,
     bonus: {
       basePoints,
-      consecutiveBonus: 0, // 連続ボーナスは廃止（後方互換性のため0を返す）
+      consecutiveBonus: 0, // 連続ボーナスは廃止
       totalPoints,
+      consecutiveDays, // 連続日数は表示用に返す
       message,
     },
   }

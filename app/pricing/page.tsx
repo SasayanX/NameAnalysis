@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Check, X, Trophy, Star, Crown, Sparkles } from "lucide-react"
 import { useSubscription } from "@/lib/subscription-manager"
+import { SquareCheckoutButton } from "@/components/square-checkout-button"
 import Link from "next/link"
 
 export default function PricingPage() {
@@ -210,20 +211,18 @@ export default function PricingPage() {
                       <Link href="/">{plan.buttonText}</Link>
                     </Button>
                   ) : (
-                    <Button
-                      variant={plan.buttonVariant}
+                    <SquareCheckoutButton
+                      planId={key as "basic" | "premium"}
+                      price={plan.price[billingCycle]}
                       className={`w-full ${
                         plan.highlight
                           ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                           : ""
                       }`}
-                      asChild
                     >
-                      <Link href={`/subscribe?plan=${key}&billing=${billingCycle}`}>
-                        {plan.highlight && <Trophy className="h-4 w-4 mr-2" />}
-                        {plan.buttonText}
-                      </Link>
-                    </Button>
+                      {plan.highlight && <Trophy className="h-4 w-4 mr-2" />}
+                      {plan.buttonText}
+                    </SquareCheckoutButton>
                   )}
                 </div>
               </CardContent>

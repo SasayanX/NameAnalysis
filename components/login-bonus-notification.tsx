@@ -50,9 +50,9 @@ export function LoginBonusNotification() {
         // ボーナスデータを設定して通知を表示
         setBonusData({
           basePoints: result.bonus.basePoints,
-          consecutiveBonus: result.bonus.consecutiveBonus,
+          consecutiveBonus: result.bonus.consecutiveBonus || 0,
           totalPoints: result.bonus.totalPoints,
-          consecutiveDays: result.bonus.consecutiveBonus + 1,
+          consecutiveDays: result.bonus.consecutiveDays || 0,
           message: result.bonus.message,
         })
         setShowNotification(true)
@@ -112,9 +112,8 @@ export function LoginBonusNotification() {
               +{bonusData.totalPoints}Kp
             </div>
             <div className="flex items-center justify-center gap-2 text-sm text-yellow-700">
-              <span>連続{bonusData.consecutiveDays}日目</span>
               <Badge variant="outline" className="bg-white/50 border-yellow-300">
-                基礎{bonusData.basePoints}Kp × {bonusData.consecutiveDays}日
+                基礎{bonusData.basePoints}Kp獲得
               </Badge>
             </div>
           </div>

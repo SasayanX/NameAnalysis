@@ -1,15 +1,74 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, ArrowRight, Gift } from "lucide-react"
 import Link from "next/link"
-import type { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "申し込み完了 | 姓名判断アプリ",
-  description: "プランの申し込みが完了しました",
-}
+import { SubscriptionManager } from "@/lib/subscription-manager"
 
 export default function SubscriptionSuccessPage() {
+  const [subscriptionSaved, setSubscriptionSaved] = useState(false)
+
+  useEffect(() => {
+    // URLパラメータからプラン情報を取得
+    if (typeof window === "undefined") return
+
+    const params = new URLSearchParams(window.location.search)
+    const planId = params.get("plan") as "free" | "basic" | "premium" | null
+    const amount = params.get("amount")
+    const subscriptionId = params.get("subscriptionId")
+
+    if (planId && planId !== "free") {
+      try {
+        const manager = SubscriptionManager.getInstance()
+        
+        // プラン情報を取得
+        const plans = {
+          basic: { price: 330 },
+          premium: { price: 550 },
+        }
+        // amountは既に円単位で渡されている
+        const planPrice = plans[planId as "basic" | "premium"]?.price || (amount ? parseInt(amount) : 0)
+
+        const expiresAt = new Date()
+        expiresAt.setMonth(expiresAt.getMonth() + 1)
+
+        const subscription = {
+          plan: planId,
+          expiresAt,
+          isActive: true,
+          trialEndsAt: null,
+          status: "active" as const,
+          paymentMethod: "square" as const,
+          amount: planPrice,
+          nextBillingDate: expiresAt,
+          lastPaymentDate: new Date(),
+          ...(subscriptionId && { squareSubscriptionId: subscriptionId }),
+        }
+
+        // SubscriptionManager経由で保存（これによりuserSubscriptionキーに正しく保存される）
+        manager.debugSwitchPlan(planId)
+        // 手動で詳細情報を設定
+        if (typeof window !== "undefined") {
+          localStorage.setItem("userSubscription", JSON.stringify({
+            ...subscription,
+            expiresAt: subscription.expiresAt.toISOString(),
+            nextBillingDate: subscription.nextBillingDate.toISOString(),
+            lastPaymentDate: subscription.lastPaymentDate.toISOString(),
+          }))
+        }
+
+        setSubscriptionSaved(true)
+        console.log("サブスクリプションを保存しました:", subscription)
+      } catch (error) {
+        console.error("サブスクリプション保存エラー:", error)
+      }
+    } else {
+      setSubscriptionSaved(true) // プラン情報がない場合はスキップ
+    }
+  }, [])
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -23,7 +82,9 @@ export default function SubscriptionSuccessPage() {
           <CardContent className="space-y-6">
             <div className="text-center">
               <p className="text-green-700 mb-4">
-                プランの申し込みが正常に完了しました。 決済処理が完了次第、プランが自動的に有効化されます。
+                {subscriptionSaved
+                  ? "プランの申し込みが正常に完了しました。プランが有効化されました！"
+                  : "プランの申し込みが正常に完了しました。決済処理が完了次第、プランが自動的に有効化されます。"}
               </p>
             </div>
 

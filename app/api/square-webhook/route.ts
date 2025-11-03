@@ -66,11 +66,20 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      // Square APIは金額をセント単位で送信（例：550円 = 55000セント）
+      // しかし、実際の金額は円単位かもしれないので、両方のケースに対応
       let plan: "basic" | "premium" = "basic"
-      if (amount >= 55000) {
+      // 55000セント = 550円、または 550セント = 5.50円の場合も考慮
+      // 通常は 550円 = 55000セントが正しい
+      if (amount >= 55000 || amount === 550) {
         plan = "premium"
-      } else if (amount >= 33000) {
+      } else if (amount >= 33000 || amount === 330) {
         plan = "basic"
+      }
+      
+      // デバッグログ
+      if (process.env.NODE_ENV === "development") {
+        console.log("プラン判定:", { amount, plan, amountInYen: amount / 100 })
       }
 
       await activateSubscription(customerId, plan, orderId)
@@ -102,8 +111,16 @@ export async function POST(request: NextRequest) {
 
       // 金額に基づいてプラン判定
       let plan: "basic" | "premium" = "basic"
-      if (amount >= 55000) {
+      // Square APIは金額をセント単位で送信（例：550円 = 55000セント）
+      if (amount >= 55000 || amount === 550) {
         plan = "premium"
+      } else if (amount >= 33000 || amount === 330) {
+        plan = "basic"
+      }
+      
+      // デバッグログ
+      if (process.env.NODE_ENV === "development") {
+        console.log("請求書プラン判定:", { amount, plan, amountInYen: amount / 100 })
       }
 
       return NextResponse.json({
@@ -192,7 +209,9 @@ export async function GET() {
   })
 }
 
-// プラン有効化処理
+// プラン有効化処理（注：Webhookはサーバーサイドで実行されるため、クライアントのlocalStorageには直接アクセスできません）
+// この関数は主にログ記録とメール送信用です
+// 実際のプラン有効化は、決済成功時にフロントエンドでURLパラメータ経由で処理されます
 async function activateSubscription(customerId: string, plan: "basic" | "premium", orderId: string) {
   try {
     const subscriptionData = {
@@ -204,16 +223,14 @@ async function activateSubscription(customerId: string, plan: "basic" | "premium
       status: "active",
     }
 
-    // ローカルストレージに保存（開発用）
-    if (typeof window !== "undefined") {
-      const existingSubscriptions = JSON.parse(localStorage.getItem("subscriptions") || "[]")
-      existingSubscriptions.push(subscriptionData)
-      localStorage.setItem("subscriptions", JSON.stringify(existingSubscriptions))
-    }
+    // 注意：サーバーサイドではlocalStorageにアクセスできません
+    // クライアント側でlocalStorageに保存する必要があります
+    // Webhookで通知を受け取った場合、別途クライアント側で処理する必要があります
 
     await sendActivationEmail(customerId, plan)
 
-    console.log("プラン有効化完了:", subscriptionData)
+    console.log("プラン有効化完了（サーバーサイド）:", subscriptionData)
+    console.warn("注意：クライアント側のlocalStorage更新が必要です。フロントエンドで処理してください。")
     return subscriptionData
   } catch (error) {
     console.error("プラン有効化エラー:", error)

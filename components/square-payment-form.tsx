@@ -177,7 +177,11 @@ export function SquarePaymentForm() {
             title: "決済完了",
             description: "サブスクリプションが正常に作成されました",
           })
-          window.location.href = "/subscription-success"
+          // URLパラメータにプラン情報を含めてリダイレクト
+          // amountはセント単位なので、円単位に変換して渡す（または、直接プラン価格を使用）
+          const subscriptionId = data.subscription?.id || ""
+          const amountInYen = amount! / 100 // セントから円に変換
+          window.location.href = `/subscription-success?plan=${selectedPlan}&amount=${amountInYen}&subscriptionId=${subscriptionId}`
         } else {
           throw new Error(data.error || "決済に失敗しました")
         }

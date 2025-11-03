@@ -29,14 +29,72 @@ export async function POST(request: NextRequest) {
     }
     const shareManager = new AutoShareManager(relaxedConfig)
     
-    // サンプル姓名データ（実際の実装では外部APIから取得）
-    const sampleNames = [
-      { lastName: '横浜', firstName: '流星', gender: 'male' },
-      { lastName: '新垣', firstName: '結衣', gender: 'female' },
-      { lastName: '石原', firstName: 'さとみ', gender: 'female' },
-      { lastName: '菅田', firstName: '将暉', gender: 'male' },
-      { lastName: '有村', firstName: '架純', gender: 'female' }
-    ]
+    // 実データソースから姓名を取得
+    const getRealNameData = async () => {
+      try {
+        // baby-names.jsonから名前データを読み込み
+        const babyNames = await import('@/data/baby-names.json')
+        
+        // 一般的な姓のリスト
+        const commonLastNames = [
+          '田中', '佐藤', '鈴木', '高橋', '渡辺', '伊藤', '山田', '中村', '小林', '加藤',
+          '吉田', '山本', '松本', '井上', '木村', '林', '斎藤', '清水', '山口', '森',
+          '池田', '橋本', '齊藤', '坂本', '石川', '前田', '小川', '藤田', '後藤', '近藤',
+          '長谷川', '村上', '遠藤', '青木', '坂口', '藤原', '岡田', '太田', '福田', '西村',
+          '三浦', '竹内', '松田', '原田', '中島', '藤井', '上田', '小林', '新井', '武田'
+        ]
+        
+        // 男性名と女性名を別々に取得
+        const maleNames = (babyNames.default?.male || []).slice(0, 100) // 上位100件
+        const femaleNames = (babyNames.default?.female || []).slice(0, 100) // 上位100件
+        
+        // ランダムに5組の姓名を生成
+        const selectedNames: Array<{ lastName: string, firstName: string, gender: 'male' | 'female' }> = []
+        
+        // 男性名3組
+        for (let i = 0; i < 3; i++) {
+          const lastName = commonLastNames[Math.floor(Math.random() * commonLastNames.length)]
+          const firstNameData = maleNames[Math.floor(Math.random() * maleNames.length)]
+          if (firstNameData && firstNameData.kanji) {
+            selectedNames.push({
+              lastName,
+              firstName: firstNameData.kanji,
+              gender: 'male'
+            })
+          }
+        }
+        
+        // 女性名2組
+        for (let i = 0; i < 2; i++) {
+          const lastName = commonLastNames[Math.floor(Math.random() * commonLastNames.length)]
+          const firstNameData = femaleNames[Math.floor(Math.random() * femaleNames.length)]
+          if (firstNameData && firstNameData.kanji) {
+            selectedNames.push({
+              lastName,
+              firstName: firstNameData.kanji,
+              gender: 'female'
+            })
+          }
+        }
+        
+        console.log(`📋 実データから姓名を生成: ${selectedNames.length}件`)
+        console.log(`📋 選択された姓名:`, selectedNames.map(n => `${n.lastName}${n.firstName}`))
+        
+        return selectedNames
+      } catch (error) {
+        console.warn('⚠️ 実データ読み込みエラー、フォールバックデータを使用:', error)
+        // フォールバック：サンプルデータ
+        return [
+          { lastName: '田中', firstName: '大翔', gender: 'male' as const },
+          { lastName: '佐藤', firstName: '結衣', gender: 'female' as const },
+          { lastName: '鈴木', firstName: '蓮', gender: 'male' as const },
+          { lastName: '高橋', firstName: '美咲', gender: 'female' as const },
+          { lastName: '渡辺', firstName: '悠真', gender: 'male' as const }
+        ]
+      }
+    }
+    
+    const sampleNames = await getRealNameData()
     
     // 共有可能な結果を抽出
     console.log('🔍 共有可能な結果を抽出中...')
@@ -145,10 +203,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 各処理の成功/失敗状態を追跡
+    let emailSent = false
+    let emailError: string | null = null
+    let tweetId: string | undefined = undefined
+    let twitterError: string | null = null
+    let twitterSent = false
+    
     if (finalShareResult) {
-      let tweetId: string | undefined = undefined
-      
-      // X（Twitter）への投稿
+      // X（Twitter）への投稿（重要：失敗しても処理は継続）
       try {
         const { postToTwitter } = await import('@/lib/twitter-api')
         const tweetText = generateTweetText(
@@ -158,25 +221,43 @@ export async function POST(request: NextRequest) {
         )
         
         console.log(`🐦 Xへの投稿開始: ${finalShareResult.name}さん`)
-        tweetId = await postToTwitter(tweetText)
-        console.log(`✅ X投稿成功: Tweet ID ${tweetId}`)
+        console.log(`📝 ツイート内容:`, tweetText)
         
-        // 投稿履歴をSupabaseに保存
-        const { getSupabaseClient } = await import('@/lib/supabase-client')
-        const supabase = getSupabaseClient()
-        await supabase.from('twitter_posts').insert({
-          last_name: finalShareResult.name.substring(0, 1),
-          first_name: finalShareResult.name.substring(1),
-          tweet_id: tweetId,
-          tweet_content: tweetText,
-          posted_at: new Date().toISOString()
-        }).catch(err => console.error('投稿履歴保存エラー:', err))
-      } catch (twitterError: any) {
-        console.error('❌ X投稿エラー:', twitterError.message)
-        // X投稿に失敗してもメール通知は送信
+        tweetId = await postToTwitter(tweetText)
+        
+        // 開発環境のシミュレーションかどうかチェック
+        if (tweetId && tweetId.startsWith('dev_')) {
+          console.warn('⚠️ 開発環境モード: 実際のX投稿は行われていません（TWITTER_BEARER_TOKENが設定されていません）')
+          twitterSent = false
+          twitterError = '開発環境モード：Twitter API認証情報が設定されていません'
+        } else {
+          twitterSent = true
+          console.log(`✅ X投稿成功: Tweet ID ${tweetId}`)
+          
+          // 投稿履歴をSupabaseに保存
+          try {
+            const { getSupabaseClient } = await import('@/lib/supabase-client')
+            const supabase = getSupabaseClient()
+            await supabase.from('twitter_posts').insert({
+              last_name: finalShareResult.name.substring(0, 1),
+              first_name: finalShareResult.name.substring(1),
+              tweet_id: tweetId,
+              tweet_content: tweetText,
+              posted_at: new Date().toISOString()
+            }).catch(err => console.error('投稿履歴保存エラー:', err))
+          } catch (dbError: any) {
+            console.warn('⚠️ 投稿履歴保存は失敗しましたが、X投稿自体は成功:', dbError.message)
+          }
+        }
+      } catch (twitterErr: any) {
+        twitterSent = false
+        twitterError = twitterErr.message || '不明なエラー'
+        console.error('❌ X投稿エラー:', twitterError)
+        console.error('❌ エラー詳細:', twitterErr)
+        // X投稿に失敗しても処理は継続
       }
       
-      // ブログ記事を自動生成して保存
+      // ブログ記事を自動生成して保存（重要：失敗しても処理は継続）
       try {
         const { generateBlogArticleFromAnalysis, saveBlogArticle } = await import('@/lib/blog-article-generator')
         const lastName = finalShareResult.name.substring(0, 1)
@@ -197,17 +278,26 @@ export async function POST(request: NextRequest) {
         // ブログ記事生成に失敗しても処理は続行
       }
       
-      await sendShareNotification(
-        finalShareResult.name,
-        finalShareResult.result,
-        finalShareResult.shareContent
-      )
-      console.log(`📧 メール通知送信完了: ${finalShareResult.name}さん${forcedShare ? '（フォールバック）' : ''}`)
+      // メール通知送信（任意：失敗してもオートパイロットは成功として扱う）
+      try {
+        await sendShareNotification(
+          finalShareResult.name,
+          finalShareResult.result,
+          finalShareResult.shareContent
+        )
+        emailSent = true
+        console.log(`📧 メール通知送信完了: ${finalShareResult.name}さん${forcedShare ? '（フォールバック）' : ''}`)
+      } catch (emailErr: any) {
+        // メール送信に失敗してもオートパイロット処理は成功として扱う
+        emailError = emailErr.message
+        console.warn(`⚠️ メール通知送信失敗（処理は継続）: ${emailErr.message}`)
+        console.warn('⚠️ ResendのDNS設定が未完了の場合、メール送信は失敗しますが、オートパイロット自体は正常に動作します')
+      }
     }
     
-    // 3. 結果を返す
+    // 3. 結果を返す（メール送信失敗でもsuccess: trueを返す）
     const response = {
-      success: true,
+      success: true, // メール送信に失敗しても、オートパイロット自体は成功
       timestamp: new Date().toISOString(),
       expansion: {
         processedNames: expansionResult.processedNames,
@@ -218,7 +308,18 @@ export async function POST(request: NextRequest) {
       sharing: {
         shareableResults: shareableResults.length,
         sharedName: finalShareResult ? finalShareResult.name : null,
-        forcedShare
+        forcedShare,
+        // X投稿状態を明示的に記録
+        twitter: {
+          sent: twitterSent,
+          tweetId: tweetId || null,
+          error: twitterError
+        },
+        // メール送信状態を明示的に記録（任意機能）
+        email: {
+          sent: emailSent,
+          error: emailError
+        }
       }
     }
     
