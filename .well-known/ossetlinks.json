@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.nameanalysis.ai",
+      "sha256_cert_fingerprints": [
+        "B766698D95C2B3A1E236143DE6DC91343DFBFD5732C8C117F0F30E46F9DC15A9",
+        "AB:6E:FC:1C:C4:B1:BB:B3:76:B4:D4:F6:14:BA:E0:7A:FE:CC:87:AF:CF:64:C4:FC:DF:AE:D2:73:25:79:AA:54"
+      ]
+    }
+  }
+]
