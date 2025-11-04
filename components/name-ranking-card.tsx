@@ -10,10 +10,40 @@ import { calculateNameRankingPoints } from "@/lib/name-ranking"
 import { useFortuneData } from "@/contexts/fortune-data-context"
 import { LockIcon, StarIcon, TrophyIcon, ZapIcon, Trophy, AlertCircle } from "lucide-react"
 import { getStarLevelDescription } from "@/lib/name-ranking"
+
 import { useAuth } from "@/components/auth/auth-provider"
 import { submitRankingEntryFromNameAnalysis } from "@/lib/ranking-repo"
 import { getOrCreatePointsSummary } from "@/lib/kanau-points-supabase"
 import Link from "next/link"
+
+// ランク別の色設定
+const rankColors: Record<string, { main: string; glow: string; shadow: string; bg: string }> = {
+  SSS: { main: '#FFF8D9', glow: '#FFD76A', shadow: '#B8860B', bg: '#FFD700' },
+  SS: { main: '#F2F7FF', glow: '#BFD1FF', shadow: '#8FA7CC', bg: '#F5F5F5' },
+  S: { main: '#FFE1CC', glow: '#FF8040', shadow: '#993300', bg: '#FF8A80' },
+  'A+': { main: '#DDE8FF', glow: '#B0C8FF', shadow: '#203060', bg: '#80CBC4' },
+  A: { main: '#EAF5CC', glow: '#BFE87A', shadow: '#667A3A', bg: '#A5D6A7' },
+  'B+': { main: '#DCE8FF', glow: '#99BFFF', shadow: '#334A66', bg: '#C8E6C9' },
+  B: { main: '#F5F5F5', glow: '#CCCCCC', shadow: '#555555', bg: '#E0E0E0' },
+  C: { main: '#F2E0C6', glow: '#E5B67E', shadow: '#5C3A24', bg: '#F9E79F' },
+  D: { main: '#FFD1A6', glow: '#CC5A2E', shadow: '#330000', bg: '#E5E7E9' },
+}
+
+// ランクから星の数を取得
+function getStarCountFromRank(rank: string): number {
+  const rankStarMap: Record<string, number> = {
+    'SSS': 10,
+    'SS': 9,
+    'S': 8,
+    'A+': 7,
+    'A': 6,
+    'B+': 5,
+    'B': 4,
+    'C': 3,
+    'D': 2,
+  }
+  return rankStarMap[rank] || 2
+}
 
 interface NameRankingCardProps {
   lastName: string
@@ -21,6 +51,143 @@ interface NameRankingCardProps {
   gender: "male" | "female"
   isPremium: boolean
   premiumLevel?: number // 0: 無料, 1: ベーシック(110円), 2: プロ(330円), 3: プレミアム(550円)
+}
+
+// ランク表示コンポーネント（カーテン演出用）
+function RankDisplay({ rank, score, powerLevel, colors }: {
+  rank: string
+  score: number
+  powerLevel: number
+  colors: { main: string; glow: string; shadow: string; bg: string }
+}) {
+  const starDescription = getStarLevelDescription(powerLevel)
+  const starCount = getStarCountFromRank(rank)
+  
+  return (
+    <div className="text-center animate-fade-in space-y-2 sm:space-y-3 px-2 sm:px-0">
+      {/* 1. SSS */}
+      <div 
+        className="text-3xl sm:text-4xl md:text-5xl font-bold"
+        style={{ 
+          color: colors.main,
+          textShadow: `0 0 20px ${colors.glow}, 0 0 40px ${colors.glow}, 0 4px 8px ${colors.shadow}`
+        }}
+      >
+        {rank}
+      </div>
+      
+      {/* 2. ランク */}
+      <div 
+        className="text-xs sm:text-sm"
+        style={{ color: colors.main, opacity: 0.8 }}
+      >
+        ランク
+      </div>
+      
+      {/* 3. ★（ランクに応じた星の数） */}
+      <div className="flex justify-center gap-0.5 sm:gap-1 flex-wrap">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <StarIcon
+            key={i}
+            className={`h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 ${
+              i < starCount
+                ? "text-amber-400 fill-amber-400"
+                : "text-gray-600 dark:text-gray-700"
+            }`}
+          />
+        ))}
+      </div>
+      
+      {/* 4. 天下無双（筆フォント） */}
+      <div 
+        className="text-4xl sm:text-5xl md:text-6xl font-bold"
+        style={{ 
+          color: colors.main,
+          fontFamily: "'Hannari','Yu Mincho','Hiragino Mincho ProN',serif",
+          textShadow: `0 0 20px ${colors.glow}, 0 0 40px ${colors.glow}, 0 4px 8px ${colors.shadow}`,
+          letterSpacing: '0.1em'
+        }}
+      >
+        {starDescription.title}
+      </div>
+      
+      {/* 5. 説明文 */}
+      <div 
+        className="text-sm sm:text-base max-w-xs sm:max-w-md mx-auto px-2 sm:px-4"
+        style={{ color: colors.main, opacity: 0.9, lineHeight: '1.6' }}
+      >
+        {starDescription.description}
+      </div>
+      
+      {/* 6. 総合パワーポイント */}
+      <div 
+        className="text-lg sm:text-xl font-semibold pt-2"
+        style={{ color: colors.main, opacity: 0.95 }}
+      >
+        総合パワーポイント: {score}
+      </div>
+    </div>
+  )
+}
+
+// カーテン演出付きランク表示（transform方式）
+function RankRevealWithCurtain({ rank, score, powerLevel }: {
+  rank: string
+  score: number
+  powerLevel: number
+}) {
+  const [isRevealed, setIsRevealed] = useState(false)
+  const colors = rankColors[rank] || rankColors.SSS
+
+  const handleReveal = () => {
+    setIsRevealed(true)
+  }
+
+  return (
+    <div className="relative w-full h-[400px] sm:h-[450px] md:h-[500px] bg-black rounded-lg overflow-hidden">
+      {/* ランク表示エリア */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {isRevealed ? (
+          <RankDisplay rank={rank} score={score} powerLevel={powerLevel} colors={colors} />
+        ) : (
+          <div className="text-gray-500 text-xl sm:text-2xl">???</div>
+        )}
+      </div>
+
+      {/* カーテン（左右から開く - transform方式） */}
+      <div 
+        className="absolute left-0 top-0 bottom-0 w-1/2 z-10"
+        style={{
+          background: `linear-gradient(to right, #1a0033, #330066, transparent)`,
+          transform: isRevealed ? 'translateX(-100%)' : 'translateX(0)',
+          transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+          willChange: 'transform'
+        }}
+      />
+      <div 
+        className="absolute right-0 top-0 bottom-0 w-1/2 z-10"
+        style={{
+          background: `linear-gradient(to left, #1a0033, #330066, transparent)`,
+          transform: isRevealed ? 'translateX(100%)' : 'translateX(0)',
+          transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+          willChange: 'transform'
+        }}
+      />
+
+      {/* アクションボタン */}
+      {!isRevealed && (
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <Button
+            onClick={handleReveal}
+            size="lg"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-base sm:text-lg md:text-xl px-6 sm:px-8 py-4 sm:py-6 rounded-full shadow-lg transform hover:scale-105 transition-transform"
+          >
+            ✨ ランクを確認する ✨
+          </Button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function NameRankingCard({ lastName, firstName, gender, isPremium, premiumLevel = 0 }: NameRankingCardProps) {
@@ -112,78 +279,30 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">{gender === "male" ? "男性" : "女性"}</div>
 
-          <div className="flex justify-center mb-4">
-            <div className="relative w-32 h-32">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-200 to-indigo-200 dark:from-purple-800 dark:to-indigo-800 flex items-center justify-center">
-                <div className="text-center">
-                  {isPremium ? (
-                    <>
-                      <div className="text-5xl font-bold text-indigo-700 dark:text-indigo-200">
-                        {rankingResult.powerRank}
-                      </div>
-                      <div className="text-sm text-indigo-600 dark:text-indigo-300">ランク</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
-                        <LockIcon className="h-10 w-10 mx-auto mb-1" />
-                        <span>非公開</span>
-                      </div>
-                      <div className="text-xs text-indigo-600 dark:text-indigo-400">プレミアム限定</div>
-                    </>
-                  )}
-                </div>
-              </div>
+          {/* カーテン演出付きランク表示（プレミアム会員のみ） */}
+          {isPremium ? (
+            <div className="mb-4">
+              <RankRevealWithCurtain
+                rank={rankingResult.powerRank}
+                score={Math.floor(rankingResult.totalPoints)}
+                powerLevel={rankingResult.powerLevel}
+              />
             </div>
-          </div>
-
-          <div className="flex justify-center gap-1 mb-2">
-            {isPremium ? (
-              Array.from({ length: 10 }).map((_, i) => (
-                <StarIcon
-                  key={i}
-                  className={`h-5 w-5 ${
-                    i < rankingResult.powerLevel
-                      ? "text-amber-400 fill-amber-400 dark:text-amber-300 dark:fill-amber-300"
-                      : "text-gray-300 dark:text-gray-600"
-                  }`}
-                />
-              ))
-            ) : (
-              <div className="flex items-center text-gray-500 dark:text-gray-400">
-                <LockIcon className="h-4 w-4 mr-1" />
-                <span className="text-sm">パワーレベルはプレミアム会員限定です</span>
-              </div>
-            )}
-          </div>
-
-          {/* 10段階運勢説明を追加 */}
-          {isPremium && (
-            <div className="mb-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 rounded-lg border border-amber-200 dark:border-amber-700">
-              <div className="text-center">
-                <div className="text-lg font-bold text-amber-800 dark:text-amber-200 mb-1">
-                  {getStarLevelDescription(rankingResult.powerLevel).title}
-                </div>
-                <div className="text-sm text-amber-700 dark:text-amber-300">
-                  {getStarLevelDescription(rankingResult.powerLevel).description}
+          ) : (
+            <div className="flex justify-center mb-4">
+              <div className="relative w-32 h-32">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-200 to-indigo-200 dark:from-purple-800 dark:to-indigo-800 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
+                      <LockIcon className="h-10 w-10 mx-auto mb-1" />
+                      <span>非公開</span>
+                    </div>
+                    <div className="text-xs text-indigo-600 dark:text-indigo-400">プレミアム限定</div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-
-          <div className="text-lg font-medium mb-4">
-            総合パワーポイント:{" "}
-            {premiumLevel === 3 ? (
-              <span className="text-indigo-600 dark:text-indigo-400 font-bold">
-                {Math.floor(rankingResult.totalPoints)}
-              </span>
-            ) : (
-              <span className="flex items-center text-gray-500">
-                <LockIcon className="h-4 w-4 mr-1" />
-                <span>プレミアム限定</span>
-              </span>
-            )}
-          </div>
         </div>
 
         <div className="space-y-4">
