@@ -27,3 +27,19 @@ yarn-error.log*
 next-env.d.ts
 # Local Netlify folder
 .netlify
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+local.properties
+*.iml
+.gradle/
+build/
+.cxx/
+.externalNativeBuild/
