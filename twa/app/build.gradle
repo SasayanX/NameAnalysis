@@ -57,8 +57,8 @@ android {
         applicationId "com.nameanalysis.ai"
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 5
-        versionName "5"
+        versionCode 6
+        versionName "6"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
@@ -150,9 +150,32 @@ android {
 
         
     }
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                def keystoreProperties = new Properties()
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            } else {
+                // 環境変数から取得（bubblewrap build用）
+                def keystorePath = file("${rootProject.projectDir}/android.keystore")
+                if (keystorePath.exists()) {
+                    storeFile keystorePath
+                    storePassword System.getenv("KEYSTORE_PASSWORD") ?: "P@ssword"
+                    keyAlias "android"
+                    keyPassword System.getenv("KEY_PASSWORD") ?: "P@ssword"
+                }
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled true
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
