@@ -47,41 +47,41 @@ export function AdvancedFiveElementsChart({
     )
   }
 
+  // gogyoResult.elementsから直接五行のカウントを取得（計算済みの値を使用）
+  const woodCount = gogyoResult.elements.wood || 0
+  const fireCount = gogyoResult.elements.fire || 0
+  const earthCount = gogyoResult.elements.earth || 0
+  const metalCount = gogyoResult.elements.metal || 0
+  const waterCount = gogyoResult.elements.water || 0
+
   // 各要素の最大値を計算
   const maxCount = Math.max(
-    gogyoResult.elements.wood,
-    gogyoResult.elements.fire,
-    gogyoResult.elements.earth,
-    gogyoResult.elements.metal,
-    gogyoResult.elements.water,
-  )
+    woodCount,
+    fireCount,
+    earthCount,
+    metalCount,
+    waterCount,
+  ) || 1 // 0除算を防ぐため、最小値を1に設定
+
+  // 合計数を計算
+  const totalCount = woodCount + fireCount + earthCount + metalCount + waterCount || 1
 
   // 各要素のパーセンテージを計算
-  // 生年月日要素と名前要素の合計数を使用
+  const woodPercent = totalCount > 0 ? Math.round((woodCount / totalCount) * 100) : 0
+  const firePercent = totalCount > 0 ? Math.round((fireCount / totalCount) * 100) : 0
+  const earthPercent = totalCount > 0 ? Math.round((earthCount / totalCount) * 100) : 0
+  const metalPercent = totalCount > 0 ? Math.round((metalCount / totalCount) * 100) : 0
+  const waterPercent = totalCount > 0 ? Math.round((waterCount / totalCount) * 100) : 0
+
+  // 生年月日と名前の要素を分けて表示（デバッグ用）
   const birthStars = gogyoResult.birthStars || []
   const nameStars = gogyoResult.nameStars || []
-  const totalCount = birthStars.length + nameStars.length
-
-  // 生年月日要素と名前要素から実際の数を計算
-  const woodCount = [...birthStars, ...nameStars].filter(star => star.includes('木')).length
-  const fireCount = [...birthStars, ...nameStars].filter(star => star.includes('火')).length
-  const earthCount = [...birthStars, ...nameStars].filter(star => star.includes('土')).length
-  const metalCount = [...birthStars, ...nameStars].filter(star => star.includes('金')).length
-  const waterCount = [...birthStars, ...nameStars].filter(star => star.includes('水')).length
-
-  const woodPercent = Math.round((woodCount / totalCount) * 100)
-  const firePercent = Math.round((fireCount / totalCount) * 100)
-  const earthPercent = Math.round((earthCount / totalCount) * 100)
-  const metalPercent = Math.round((metalCount / totalCount) * 100)
-  const waterPercent = Math.round((waterCount / totalCount) * 100)
-
-  // Add these safety checks before using the arrays
   
-  // 生年月日と名前の要素を分けて表示
   console.log("=== 陰陽五行分析デバッグ ===")
   console.log("生年月日要素:", birthStars)
   console.log("名前要素:", nameStars)
-  console.log("合計要素:", gogyoResult.elements)
+  console.log("計算済み五行要素:", gogyoResult.elements)
+  console.log("木:", woodCount, "火:", fireCount, "土:", earthCount, "金:", metalCount, "水:", waterCount)
   console.log("要素の合計:", totalCount)
 
   return (

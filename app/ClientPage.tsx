@@ -35,6 +35,7 @@ import type { StarPersonType } from "@/lib/fortune-flow-calculator"
 import { normalizeStarPersonType, calculateStarPersonFromBirthdate } from "@/lib/fortune-flow-calculator"
 import { UsageTracker } from "@/lib/usage-tracker"
 import { calculateNumerology } from "@/lib/numerology"
+import { calculateGogyo } from "@/lib/advanced-gogyo"
 
 // メモ化されたコンポーネント
 const MemoizedVerticalNameDisplay = React.memo(VerticalNameDisplay)
@@ -445,80 +446,30 @@ export default function ClientPage() {
         }
         setSixStar(mockSixStar)
 
-        const mockAdvanced = {
+        // 実際の五行分析を実行
+        console.log("🌿 五行分析を開始します...")
+        const gogyoResult = calculateGogyo(lastName, firstName, dateObject)
+        console.log("✅ 五行分析完了:", gogyoResult)
+
+        const advancedData = {
           hasBirthdate: true,
           sixStar: mockSixStar,
-          gogyoResult: {
-            dominantElement: "水",
-            weakElement: "火",
-            yinYang: "陽",
-            elements: { wood: 1, fire: 0, earth: 1, metal: 1, water: 2 },
-            // 生年月日から導出された星（4つの星）
-            birthStars: ["水星", "金星", "木星", "土星"],
-            // 姓名判断から導出された星（5つの格）
-            nameStars: ["木星", "火星", "土星", "金星", "水星"],
-            // 九星
-            nineStar: "一白水星",
-            // 外運、内運、一生運
-            externalLuck: 15,
-            internalLuck: 18,
-            lifeLuck: 33,
-            elementArray: [
-              { element: "木", count: 1, percentage: 20 },
-              { element: "火", count: 0, percentage: 0 },
-              { element: "土", count: 1, percentage: 20 },
-              { element: "金", count: 1, percentage: 20 },
-              { element: "水", count: 2, percentage: 40 },
-            ],
-            balance: "良好",
-            advice: "五行のバランスが取れています",
-            compatibility: {
-              wood: "普通",
-              fire: "注意",
-              earth: "良好",
-              metal: "良好",
-              water: "最良",
-            },
-          },
+          gogyoResult: gogyoResult,
         }
-        setAdvancedResults(mockAdvanced)
+        setAdvancedResults(advancedData)
       } else {
         // 生年月日なしの場合
-        const mockAdvanced = {
+        // 実際の五行分析を実行（生年月日なし）
+        console.log("🌿 五行分析を開始します（生年月日なし）...")
+        const gogyoResult = calculateGogyo(lastName, firstName)
+        console.log("✅ 五行分析完了:", gogyoResult)
+
+        const advancedData = {
           hasBirthdate: false,
           sixStar: null,
-          gogyoResult: {
-            dominantElement: "水",
-            weakElement: "火",
-            yinYang: "陽",
-            elements: { wood: 1, fire: 0, earth: 1, metal: 1, water: 2 },
-            // 生年月日なしなので空配列
-            birthStars: [],
-            // 姓名判断から導出された星のみ
-            nameStars: ["木星", "火星", "土星", "金星", "水星"],
-            nineStar: null,
-            externalLuck: 15,
-            internalLuck: 18,
-            lifeLuck: 33,
-            elementArray: [
-              { element: "木", count: 1, percentage: 20 },
-              { element: "火", count: 0, percentage: 0 },
-              { element: "土", count: 1, percentage: 20 },
-              { element: "金", count: 1, percentage: 20 },
-              { element: "水", count: 2, percentage: 40 },
-            ],
-            balance: "良好",
-            advice: "五行のバランスが取れています",
-            compatibility: {
-              wood: "普通",
-              fire: "注意",
-              earth: "良好",
-              metal: "良好",
-              water: "最良",
-            },
-          },
+          gogyoResult: gogyoResult,
         }
-        setAdvancedResults(mockAdvanced)
+        setAdvancedResults(advancedData)
       }
 
       if (usageTracker.incrementUsage("personalAnalysis")) {

@@ -34,6 +34,7 @@ export const strokeCountData: Record<string, number> = {
   隆: 17,
   慎: 14,
   帆: 6,
+  不: 4,
 }
 
 // 「々」は繰り返し文字として7画で処理

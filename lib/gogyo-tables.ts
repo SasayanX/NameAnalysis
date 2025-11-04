@@ -454,8 +454,29 @@ export function getDateRangeIndex(month: number, day: number): number {
       const endMonth = range.end.month
       const endDay = range.end.day
 
-      if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
-        return i
+      // 開始月と終了月が同じ場合（例：5月6日~5月5日は範囲外なので実際には存在しないが、念のため）
+      if (startMonth === endMonth) {
+        if (month === startMonth && day >= startDay && day <= endDay) {
+          return i
+        }
+      }
+      // 開始月と終了月が異なる場合
+      else {
+        // 開始月で開始日以降
+        if (month === startMonth && day >= startDay) {
+          return i
+        }
+        // 終了月で終了日以前
+        if (month === endMonth && day <= endDay) {
+          return i
+        }
+        // 開始月と終了月の間の月（開始月 < month < endMonth）
+        if (startMonth < endMonth) {
+          if (month > startMonth && month < endMonth) {
+            return i
+          }
+        }
+        // 開始月 > 終了月の場合（例：12月8日~1月5日は特殊ケースで処理済み）
       }
     }
   }

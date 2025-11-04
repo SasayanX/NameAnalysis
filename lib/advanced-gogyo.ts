@@ -70,28 +70,62 @@ export function calculateGogyo(lastName: string, firstName: string, birthdate?: 
 
     console.log("=== calculateGogyo 生年月日要素デバッグ ===")
     console.log("生年月日:", birthdate)
-    console.log("生年月日から導出した星:", birthStars)
+    console.log("生年月日から導出した星（4つ）:", birthStars)
+    console.log("生年月日から導出した星の数:", birthStars.length)
 
-    // 生年月日から導出した星を五行要素にカウント
+    // 生年月日から導出した星を五行要素にカウント（生年月日からの五行 = 4個）
     for (const star of birthStars) {
+      console.log(`生年月日の星をカウント: ${star}`)
       countElementFromStar(star, elements)
     }
     
     console.log("生年月日要素カウント後:", elements)
+    console.log("生年月日要素カウント後（詳細）:", {
+      木: elements.wood,
+      火: elements.fire,
+      土: elements.earth,
+      金: elements.metal,
+      水: elements.water,
+    })
   }
 
   // 名前から星を導出
   const { nameStars, nameCharsDebug } = calculateNameElements(lastName, firstName)
 
   console.log("=== calculateGogyo 名前要素デバッグ ===")
-  console.log("名前から導出した星:", nameStars)
+  console.log("名前から導出した星（5格）:", nameStars)
+  console.log("名前の各文字の五行（デバッグ用）:", nameCharsDebug)
 
-  // 名前から導出した星を五行要素にカウント
+  // 5つの格から導出した星を五行要素にカウント（天格、人格、地格、外格、総格）
+  // 姓名判断からの五行 = 5個（5つの格のみ）
   for (const star of nameStars) {
     countElementFromStar(star, elements)
   }
   
-  console.log("名前要素カウント後:", elements)
+  console.log("名前要素カウント後（5格のみ）:", elements)
+  console.log("詳細内訳:", {
+    木: elements.wood,
+    火: elements.fire,
+    土: elements.earth,
+    金: elements.metal,
+    水: elements.water,
+  })
+
+  // 最終的な合計を確認
+  const finalTotal = elements.wood + elements.fire + elements.earth + elements.metal + elements.water
+  console.log("=== 最終的な五行カウント ===")
+  console.log("生年月日要素数:", birthStars.length)
+  console.log("名前要素数:", nameStars.length)
+  console.log("合計要素数（期待値9）:", birthStars.length + nameStars.length)
+  console.log("実際のカウント合計:", finalTotal)
+  console.log("最終内訳:", {
+    木: elements.wood,
+    火: elements.fire,
+    土: elements.earth,
+    金: elements.metal,
+    水: elements.water,
+    合計: finalTotal,
+  })
 
   // 優勢な要素と弱い要素を特定
   const elementArray = [
@@ -168,17 +202,26 @@ function calculateBirthElements(birthdate: Date): {
   // 年から九星を取得
   const nineStar = yearToNineStar[adjustedYear] || "五黄土星" // デフォルト値
 
+  console.log("=== calculateBirthElements デバッグ ===")
+  console.log(`生年月日: ${year}年${month}月${day}日`)
+  console.log(`調整後年: ${adjustedYear}`)
+  console.log(`九星: ${nineStar}`)
+
   // 天運から星を導出（年から直接取得）
   const tenunStars = yearToTenunStars[adjustedYear] || ["土星", "土星"] // デフォルト値
+  console.log(`天運早見表から取得: ${tenunStars[0]}, ${tenunStars[1]}`)
 
   // 月日から星を導出
   const dateRangeIndex = getDateRangeIndex(month, day)
+  console.log(`日付範囲インデックス: ${dateRangeIndex} (${month}月${day}日)`)
 
   // 月日早見表から星を取得
   const monthDayStarsForNineStar = monthDayStars[dateRangeIndex]?.[nineStar] || ["水星", "木星"] // デフォルト値
+  console.log(`月日早見表から取得 (${nineStar}): ${monthDayStarsForNineStar[0]}, ${monthDayStarsForNineStar[1]}`)
 
   // 4つの星を配列にまとめる（天運早見表から2つ + 月日早見表から2つ）
   const stars: FiveElement[] = [...tenunStars, ...monthDayStarsForNineStar]
+  console.log(`最終的な生年月日要素 (4つ): ${stars.join(", ")}`)
 
   return {
     stars,
@@ -330,20 +373,17 @@ function calculateNameElements(
   let firstNameStrokes = 0
 
   // 姓の各文字の画数を計算
-  let prevChar = null
   for (const char of lastName) {
-    const strokes = getCharStroke(char, prevChar)
+    const strokes = getCharStroke(char)
     lastNameStrokes += strokes
     nameCharsDebug.push({ char, strokes, element: improvedStrokeToElement(char, strokes) })
-    prevChar = char
   }
 
   // 名の各文字の画数を計算
   for (const char of firstName) {
-    const strokes = getCharStroke(char, prevChar)
+    const strokes = getCharStroke(char)
     firstNameStrokes += strokes
     nameCharsDebug.push({ char, strokes, element: improvedStrokeToElement(char, strokes) })
-    prevChar = char
   }
 
   // 天格（姓運/先祖運）：姓の画数
