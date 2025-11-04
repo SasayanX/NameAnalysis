@@ -21,6 +21,39 @@ export default function MySubscriptionPage() {
     const planId = params.get("plan") as "basic" | "premium" | null
     const amount = params.get("amount")
     const paymentId = params.get("payment_id")
+    const email = params.get("email")
+
+    // メールアドレスがURLパラメータにある場合、自動的に決済情報を確認
+    if (email) {
+      setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/square-payments/auto-activate?email=${encodeURIComponent(email)}`)
+          const result = await response.json()
+
+          if (result.success && result.subscription) {
+            // プランを自動的に有効化
+            localStorage.setItem("userSubscription", JSON.stringify(result.subscription))
+            
+            toast({
+              title: "プランが有効化されました",
+              description: `${result.subscription.plan === "basic" ? "ベーシック" : "プレミアム"}プランが有効になりました`,
+            })
+
+            // URLパラメータを削除
+            params.delete("email")
+            const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "")
+            window.history.replaceState({}, "", newUrl)
+
+            // ページをリロード
+            setTimeout(() => {
+              window.location.reload()
+            }, 1000)
+          }
+        } catch (error) {
+          console.error("自動決済確認エラー:", error)
+        }
+      }, 1000)
+    }
 
     if (planId && (planId === "basic" || planId === "premium")) {
       // 決済完了情報がURLにある場合、localStorageに保存
@@ -77,32 +110,131 @@ export default function MySubscriptionPage() {
   const handleCheckPayment = async () => {
     setIsCheckingPayment(true)
     try {
-      // Square APIから最近の決済を確認
-      // TODO: 実際の実装では、Square APIを呼び出す
-      
       toast({
         title: "確認中",
         description: "決済状況を確認しています...",
       })
 
-      // 簡易実装：localStorageのsubscriptionsキーを確認
+      // ユーザーのメールアドレスを取得（優先順位: URLパラメータ > customerEmail > userSession）
+      let customerEmail: string | null = null
+      
       if (typeof window !== "undefined") {
-        const subscriptions = JSON.parse(localStorage.getItem("subscriptions") || "[]")
-        if (subscriptions.length > 0) {
-          const latest = subscriptions[subscriptions.length - 1]
-          if (latest.status === "active") {
-            const manager = SubscriptionManager.getInstance()
-            manager.debugSwitchPlan(latest.plan)
-            toast({
-              title: "プランが見つかりました",
-              description: "プラン情報を反映しました",
-            })
-            setTimeout(() => {
-              window.location.reload()
-            }, 1000)
+        // 1. URLパラメータから取得（最優先）
+        const params = new URLSearchParams(window.location.search)
+        customerEmail = params.get("email")
+        
+        // 2. localStorageのcustomerEmailから取得（決済時に保存したメールアドレス）
+        if (!customerEmail) {
+          customerEmail = localStorage.getItem("customerEmail")
+        }
+        
+        // 3. userSessionから取得
+        if (!customerEmail) {
+          try {
+            const sessionData = localStorage.getItem("userSession")
+            if (sessionData) {
+              const session = JSON.parse(sessionData)
+              customerEmail = session.email || null
+            }
+          } catch (e) {
+            // パースエラーは無視
           }
         }
       }
+
+      if (!customerEmail) {
+        toast({
+          title: "情報不足",
+          description: "決済確認にはメールアドレスが必要です。URLパラメータに?email=your@email.comを追加してください。",
+          variant: "destructive",
+        })
+        setIsCheckingPayment(false)
+        return
+      }
+
+      // APIから決済情報を取得
+      const response = await fetch(`/api/square-payments/check?email=${encodeURIComponent(customerEmail)}`)
+      const result = await response.json()
+
+      if (!result.success || !result.payment) {
+        toast({
+          title: "決済情報が見つかりません",
+          description: "最近の決済情報が見つかりませんでした。決済が完了していないか、Webhookが受信されていない可能性があります。",
+          variant: "destructive",
+        })
+        setIsCheckingPayment(false)
+        return
+      }
+
+      const payment = result.payment
+
+      // プランを有効化
+      const manager = SubscriptionManager.getInstance()
+      const plans = {
+        basic: { price: 330 },
+        premium: { price: 550 },
+      }
+      const planPrice = plans[payment.plan as "basic" | "premium"]?.price || payment.amount
+
+      // 有効期限を計算（次回請求日まで有効）
+      // expires_atが設定されている場合はそれを使用、なければ次回請求日（12月1日）を設定
+      let expiresAt: Date
+      if (payment.expires_at) {
+        expiresAt = new Date(payment.expires_at)
+      } else {
+        // 次回請求日（2025年12月1日）を設定
+        expiresAt = new Date("2025-12-01")
+        // または、現在の日付から1ヶ月後（決済完了から1ヶ月間有効）
+        if (expiresAt < new Date()) {
+          expiresAt = new Date()
+          expiresAt.setMonth(expiresAt.getMonth() + 1)
+        }
+      }
+      
+      // 次回請求日も同様に設定
+      const nextBillingDate = expiresAt
+
+      const subscription = {
+        plan: payment.plan,
+        expiresAt,
+        isActive: true,
+        trialEndsAt: null,
+        status: "active" as const,
+        paymentMethod: "square" as const,
+        amount: planPrice,
+        nextBillingDate: nextBillingDate,
+        lastPaymentDate: new Date(payment.webhook_received_at || Date.now()),
+        squarePaymentId: payment.payment_id,
+      }
+
+      // localStorageに保存
+      if (typeof window !== "undefined") {
+        localStorage.setItem("userSubscription", JSON.stringify({
+          ...subscription,
+          expiresAt: subscription.expiresAt.toISOString(),
+          nextBillingDate: subscription.nextBillingDate.toISOString(),
+          lastPaymentDate: subscription.lastPaymentDate.toISOString(),
+        }))
+      }
+
+      // 有効化時刻を記録
+      await fetch("/api/square-payments/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payment_id: payment.payment_id,
+          activated_at: new Date().toISOString(),
+        }),
+      })
+
+      toast({
+        title: "プランが見つかりました",
+        description: `${payment.plan === "basic" ? "ベーシック" : "プレミアム"}プランが有効化されました`,
+      })
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     } catch (error) {
       console.error("Payment check error:", error)
       toast({

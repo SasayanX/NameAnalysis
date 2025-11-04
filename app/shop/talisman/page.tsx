@@ -55,6 +55,7 @@ export default function TalismanShopPage() {
   const [purchaseMessage, setPurchaseMessage] = useState<string>("")
   const [showShareBonus, setShowShareBonus] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [hasSharedToday, setHasSharedToday] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -74,6 +75,11 @@ export default function TalismanShopPage() {
             updatedAt: new Date().toISOString(),
           }
           setUser(mapped)
+          
+          // 今日すでにシェアボーナスを獲得しているかチェック
+          const { hasEarnedPointsToday } = await import("@/lib/kanau-points-supabase")
+          const shared = await hasEarnedPointsToday(authUser.id, "お守りショップSNS共有ボーナス")
+          setHasSharedToday(shared)
         } catch (e) {
           console.error("Failed to load user points:", e)
         } finally {
@@ -89,6 +95,12 @@ export default function TalismanShopPage() {
           userData = pointsManager.initializeUser(userId)
         }
         setUser(userData)
+        
+        // 今日すでにシェアボーナスを獲得しているかチェック
+        const today = new Date().toDateString()
+        const lastShareDate = localStorage.getItem("talisman_share_date")
+        setHasSharedToday(lastShareDate === today)
+        
         setIsLoading(false)
       }
     }
@@ -169,8 +181,19 @@ export default function TalismanShopPage() {
     if (typeof window === "undefined") return
 
     const shareText = `あなたも「${GOLDEN_DRAGON_TALISMAN.name}」を授かりました✨\n#カナウ護符 #AI姓名判断 #開運アプリ\nhttps://seimei.app/shop/talisman`
+    const shareReason = "お守りショップSNS共有ボーナス"
     
     try {
+      // 日次制限チェック（ゲストモード）
+      if (!authUser) {
+        const today = new Date().toDateString()
+        const lastShareDate = localStorage.getItem("talisman_share_date")
+        if (lastShareDate === today) {
+          alert("今日はすでにシェアボーナスを獲得済みです。明日またお試しください！")
+          return
+        }
+      }
+
       if (navigator.share) {
         await navigator.share({
           title: "金龍護符を授かりました",
@@ -178,32 +201,93 @@ export default function TalismanShopPage() {
           url: "https://seimei.app/shop/talisman",
         })
         
-        // シェアボーナス付与
+        // シェアボーナス付与（日次制限あり）
         if (authUser) {
-          await addPointsSupa(authUser.id, 20, "SNS共有ボーナス")
-          const summary = await getOrCreatePointsSummary(authUser.id)
-          setUser({
-            ...user,
-            points: summary.points,
-            totalEarned: summary.total_earned,
-          } as KanauPointsUser)
+          try {
+            await addPointsSupa(authUser.id, 20, shareReason, "special_reward", true)
+            const summary = await getOrCreatePointsSummary(authUser.id)
+            setUser({
+              ...user,
+              points: summary.points,
+              totalEarned: summary.total_earned,
+            } as KanauPointsUser)
+            setShowShareBonus(true)
+            setHasSharedToday(true) // 獲得済みフラグを更新
+            setTimeout(() => setShowShareBonus(false), 3000)
+          } catch (error: any) {
+            if (error.message.includes("すでに")) {
+              alert("今日はすでにシェアボーナスを獲得済みです。明日またお試しください！")
+              setHasSharedToday(true)
+            } else {
+              throw error
+            }
+          }
         } else {
+          // ゲストモード：localStorageで制限
           const pointsManager = KanauPointsManager.getInstance()
-          pointsManager.addPoints("demo_user_001", 20, "SNS共有ボーナス")
+          pointsManager.addPoints("demo_user_001", 20, shareReason)
           const updated = pointsManager.getUser("demo_user_001")
           if (updated) setUser(updated)
           pointsManager.saveToStorage()
+          
+          // 今日の日付を保存
+          localStorage.setItem("talisman_share_date", new Date().toDateString())
+          setHasSharedToday(true) // 獲得済みフラグを更新
+          
+          setShowShareBonus(true)
+          setTimeout(() => setShowShareBonus(false), 3000)
         }
-
-        setShowShareBonus(true)
-        setTimeout(() => setShowShareBonus(false), 3000)
       } else {
         // フォールバック：クリップボードにコピー
         await navigator.clipboard.writeText(shareText)
         alert("シェアテキストをクリップボードにコピーしました！")
+        
+        // フォールバックでもポイント付与（ただし、共有成功の確認はできないため制限付き）
+        if (authUser) {
+          try {
+            await addPointsSupa(authUser.id, 20, shareReason, "special_reward", true)
+            const summary = await getOrCreatePointsSummary(authUser.id)
+            setUser({
+              ...user,
+              points: summary.points,
+              totalEarned: summary.total_earned,
+            } as KanauPointsUser)
+            setShowShareBonus(true)
+            setHasSharedToday(true) // 獲得済みフラグを更新
+            setTimeout(() => setShowShareBonus(false), 3000)
+          } catch (error: any) {
+            if (error.message.includes("すでに")) {
+              alert("今日はすでにシェアボーナスを獲得済みです。")
+              setHasSharedToday(true)
+            }
+          }
+        } else {
+          const today = new Date().toDateString()
+          const lastShareDate = localStorage.getItem("talisman_share_date")
+          if (lastShareDate !== today) {
+            const pointsManager = KanauPointsManager.getInstance()
+            pointsManager.addPoints("demo_user_001", 20, shareReason)
+            const updated = pointsManager.getUser("demo_user_001")
+            if (updated) setUser(updated)
+            pointsManager.saveToStorage()
+            localStorage.setItem("talisman_share_date", today)
+            setHasSharedToday(true) // 獲得済みフラグを更新
+            setShowShareBonus(true)
+            setTimeout(() => setShowShareBonus(false), 3000)
+          } else {
+            alert("今日はすでにシェアボーナスを獲得済みです。")
+            setHasSharedToday(true)
+          }
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Share failed:", error)
+      if (error.message && !error.message.includes("すでに")) {
+        // ユーザーがシェアをキャンセルした場合はエラーを表示しない
+        if (error.name !== "AbortError") {
+          alert("シェア処理中にエラーが発生しました")
+        }
+      }
     }
   }
 
@@ -415,10 +499,16 @@ export default function TalismanShopPage() {
                 onClick={handleShare}
                 variant="outline"
                 className="w-full"
+                disabled={hasSharedToday}
               >
                 <Share2 className="h-4 w-4 mr-2" />
-                シェアして +20 Kp 獲得
+                {hasSharedToday ? "今日はすでに獲得済み" : "シェアして +20 Kp 獲得"}
               </Button>
+              {hasSharedToday && (
+                <p className="text-xs text-center text-muted-foreground">
+                  明日またお試しください
+                </p>
+              )}
               {showShareBonus && (
                 <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
                   <Gift className="h-4 w-4 text-blue-600" />

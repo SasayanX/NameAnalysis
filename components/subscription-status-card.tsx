@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, Clock, CreditCard, AlertTriangle, Zap } from "lucide-react"
 import Link from "next/link"
+import { SubscriptionManager, SUBSCRIPTION_PLANS } from "@/lib/subscription-manager"
+import { useToast } from "@/hooks/use-toast"
+import { UsageTracker } from "@/lib/usage-tracker"
 
 interface SubscriptionStatus {
   plan: "free" | "basic" | "premium"
@@ -21,22 +24,38 @@ export function SubscriptionStatusCard() {
   const [status, setStatus] = useState<SubscriptionStatus>({
     plan: "free",
     status: "inactive",
-    usageToday: 2,
-    usageLimit: 3,
+    usageToday: 0,
+    usageLimit: 1,
   })
+  const { toast } = useToast()
 
   useEffect(() => {
-    // In a real app, fetch from API
-    // For demo, simulate different states
-    const mockStatus: SubscriptionStatus = {
-      plan: "basic",
-      status: "active",
-      usageToday: 5,
-      usageLimit: 10,
-      nextBillingDate: "2024-02-15",
-      amount: 220,
+    // 実際のサブスクリプション情報を取得
+    const manager = SubscriptionManager.getInstance()
+    const subscription = manager.getSubscriptionInfo()
+    
+    // サブスクリプションが有効かどうかを確認
+    const isActive = manager.isSubscriptionActive()
+    
+    // 解約済みまたは無効な場合は、無料プランとして表示
+    const effectivePlan = (isActive && subscription.status !== "cancelled") ? subscription.plan : "free"
+    
+    // プラン情報を取得
+    const planInfo = SUBSCRIPTION_PLANS.find((p) => p.id === effectivePlan) || SUBSCRIPTION_PLANS[0]
+    
+    // 使用状況を取得
+    const usageTracker = UsageTracker.getInstance()
+    const usageStatus = usageTracker.getUsageStatus()
+    
+    const newStatus: SubscriptionStatus = {
+      plan: effectivePlan,
+      status: isActive ? "active" : "inactive",
+      usageToday: usageStatus.todayUsage.personalAnalysis || 0,
+      usageLimit: planInfo.limits.personalAnalysis === -1 ? -1 : planInfo.limits.personalAnalysis,
+      nextBillingDate: (isActive && subscription.status !== "cancelled") ? (subscription.nextBillingDate ? new Date(subscription.nextBillingDate).toISOString().split('T')[0] : undefined) : undefined,
+      amount: (isActive && subscription.status !== "cancelled") ? (subscription.amount || planInfo.price) : 0,
     }
-    setStatus(mockStatus)
+    setStatus(newStatus)
   }, [])
 
   const getPlanName = (plan: string) => {
@@ -141,11 +160,60 @@ export function SubscriptionStatusCard() {
           {status.status === "active" && (
             <div className="pt-4 border-t">
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" size="sm">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  支払い方法
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/pricing">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    支払い方法
+                  </Link>
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={async () => {
+                    if (!confirm("本当に解約しますか？解約後は無料プランに戻ります。")) {
+                      return
+                    }
+                    
+                    try {
+                      // Squareダッシュボードで解約する必要があることを通知
+                      toast({
+                        title: "解約について",
+                        description: "解約はSquareダッシュボードから行う必要があります。詳細はマイページをご確認ください。",
+                        variant: "default",
+                      })
+                      
+                      // ローカルでは無料プランに戻す
+                      const manager = SubscriptionManager.getInstance()
+                      const now = new Date()
+                      const freeSubscription = {
+                        plan: "free" as const,
+                        expiresAt: now.toISOString(), // 過去の日付に設定（即座に無効化）
+                        isActive: false,
+                        trialEndsAt: null,
+                        status: "cancelled" as const,
+                        cancelledAt: now.toISOString(),
+                      }
+                      
+                      localStorage.setItem("userSubscription", JSON.stringify(freeSubscription))
+                      
+                      toast({
+                        title: "プランを無料に戻しました",
+                        description: "Squareダッシュボードで解約手続きも完了してください。",
+                      })
+                      
+                      setTimeout(() => {
+                        window.location.reload()
+                      }, 1000)
+                    } catch (error) {
+                      console.error("解約エラー:", error)
+                      toast({
+                        title: "エラー",
+                        description: "解約処理に失敗しました",
+                        variant: "destructive",
+                      })
+                    }
+                  }}
+                >
                   <AlertTriangle className="h-4 w-4 mr-2" />
                   解約
                 </Button>

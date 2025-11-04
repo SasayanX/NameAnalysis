@@ -1,5 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
+import { createClient } from "@supabase/supabase-js"
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Square Webhook署名検証
 function verifyWebhookSignature(body: string, signature: string, webhookSignatureKey: string): boolean {
@@ -82,6 +88,48 @@ export async function POST(request: NextRequest) {
         console.log("プラン判定:", { amount, plan, amountInYen: amount / 100 })
       }
 
+      // Supabaseに決済情報を保存
+      // Squareサブスクリプションの場合、次回請求日まで有効
+      // paymentオブジェクトから次回請求日を取得するか、1ヶ月後をデフォルトとする
+      let expiresAt = new Date()
+      expiresAt.setMonth(expiresAt.getMonth() + 1) // デフォルト: 1ヶ月後
+      
+      // Squareサブスクリプション情報から次回請求日を取得（可能な場合）
+      // 注: payment.updatedイベントには次回請求日が含まれていない可能性があるため、
+      // subscription.updatedイベントも処理する必要がある
+
+      const { error: dbError } = await supabase
+        .from("square_payments")
+        .upsert({
+          payment_id: payment.id,
+          order_id: orderId,
+          customer_email: customerId,
+          plan: plan,
+          amount: currency === "JPY" ? amount : amount / 100, // セント単位の場合は円単位に変換
+          currency: currency,
+          status: "completed",
+          webhook_received_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString(),
+          metadata: {
+            environment: isProduction ? "production" : "sandbox",
+            isTest: isTestSignature,
+            event_type: "payment.updated",
+          },
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "payment_id",
+        })
+
+      if (dbError) {
+        console.error("Supabase決済情報保存エラー:", dbError)
+      } else {
+        console.log("Square決済情報をSupabaseに保存しました:", {
+          payment_id: payment.id,
+          plan,
+          customer_email: customerId,
+        })
+      }
+
       await activateSubscription(customerId, plan, orderId)
 
       return NextResponse.json({
@@ -90,6 +138,7 @@ export async function POST(request: NextRequest) {
         customerId,
         plan,
         amount,
+        paymentId: payment.id,
         isTest: isTestSignature,
         environment: isProduction ? "production" : "sandbox",
       })
@@ -158,19 +207,112 @@ export async function POST(request: NextRequest) {
     // サブスクリプション更新処理
     if (event.type === "subscription.updated") {
       const subscription = event.data.object
+      const subscriptionId = subscription.id
+      const planId = subscription.plan_id
+      const status = subscription.status
+      const chargedThroughDate = subscription.charged_through_date // 次回請求日
+      
       console.log("サブスクリプション更新:", {
-        subscriptionId: subscription.id,
-        planId: subscription.plan_id,
-        status: subscription.status,
+        subscriptionId,
+        planId,
+        status,
+        chargedThroughDate,
         isTest: isTestSignature,
       })
+
+      // プランIDからアプリ内プランIDを取得
+      let appPlan: "basic" | "premium" | null = null
+      if (planId === process.env.SQUARE_SUBSCRIPTION_PLAN_ID_BASIC) {
+        appPlan = "basic"
+      } else if (planId === process.env.SQUARE_SUBSCRIPTION_PLAN_ID_PREMIUM) {
+        appPlan = "premium"
+      }
+
+      // 解約処理（status === "CANCELED" または "CANCELLED"）
+      if (status === "CANCELED" || status === "CANCELLED") {
+        if (appPlan) {
+          // 解約済みとしてマーク（expires_atを現在時刻に設定、または過去の日付に設定）
+          const now = new Date()
+          
+          const { error: cancelError } = await supabase
+            .from("square_payments")
+            .update({
+              status: "cancelled",
+              expires_at: now.toISOString(), // 有効期限を現在時刻に設定（即座に無効化）
+              updated_at: now.toISOString(),
+              metadata: {
+                subscription_id: subscriptionId,
+                subscription_status: status,
+                cancelled_at: now.toISOString(),
+              },
+            })
+            .eq("plan", appPlan)
+            .eq("status", "completed")
+            .order("created_at", { ascending: false })
+            .limit(1)
+
+          if (cancelError) {
+            console.error("サブスクリプション解約処理エラー:", cancelError)
+          } else {
+            console.log("サブスクリプションを解約済みとして更新しました:", {
+              subscriptionId,
+              appPlan,
+              cancelledAt: now.toISOString(),
+            })
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "サブスクリプション解約処理完了",
+          subscriptionId,
+          planId,
+          status,
+          isTest: isTestSignature,
+          environment: isProduction ? "production" : "sandbox",
+        })
+      }
+
+      // 次回請求日が設定されている場合（通常の更新）、Supabaseの決済情報を更新
+      if (chargedThroughDate && appPlan) {
+        // 次回請求日を有効期限として設定
+        const expiresAt = new Date(chargedThroughDate)
+        
+        // 該当する決済情報を更新（subscription_idまたはplanで検索）
+        const { error: updateError } = await supabase
+          .from("square_payments")
+          .update({
+            expires_at: expiresAt.toISOString(),
+            updated_at: new Date().toISOString(),
+            metadata: {
+              subscription_id: subscriptionId,
+              subscription_status: status,
+              charged_through_date: chargedThroughDate,
+            },
+          })
+          .eq("plan", appPlan)
+          .eq("status", "completed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+
+        if (updateError) {
+          console.error("サブスクリプション情報更新エラー:", updateError)
+        } else {
+          console.log("サブスクリプション情報を更新しました:", {
+            subscriptionId,
+            appPlan,
+            expiresAt: expiresAt.toISOString(),
+          })
+        }
+      }
 
       return NextResponse.json({
         success: true,
         message: "サブスクリプション更新完了",
-        subscriptionId: subscription.id,
-        planId: subscription.plan_id,
-        status: subscription.status,
+        subscriptionId,
+        planId,
+        status,
+        chargedThroughDate,
         isTest: isTestSignature,
         environment: isProduction ? "production" : "sandbox",
       })

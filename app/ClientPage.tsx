@@ -26,7 +26,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { TrialBanner } from "@/components/trial-banner"
 import { KanauPointsHeader } from "@/components/kanau-points-header"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { useSubscription } from "@/lib/subscription-manager"
+import { useSubscription, SubscriptionManager } from "@/lib/subscription-manager"
 import { NumerologyResultComponent } from "@/components/numerology-result"
 import { BabyNamingTool } from "@/components/baby-naming-tool"
 
@@ -119,9 +119,29 @@ export default function ClientPage() {
   // クライアントサイドでマウントされたかどうか（ハイドレーションエラー回避用）
   const [mounted, setMounted] = useState(false)
 
-  // URLパラメータでプレミアムモードを強制（スクリーンショット用）
+  // URLパラメータでプレミアムモードを強制（開発環境・スクリーンショット用）
+  // 本番環境では無効化（セキュリティのため）
   useEffect(() => {
     if (typeof window === "undefined") return
+    
+    // 開発環境でのみ動作するように制限
+    const isDevelopment = 
+      process.env.NODE_ENV === "development" ||
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      process.env.NEXT_PUBLIC_ALLOW_PLAN_PARAM === "true"
+    
+    // 本番環境ではURLパラメータを削除して終了
+    if (!isDevelopment) {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has("plan") || params.has("premium")) {
+        params.delete("plan")
+        params.delete("premium")
+        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "")
+        window.history.replaceState({}, "", newUrl)
+      }
+      return
+    }
     
     const params = new URLSearchParams(window.location.search)
     const premiumParam = params.get("premium")
@@ -248,12 +268,17 @@ export default function ClientPage() {
           lastPaymentDate: basicSubscription.lastPaymentDate.toISOString(),
         }))
       } else if (targetPlan === "free") {
-        localStorage.setItem("userSubscription", JSON.stringify({
-          plan: "free",
+        // 無料プランに戻す
+        const freeSubscription = {
+          plan: "free" as const,
           expiresAt: null,
           isActive: false,
           trialEndsAt: null,
-        }))
+          status: "cancelled" as const,
+        }
+        
+        // localStorageに直接保存（ページリロード時にSubscriptionManagerが読み込む）
+        localStorage.setItem("userSubscription", JSON.stringify(freeSubscription))
       }
       
       // URLパラメータを削除してから再読み込み（無限ループを防ぐ）
@@ -271,6 +296,95 @@ export default function ClientPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // 決済完了後の自動プラン有効化チェック（ウェブ・モバイル対応）
+  useEffect(() => {
+    if (typeof window === "undefined" || !mounted) return
+
+    // モバイル判定（画面幅768px以下）
+    const isMobile = window.innerWidth <= 768
+
+    // 既に有効なプランがある場合はスキップ、解約済みの場合はスキップ
+    try {
+      const existing = localStorage.getItem("userSubscription")
+      if (existing) {
+        const sub = JSON.parse(existing)
+        // 解約済みの場合はスキップ
+        if (sub.status === "cancelled") {
+          return // 解約済みのため、自動有効化をスキップ
+        }
+        // 既に有効なプランがある場合はスキップ
+        if (sub.isActive && sub.plan !== "free" && sub.expiresAt && new Date(sub.expiresAt) > new Date()) {
+          return // 既に有効なプランがある
+        }
+      }
+    } catch (e) {
+      // エラー時は続行
+    }
+
+    // URLパラメータからメールアドレスを取得
+    const params = new URLSearchParams(window.location.search)
+    const email = params.get("email")
+
+    // メールアドレスがない場合は、localStorageから取得を試みる
+    let customerEmail = email
+    if (!customerEmail) {
+      // 1. URLパラメータから取得（既に処理済み）
+      // 2. localStorageのcustomerEmailから取得（決済時に保存したメールアドレス）
+      customerEmail = localStorage.getItem("customerEmail") || null
+      
+      // 3. userSessionから取得
+      if (!customerEmail) {
+        try {
+          const sessionData = localStorage.getItem("userSession")
+          if (sessionData) {
+            const session = JSON.parse(sessionData)
+            customerEmail = session.email || null
+          }
+        } catch (e) {
+          // エラー時は無視
+        }
+      }
+    }
+
+    // メールアドレスがある場合のみ、自動的に決済情報を確認
+    if (customerEmail) {
+      // ウェブ: 即座に確認（0.5秒後）
+      // モバイル: 少し遅延（1秒後、TWA/PWAの読み込みを待つ）
+      const delay = isMobile ? 1000 : 500
+      
+      const timer = setTimeout(async () => {
+        try {
+          // ローディング状態を視覚的に表示（オプション）
+          const response = await fetch(`/api/square-payments/auto-activate?email=${encodeURIComponent(customerEmail!)}`)
+          const result = await response.json()
+
+          if (result.success && result.subscription) {
+            // プランを自動的に有効化
+            localStorage.setItem("userSubscription", JSON.stringify(result.subscription))
+            
+            // モバイル: リロード前にトースト通知（但し、useToastはここでは使えないので、alert or console）
+            if (isMobile) {
+              console.log("決済完了を検知し、プランを有効化しました:", result.subscription.plan)
+              // モバイルでは、リロード前に少し待機（ユーザーが通知を確認できるように）
+              setTimeout(() => {
+                window.location.reload()
+              }, 500)
+            } else {
+              // ウェブ: 即座にリロード
+              console.log("決済完了を検知し、プランを有効化しました:", result.subscription.plan)
+              window.location.reload()
+            }
+          }
+        } catch (error) {
+          // エラーは無視（自動チェックなので失敗しても問題ない）
+          console.log("自動決済確認:", error)
+        }
+      }, delay)
+
+      return () => clearTimeout(timer)
+    }
+  }, [mounted])
 
   // usageStatusのplanが変更されたらcurrentPlanを更新
   useEffect(() => {

@@ -69,16 +69,59 @@ export async function addTransaction(
   if (error) throw error
 }
 
+/**
+ * 今日すでに特定の理由でポイントを獲得しているかチェック
+ */
+export async function hasEarnedPointsToday(
+  userId: string,
+  reason: string,
+): Promise<boolean> {
+  const supabase = getSupabaseClient()
+  if (!supabase) {
+    throw new Error("Supabase環境変数が設定されていません")
+  }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStart = today.toISOString()
+
+  const { data, error } = await supabase
+    .from("point_transactions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("type", "earn")
+    .eq("reason", reason)
+    .gte("created_at", todayStart)
+    .limit(1)
+
+  if (error) {
+    console.error("ポイント履歴チェックエラー:", error)
+    return false // エラー時は許可（安全側）
+  }
+
+  return (data?.length || 0) > 0
+}
+
 export async function addPointsSupa(
   userId: string,
   amount: number,
   reason: string = "デバッグ付与",
   category: "special_reward" | "purchase" = "special_reward",
+  checkDailyLimit: boolean = false,
 ) {
   const supabase = getSupabaseClient()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
+
+  // 日次制限チェック
+  if (checkDailyLimit) {
+    const alreadyEarned = await hasEarnedPointsToday(userId, reason)
+    if (alreadyEarned) {
+      throw new Error("今日はすでにこのボーナスを獲得済みです")
+    }
+  }
+
   const summary = await getOrCreatePointsSummary(userId)
 
   const { error: upErr } = await supabase
