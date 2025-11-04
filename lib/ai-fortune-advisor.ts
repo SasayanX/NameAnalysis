@@ -194,10 +194,22 @@ export function generateAIFortuneAdvice(analysisData: NameAnalysisData): AIFortu
      fortuneLevels.gai + fortuneLevels.sou * 2) / 7
   )
 
-  // 五行要素の分析（名前の画数から動的に生成）
+  // 五行要素の分析（実際のグラフの値から直接計算）
+  // elementsが存在する場合はそれを使用、存在しない場合は動的に生成
   const dynamicElements = generateElementsFromName(name, categories)
-  const dominantElement = elements ? getDominantElement(elements) : getDominantElement(dynamicElements)
-  const weakElement = elements ? getWeakElement(elements) : getWeakElement(dynamicElements)
+  const actualElements = elements || dynamicElements
+  
+  // 実際のグラフの値から最大値と最小値を計算（グラフの表示と一致させるため）
+  const elementArray = [
+    { element: "木" as const, count: actualElements.woodCount || 0 },
+    { element: "火" as const, count: actualElements.fireCount || 0 },
+    { element: "土" as const, count: actualElements.earthCount || 0 },
+    { element: "金" as const, count: actualElements.metalCount || 0 },
+    { element: "水" as const, count: actualElements.waterCount || 0 },
+  ]
+  elementArray.sort((a, b) => b.count - a.count)
+  const dominantElement = elementArray[0].element
+  const weakElement = elementArray[elementArray.length - 1].element
 
   // AI生成されたパーソナライズアドバイス
   const personalizedAdvice = generatePersonalizedAdvice(

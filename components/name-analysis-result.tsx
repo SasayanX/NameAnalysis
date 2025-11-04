@@ -19,6 +19,7 @@ interface NameAnalysisResultProps {
   isPremium?: boolean
   isPro?: boolean
   currentPlan?: "free" | "basic" | "premium"
+  advancedResults?: any // 五行分析結果を含む
 }
 
 export function NameAnalysisResult({
@@ -28,6 +29,7 @@ export function NameAnalysisResult({
   isPremium = false,
   isPro = false,
   currentPlan = "free",
+  advancedResults,
 }: NameAnalysisResultProps) {
   const [isAdviceOpen, setIsAdviceOpen] = useState(false)
 
@@ -660,7 +662,21 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
                 gender: gender as "male" | "female",
                 categories: results.categories || [],
                 totalScore: results.totalScore || 0,
-                elements: results.elements
+                elements: (() => {
+                  // 実際のグラフの値から五行要素を取得（優先順位: advancedResults > results.elements）
+                  if (advancedResults?.gogyoResult?.elements) {
+                    const gogyoElements = advancedResults.gogyoResult.elements
+                    return {
+                      woodCount: gogyoElements.wood || 0,
+                      fireCount: gogyoElements.fire || 0,
+                      earthCount: gogyoElements.earth || 0,
+                      metalCount: gogyoElements.metal || 0,
+                      waterCount: gogyoElements.water || 0,
+                    }
+                  }
+                  // フォールバック: results.elements または undefined
+                  return results.elements
+                })()
               }}
             />
           </div>

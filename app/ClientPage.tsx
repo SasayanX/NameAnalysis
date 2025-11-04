@@ -922,6 +922,7 @@ export default function ClientPage() {
                             name={fullName} 
                             gender={gender} 
                             currentPlan={currentPlan}
+                            advancedResults={advancedResults}
                           />
                           {/* 無料プランでのアップグレード誘導 */}
                           {currentPlan === "free" && (
