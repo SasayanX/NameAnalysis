@@ -254,6 +254,9 @@ export const commonKanjiData: Record<string, number> = {
   吾: 7,
   彅: 14,
   寛: 15, // 寛大、寛容
+  祥: 11, // 吉祥、祥瑞
+  椎: 12, // 椎骨、椎間板
+  崇: 11, // 崇拝、崇高
 }
 
 // Import other stroke data

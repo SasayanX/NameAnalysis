@@ -1,11 +1,24 @@
 "use client"
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import RareCardWithActions from '@/components/RareCardWithActions'
+
+// ランク別の称号
+const rankTitles: Record<string, string> = {
+  SSS: '天下無双',
+  SS: '無敵',
+  S: '最強',
+  'A+': '一流',
+  A: '優秀',
+  'B+': '良好',
+  B: '普通',
+  C: '平凡',
+  D: '苦労',
+}
 
 export default function TestRareCardPage() {
   const [lastName, setLastName] = useState('大谷')
@@ -14,47 +27,6 @@ export default function TestRareCardPage() {
   const [totalPoints, setTotalPoints] = useState(480)
   const [powerLevel, setPowerLevel] = useState(10)
   const [baseImagePath, setBaseImagePath] = useState<string>('')
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const handleGenerate = async () => {
-    setLoading(true)
-    setImageUrl(null)
-
-    try {
-      const params = new URLSearchParams({
-        lastName,
-        firstName,
-        rank,
-        totalPoints: totalPoints.toString(),
-        powerLevel: powerLevel.toString(),
-      })
-      
-      // ベース画像パスが指定されている場合は追加
-      if (baseImagePath.trim()) {
-        params.append('baseImagePath', baseImagePath.trim())
-      }
-
-      const url = `/api/rare-card/generate?${params.toString()}`
-      setImageUrl(url)
-    } catch (error) {
-      console.error('画像生成エラー:', error)
-      alert('画像生成に失敗しました')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDownload = () => {
-    if (!imageUrl) return
-
-    const link = document.createElement('a')
-    link.href = imageUrl
-    link.download = `rare-card-${lastName}${firstName}-${rank}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -142,30 +114,22 @@ export default function TestRareCardPage() {
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={handleGenerate} disabled={loading}>
-              {loading ? '生成中...' : 'レアカード生成'}
-            </Button>
-            {imageUrl && (
-              <Button onClick={handleDownload} variant="outline">
-                ダウンロード
-              </Button>
-            )}
-          </div>
-
-          {imageUrl && (
-            <div className="mt-6">
-              <Label>生成されたレアカード</Label>
-              <div className="mt-2 border rounded-lg p-4 bg-gray-50">
-                <img
-                  src={imageUrl}
-                  alt={`${lastName}${firstName} - ${rank}`}
-                  className="mx-auto max-w-full"
-                  style={{ maxHeight: '600px' }}
-                />
-              </div>
+          <div className="mt-6">
+            <Label>レアカードプレビュー</Label>
+            <div className="mt-4">
+              <RareCardWithActions
+                lastName={lastName}
+                firstName={firstName}
+                rank={rank}
+                title={rankTitles[rank]}
+                score={totalPoints}
+                powerLevel={powerLevel}
+                baseSrc={baseImagePath || undefined}
+                width={1024}
+                height={1536}
+              />
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>
