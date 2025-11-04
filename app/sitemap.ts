@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://seimei.kanau-kiryu.com"
+  const baseUrl = "https://seimei.app"
   const currentDate = new Date()
 
   // 基本ページ

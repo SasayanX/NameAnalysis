@@ -344,30 +344,42 @@ export function analyzeNameFortune(
 
   // 文字別詳細情報
   const characterDetails = []
+  
+  // サーバーサイド/クライアントサイドの判定
+  let getCharStrokeWithContextFunc: (char: string, fullText: string, position: number) => { stroke: number; isDefault: boolean }
+  if (typeof window === 'undefined') {
+    // サーバーサイド
+    const { getCharStrokeWithContextServer } = require('./stroke-count-server')
+    getCharStrokeWithContextFunc = getCharStrokeWithContextServer
+  } else {
+    // クライアントサイド
+    const { getCharStrokeWithContext } = require('./name-data-simple')
+    getCharStrokeWithContextFunc = getCharStrokeWithContext
+  }
 
-  // 姓の文字別情報
-  for (let i = 0; i < lastName.length; i++) {
-    const char = lastName[i]
-    const stroke = getStrokeCount(char)
+  // 姓の文字別情報（lastNameCharsは既に199行目で宣言済み）
+  for (let i = 0; i < lastNameChars.length; i++) {
+    const char = lastNameChars[i]
+    const { stroke, isDefault } = getCharStrokeWithContextFunc(char, lastName, i)
     characterDetails.push({
       name: "姓",
       character: char,
       strokes: stroke,
-      isDefault: false, // getStrokeCountは常にfalse
+      isDefault: isDefault,
       isReisuu: lastNameResult.hasReisuu && i === 0
     })
   }
 
-  // 名の文字別情報
-  for (let i = 0; i < firstName.length; i++) {
-    const char = firstName[i]
-    const stroke = getStrokeCount(char)
+  // 名の文字別情報（firstNameCharsは既に200行目で宣言済み）
+  for (let i = 0; i < firstNameChars.length; i++) {
+    const char = firstNameChars[i]
+    const { stroke, isDefault } = getCharStrokeWithContextFunc(char, firstName, i)
     characterDetails.push({
       name: "名",
       character: char,
       strokes: stroke,
-      isDefault: false, // getStrokeCountは常にfalse
-      isReisuu: firstNameResult.hasReisuu && i === firstName.length - 1
+      isDefault: isDefault,
+      isReisuu: firstNameResult.hasReisuu && i === firstNameChars.length - 1
     })
   }
 

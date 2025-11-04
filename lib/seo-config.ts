@@ -1,6 +1,6 @@
 export const seoConfig = {
   siteName: "まいにち姓名判断",
-  siteUrl: "https://seimei.kanau-kiryu.com", // 正しいドメインに修正
+  siteUrl: "https://seimei.app", // 正しいドメイン
   description:
     "毎日の運勢もわかる本格姓名判断アプリ。旧字体による正確な画数計算で、あなたの運命を詳しく鑑定します。無料で基本鑑定、有料で詳細分析や運気運行表も利用可能。",
   keywords: [

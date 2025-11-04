@@ -17,7 +17,7 @@ import { SEOHead } from "@/components/seo-head"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://seimei.kanau-kiryu.com"),
+  metadataBase: new URL("https://seimei.app"),
   title: {
     default: "まいにちAI姓名判断 - 完全旧字体対応のAI運命鑑定",
     template: "%s | まいにちAI姓名判断",

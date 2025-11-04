@@ -424,6 +424,29 @@ export default function ClientPage() {
       console.log("分析結果:", analysisResult)
       setResults(analysisResult)
 
+      // 推測マーク（isDefault: true）の文字を検出してメール通知
+      if (analysisResult.characterDetails && Array.isArray(analysisResult.characterDetails)) {
+        const unknownKanji = analysisResult.characterDetails
+          .filter((detail: any) => detail.isDefault === true)
+          .map((detail: any) => detail.character)
+        
+        if (unknownKanji.length > 0) {
+          console.log(`📧 推測マーク検出: ${unknownKanji.length}文字 (${unknownKanji.join(', ')})`)
+          // メール通知を送信（非同期、エラーは無視）
+          fetch('/api/notify-unknown-strokes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lastName,
+              firstName,
+              unknownKanji,
+            }),
+          }).catch((error) => {
+            console.warn('推測マーク通知エラー:', error)
+          })
+        }
+      }
+
       if (birthdate) {
         // 生年月日から六星占術の星人タイプを計算
         const dateObject = new Date(birthdate)
