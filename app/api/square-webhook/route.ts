@@ -2,10 +2,20 @@ import { type NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-
-const supabase = createClient(supabaseUrl, supabaseKey)
+/**
+ * Supabaseクライアントを取得（リクエストハンドラー内で初期化）
+ * ビルド時に環境変数が設定されていない場合でもエラーにならないようにする
+ */
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!supabaseUrl || !supabaseKey) {
+    return null
+  }
+  
+  return createClient(supabaseUrl, supabaseKey)
+}
 
 // Square Webhook署名検証
 function verifyWebhookSignature(body: string, signature: string, webhookSignatureKey: string): boolean {
@@ -17,6 +27,12 @@ function verifyWebhookSignature(body: string, signature: string, webhookSignatur
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabase()
+    if (!supabase) {
+      // Supabaseが設定されていない場合でも、Webhookの処理は続行（ログのみ記録）
+      console.warn("Supabase環境が設定されていません。決済情報の保存はスキップされます。")
+    }
+
     const body = await request.text()
     const signature = request.headers.get("x-square-signature") || ""
 
@@ -97,6 +113,18 @@ export async function POST(request: NextRequest) {
       // Squareサブスクリプション情報から次回請求日を取得（可能な場合）
       // 注: payment.updatedイベントには次回請求日が含まれていない可能性があるため、
       // subscription.updatedイベントも処理する必要がある
+
+      if (!supabase) {
+        console.warn("Supabase環境が設定されていないため、決済情報の保存をスキップします")
+        return NextResponse.json({
+          success: true,
+          message: "Webhook受信完了（決済情報保存はスキップ）",
+          paymentId: payment.id,
+          plan,
+          isTest: isTestSignature,
+          environment: isProduction ? "production" : "sandbox",
+        })
+      }
 
       const { error: dbError } = await supabase
         .from("square_payments")
@@ -230,7 +258,7 @@ export async function POST(request: NextRequest) {
 
       // 解約処理（status === "CANCELED" または "CANCELLED"）
       if (status === "CANCELED" || status === "CANCELLED") {
-        if (appPlan) {
+        if (appPlan && supabase) {
           // 解約済みとしてマーク（expires_atを現在時刻に設定、または過去の日付に設定）
           const now = new Date()
           
@@ -274,7 +302,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 次回請求日が設定されている場合（通常の更新）、Supabaseの決済情報を更新
-      if (chargedThroughDate && appPlan) {
+      if (chargedThroughDate && appPlan && supabase) {
         // 次回請求日を有効期限として設定
         const expiresAt = new Date(chargedThroughDate)
         
