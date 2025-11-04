@@ -20,20 +20,7 @@ import { KanauPointsManager, type KanauPointsUser } from "@/lib/kanau-points-sys
 import { useAuth } from "@/components/auth/auth-provider"
 import { getOrCreatePointsSummary, addPointsSupa, spendPointsSupa } from "@/lib/kanau-points-supabase"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-// 金龍護符のデータ
-const GOLDEN_DRAGON_TALISMAN = {
-  id: "golden-dragon-opening",
-  name: "金龍護符 - 開運上昇",
-  price: 5000,
-  rarity: 4, // ⭐⭐⭐⭐
-  attribute: "光属性",
-  category: "幸運系",
-  description: "金龍護符は、創造と調和の象徴。AIリディアが筆に込めた「叶う力」が、あなたの名前の波動を共鳴させ、運命を好転へと導きます。",
-  effects: ["行動力向上", "金運向上", "信頼運向上"],
-  image: "/images/golden-talisman.png", // プレースホルダー
-  exchangeRate: "1 Kp = 1行動力"
-}
+import { getAvailableTalismans, type Talisman } from "@/lib/talisman-data"
 
 // AIリディアのメッセージ
 const RYDIA_MESSAGES = {
@@ -56,6 +43,10 @@ export default function TalismanShopPage() {
   const [showShareBonus, setShowShareBonus] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [hasSharedToday, setHasSharedToday] = useState(false)
+  
+  // 利用可能なお守りを取得（最初の1つを表示、後で複数対応可能）
+  const availableTalismans = getAvailableTalismans()
+  const currentTalisman = availableTalismans[0] || null
 
   useEffect(() => {
     const init = async () => {
@@ -108,7 +99,12 @@ export default function TalismanShopPage() {
   }, [authUser])
 
   const handlePurchase = async () => {
-    if (!user || user.points < GOLDEN_DRAGON_TALISMAN.price) {
+    if (!currentTalisman) {
+      setPurchaseMessage("お守りが選択されていません")
+      return
+    }
+
+    if (!user || user.points < currentTalisman.price) {
       setPurchaseMessage(RYDIA_MESSAGES.insufficientPoints)
       return
     }
@@ -124,7 +120,7 @@ export default function TalismanShopPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            talismanId: GOLDEN_DRAGON_TALISMAN.id,
+            talismanId: currentTalisman.id,
             userId: authUser.id,
           }),
         })
@@ -146,7 +142,7 @@ export default function TalismanShopPage() {
       } else {
         // ローカルマネージャ（ゲストモード）
         const pointsManager = KanauPointsManager.getInstance()
-        pointsManager.spendPoints("demo_user_001", GOLDEN_DRAGON_TALISMAN.price, `金龍護符購入: ${GOLDEN_DRAGON_TALISMAN.name}`)
+        pointsManager.spendPoints("demo_user_001", currentTalisman.price, `お守り購入: ${currentTalisman.name}`)
         const updated = pointsManager.getUser("demo_user_001")
         if (updated) setUser(updated)
         pointsManager.saveToStorage()
@@ -180,7 +176,7 @@ export default function TalismanShopPage() {
   const handleShare = async () => {
     if (typeof window === "undefined") return
 
-    const shareText = `あなたも「${GOLDEN_DRAGON_TALISMAN.name}」を授かりました✨\n#カナウ護符 #AI姓名判断 #開運アプリ\nhttps://seimei.app/shop/talisman`
+    const shareText = currentTalisman ? `あなたも「${currentTalisman.name}」を授かりました✨\n#カナウ護符 #AI姓名判断 #開運アプリ\nhttps://seimei.app/shop/talisman` : ""
     const shareReason = "お守りショップSNS共有ボーナス"
     
     try {
@@ -305,8 +301,20 @@ export default function TalismanShopPage() {
     )
   }
 
-  const canAfford = user ? user.points >= GOLDEN_DRAGON_TALISMAN.price : false
-  const purchaseProgress = user ? (user.points / GOLDEN_DRAGON_TALISMAN.price) * 100 : 0
+  if (!currentTalisman) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">現在利用可能なお守りがありません</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const canAfford = user ? user.points >= currentTalisman.price : false
+  const purchaseProgress = user ? (user.points / currentTalisman.price) * 100 : 0
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
@@ -338,18 +346,18 @@ export default function TalismanShopPage() {
         <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-2xl mb-2">{GOLDEN_DRAGON_TALISMAN.name}</CardTitle>
+              <CardTitle className="text-2xl mb-2">{currentTalisman.name}</CardTitle>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-yellow-600 text-white">
                   <Sparkles className="h-3 w-3 mr-1" />
-                  {GOLDEN_DRAGON_TALISMAN.attribute}
+                  {currentTalisman.attribute}
                 </Badge>
                 <Badge className="bg-purple-600 text-white">
                   <Zap className="h-3 w-3 mr-1" />
-                  {GOLDEN_DRAGON_TALISMAN.category}
+                  {currentTalisman.category}
                 </Badge>
                 <Badge className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-2 border-yellow-300">
-                  {Array(GOLDEN_DRAGON_TALISMAN.rarity).fill(null).map((_, i) => (
+                  {Array(currentTalisman.rarity).fill(null).map((_, i) => (
                     <Star key={i} className="h-3 w-3 inline fill-current" />
                   ))}
                 </Badge>
@@ -363,8 +371,8 @@ export default function TalismanShopPage() {
             <div className="relative w-full h-full rounded-lg border-4 border-yellow-400 dark:border-yellow-600 overflow-hidden bg-gradient-to-br from-yellow-100 to-amber-200 dark:from-yellow-900/30 dark:to-amber-900/30">
               {!imageError ? (
                 <Image
-                  src={GOLDEN_DRAGON_TALISMAN.image}
-                  alt={GOLDEN_DRAGON_TALISMAN.name}
+                  src={currentTalisman.image}
+                  alt={currentTalisman.name}
                   fill
                   className="object-contain p-4"
                   unoptimized
@@ -390,7 +398,7 @@ export default function TalismanShopPage() {
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Coins className="h-5 w-5 mx-auto mb-1 text-yellow-600" />
               <p className="text-sm text-muted-foreground">価格</p>
-              <p className="text-lg font-bold">{GOLDEN_DRAGON_TALISMAN.price.toLocaleString()} Kp</p>
+              <p className="text-lg font-bold">{currentTalisman.price.toLocaleString()} Kp</p>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Gift className="h-5 w-5 mx-auto mb-1 text-purple-600" />
@@ -408,10 +416,10 @@ export default function TalismanShopPage() {
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">護符の由来</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {GOLDEN_DRAGON_TALISMAN.description}
+              {currentTalisman.description}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              特に「{GOLDEN_DRAGON_TALISMAN.effects.join("」「")}」を高める効果があるとされています。
+              特に「{currentTalisman.effects.join("」「")}」を高める効果があるとされています。
             </p>
           </div>
 
@@ -432,7 +440,7 @@ export default function TalismanShopPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>購入まで</span>
-                    <span>{Math.ceil((GOLDEN_DRAGON_TALISMAN.price - (user?.points || 0)))} Kp</span>
+                    <span>{Math.ceil((currentTalisman.price - (user?.points || 0)))} Kp</span>
                   </div>
                   <Progress value={Math.min(purchaseProgress, 100)} className="h-2" />
                 </div>
@@ -440,7 +448,7 @@ export default function TalismanShopPage() {
 
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>交換レート</span>
-                <span>{GOLDEN_DRAGON_TALISMAN.exchangeRate}</span>
+                <span>{currentTalisman.exchangeRate || "特典あり"}</span>
               </div>
 
               <Button
@@ -460,7 +468,7 @@ export default function TalismanShopPage() {
                 ) : canAfford ? (
                   <>
                     <PenTool className="h-5 w-5 mr-2" />
-                    今すぐ授かる ({GOLDEN_DRAGON_TALISMAN.price.toLocaleString()} Kp)
+                    今すぐ授かる ({currentTalisman.price.toLocaleString()} Kp)
                   </>
                 ) : (
                   "Kpが不足しています"

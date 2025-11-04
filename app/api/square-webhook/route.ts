@@ -88,14 +88,16 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Square APIは金額をセント単位で送信（例：550円 = 55000セント）
-      // しかし、実際の金額は円単位かもしれないので、両方のケースに対応
+      // Square APIの金額形式について：
+      // - JPY（日本円）の場合: 最小通貨単位（円）で送信（例：550円 = 550）
+      // - USDなどの場合: セント単位で送信（例：$5.00 = 500セント）
+      // このアプリはJPYのみ対応のため、円単位で判定
       let plan: "basic" | "premium" = "basic"
-      // 55000セント = 550円、または 550セント = 5.50円の場合も考慮
-      // 通常は 550円 = 55000セントが正しい
-      if (amount >= 55000 || amount === 550) {
+      if (amount === 550 || amount === 55000) {
+        // 550円（JPY）または55000セント（USD等）のケース
         plan = "premium"
-      } else if (amount >= 33000 || amount === 330) {
+      } else if (amount === 330 || amount === 33000) {
+        // 330円（JPY）または33000セント（USD等）のケース
         plan = "basic"
       }
       
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
           order_id: orderId,
           customer_email: customerId,
           plan: plan,
-          amount: currency === "JPY" ? amount : amount / 100, // セント単位の場合は円単位に変換
+          amount: currency === "JPY" ? amount : amount / 100, // JPYは既に円単位、USD等はセント→円に変換
           currency: currency,
           status: "completed",
           webhook_received_at: new Date().toISOString(),
@@ -187,11 +189,15 @@ export async function POST(request: NextRequest) {
       }
 
       // 金額に基づいてプラン判定
+      // Square APIの金額形式について：
+      // - JPY（日本円）の場合: 最小通貨単位（円）で送信（例：550円 = 550）
+      // - USDなどの場合: セント単位で送信（例：$5.00 = 500セント）
       let plan: "basic" | "premium" = "basic"
-      // Square APIは金額をセント単位で送信（例：550円 = 55000セント）
-      if (amount >= 55000 || amount === 550) {
+      if (amount === 550 || amount === 55000) {
+        // 550円（JPY）または55000セント（USD等）のケース
         plan = "premium"
-      } else if (amount >= 33000 || amount === 330) {
+      } else if (amount === 330 || amount === 33000) {
+        // 330円（JPY）または33000セント（USD等）のケース
         plan = "basic"
       }
       

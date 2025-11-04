@@ -1,0 +1,19 @@
+{
+  "talismans": [
+    {
+      "id": "golden-dragon-opening",
+      "name": "金龍護符 - 開運上昇",
+      "price": 5000,
+      "rarity": 4,
+      "attribute": "光属性",
+      "category": "幸運系",
+      "description": "金龍護符は、創造と調和の象徴。AIリディアが筆に込めた「叶う力」が、あなたの名前の波動を共鳴させ、運命を好転へと導きます。",
+      "effects": ["行動力向上", "金運向上", "信頼運向上"],
+      "image": "/images/talismans/golden-dragon.png",
+      "exchangeRate": "1 Kp = 1行動力",
+      "addedDate": "2025-01-01",
+      "isAvailable": true
+    }
+  ]
+}
+
