@@ -43,6 +43,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: "/",
       },
     ],
-    sitemap: "https://nameanalysis216.vercel.app/sitemap.xml",
+    sitemap: "https://seimei.app/sitemap.xml",
   }
 }
