@@ -265,6 +265,8 @@ export async function POST(request: NextRequest) {
     let tweetId: string | undefined = undefined
     let twitterError: string | null = null
     let twitterSent = false
+    let articleId: string | null = null
+    let articleError: string | null = null
     
     if (finalShareResult) {
       // X（Twitter）への投稿（重要：失敗しても処理は継続）
@@ -353,8 +355,6 @@ export async function POST(request: NextRequest) {
       }
       
       // ブログ記事を自動生成して保存（重要：失敗しても処理は継続）
-      let articleId: string | null = null
-      let articleError: string | null = null
       try {
         const { generateBlogArticleFromAnalysis, saveBlogArticle } = await import('@/lib/blog-article-generator')
         
