@@ -5,8 +5,7 @@ export async function GET() {
   const assetLinks = [
     {
       relation: [
-        'delegate_permission/common.handle_all_urls',
-        'delegate_permission/common.get_login_creds'
+        'delegate_permission/common.handle_all_urls'
       ],
       target: {
         namespace: 'android_app',
