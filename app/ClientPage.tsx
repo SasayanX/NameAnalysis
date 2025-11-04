@@ -1013,8 +1013,9 @@ export default function ClientPage() {
                                         <p className="text-sm text-muted-foreground">名前の総合評価</p>
                                       </div>
                                       <div className="flex items-center gap-1">
-                                        {currentPlan === "free" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
-                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">ベーシック</span>
+                                        {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <Sparkles className="h-4 w-4 text-purple-600" />
+                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">プレミアム</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1112,7 +1113,7 @@ export default function ClientPage() {
                             lastName={lastName}
                             firstName={firstName}
                             gender={gender}
-                            isPremium={currentPlan === "premium"}
+                            isPremium={currentPlan === "premium"} // プレミアムプランのみカーテン表示を有効化
                             premiumLevel={currentPlan === "premium" ? 3 : currentPlan === "basic" ? 1 : 0}
                           />
                         </TabsContent>

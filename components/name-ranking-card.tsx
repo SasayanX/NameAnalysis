@@ -13,8 +13,9 @@ import { getStarLevelDescription } from "@/lib/name-ranking"
 
 import { useAuth } from "@/components/auth/auth-provider"
 import { submitRankingEntryFromNameAnalysis } from "@/lib/ranking-repo"
-import { getOrCreatePointsSummary } from "@/lib/kanau-points-supabase"
+// クライアントサイドから直接Supabaseアクセスを避けるため、API Route経由で取得
 import Link from "next/link"
+import RankCardIssueSection from "@/components/RankCardIssueSection"
 
 // ランク別の色設定
 const rankColors: Record<string, { main: string; glow: string; shadow: string; bg: string }> = {
@@ -199,11 +200,16 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
   const { fortuneData } = useFortuneData()
   const { user: authUser } = useAuth()
 
-  // ポイント残高を取得
+  // ポイント残高を取得（API Route経由）
   useEffect(() => {
     if (authUser) {
-      getOrCreatePointsSummary(authUser.id)
-        .then((s) => setPoints(s.points || 0))
+      fetch(`/api/kp/balance?userId=${encodeURIComponent(authUser.id)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setPoints(data.points || 0)
+          }
+        })
         .catch(() => {})
     }
   }, [authUser])
@@ -222,9 +228,14 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
     try {
       await submitRankingEntryFromNameAnalysis(authUser.id, lastName, firstName, gender)
       setRegisterSuccess(true)
-      // ポイント残高を更新
-      const updated = await getOrCreatePointsSummary(authUser.id)
-      setPoints(updated.points || 0)
+      // ポイント残高を更新（API Route経由）
+      const response = await fetch(`/api/kp/balance?userId=${encodeURIComponent(authUser.id)}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setPoints(data.points || 0)
+        }
+      }
     } catch (e: any) {
       setRegisterError(e.message || "ランキング登録に失敗しました")
     } finally {
@@ -263,7 +274,7 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
       <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white dark:from-purple-700 dark:to-indigo-700">
         <CardTitle className="flex justify-between items-center">
           <span>おなまえ格付けランク</span>
-          {isPremium && (
+          {isPremium && premiumLevel === 3 && (
             <Badge variant="outline" className="bg-white/20 text-white border-white/30">
               プレミアム機能
             </Badge>
@@ -376,6 +387,20 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ランクカード発行セクション */}
+        {isPremium && (
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <RankCardIssueSection
+              lastName={lastName}
+              firstName={firstName}
+              rank={rankingResult.powerRank}
+              totalPoints={Math.floor(rankingResult.totalPoints)}
+              powerLevel={rankingResult.powerLevel}
+              baseImagePath={`/images/rare-cards/card_base_${rankingResult.powerRank}_v1.png`}
+            />
           </div>
         )}
 

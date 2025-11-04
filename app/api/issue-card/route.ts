@@ -1,0 +1,184 @@
+/**
+ * ランクカード発行API
+ * KP消費 + 画像生成
+ */
+import { NextRequest, NextResponse } from 'next/server'
+import { generateRareCardImage, RankType } from '@/lib/rare-card-generator'
+import { spendPointsSupa, getOrCreatePointsSummary } from '@/lib/kanau-points-supabase'
+import { KP_COST_ISSUE } from '@/constants/kp'
+import { getSupabaseServerClient } from '@/lib/supabase-server'
+import fs from 'fs'
+import path from 'path'
+
+export async function POST(request: NextRequest) {
+  try {
+    console.log('🎴 ランクカード発行API: リクエスト受信')
+    const body = await request.json()
+    console.log('📦 リクエストボディ:', body)
+    const { lastName, firstName, rank, totalPoints, powerLevel, userId, baseImagePath } = body
+
+    // バリデーション
+    if (!lastName || !firstName || !rank || !userId) {
+      console.error('❌ バリデーションエラー: 必須パラメータが不足')
+      return NextResponse.json(
+        { success: false, error: 'lastName, firstName, rank, userIdパラメータが必要です' },
+        { status: 400 }
+      )
+    }
+
+    // ランクの妥当性チェック
+    const validRanks: RankType[] = ['SSS', 'SS', 'S', 'A+', 'A', 'B+', 'B', 'C', 'D']
+    if (!validRanks.includes(rank as RankType)) {
+      return NextResponse.json(
+        { success: false, error: `無効なランク: ${rank}` },
+        { status: 400 }
+      )
+    }
+
+    // 1. Supabaseクライアントの確認
+    const supabaseServer = getSupabaseServerClient()
+    if (!supabaseServer) {
+      console.error('❌ Supabaseサービスロールキーが設定されていません')
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'サーバー設定エラー: SUPABASE_SERVICE_ROLE_KEY が設定されていません。.env.local に追加してください。' 
+        },
+        { status: 500 }
+      )
+    }
+
+    // 2. KP残高を確認
+    console.log('💰 KP残高確認中...')
+    let summary
+    try {
+      summary = await getOrCreatePointsSummary(userId)
+      console.log('💰 現在のKP残高:', summary.points)
+    } catch (error: any) {
+      console.error('❌ KP残高取得エラー:', error)
+      const errorMessage = error.message || 'KP残高の取得に失敗しました'
+      if (errorMessage.includes('Invalid API key') || errorMessage.includes('API key')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Supabase設定エラー: APIキーが無効です。SUPABASE_SERVICE_ROLE_KEY を確認してください。' 
+          },
+          { status: 500 }
+        )
+      }
+      throw error
+    }
+
+    if (summary.points < KP_COST_ISSUE) {
+      console.error('❌ KP不足:', summary.points, '<', KP_COST_ISSUE)
+      return NextResponse.json(
+        { success: false, error: 'カナウポイントが不足しています' },
+        { status: 400 }
+      )
+    }
+
+    // 3. KP消費（トランザクション記録）
+    console.log('💸 KP消費中:', KP_COST_ISSUE)
+    try {
+      await spendPointsSupa(userId, KP_COST_ISSUE, 'ランクカード発行', 'purchase')
+      console.log('✅ KP消費完了')
+    } catch (error: any) {
+      console.error('❌ KP消費エラー:', error)
+      const errorMessage = error.message || 'KP消費に失敗しました'
+      if (errorMessage.includes('Invalid API key') || errorMessage.includes('API key')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Supabase設定エラー: APIキーが無効です。SUPABASE_SERVICE_ROLE_KEY を確認してください。' 
+          },
+          { status: 500 }
+        )
+      }
+      throw error
+    }
+
+    // 4. レアカード画像を生成
+    console.log('🎨 レアカード画像生成中...')
+    const imageBuffer = await generateRareCardImage(
+      lastName,
+      firstName,
+      rank as RankType,
+      totalPoints || 0,
+      powerLevel || 1,
+      baseImagePath
+    )
+    console.log('✅ 画像生成完了:', imageBuffer.length, 'bytes')
+
+    // 5. 画像を保存（オプション: public/generated/cards/ に保存）
+    const timestamp = Date.now()
+    const filename = `card_${lastName}_${firstName}_${rank}_${timestamp}.png`
+    const outputDir = path.join(process.cwd(), 'public', 'generated', 'cards')
+    
+    // ディレクトリが存在しない場合は作成
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true })
+    }
+
+    const outputPath = path.join(outputDir, filename)
+    await fs.promises.writeFile(outputPath, imageBuffer)
+
+    // 6. 発行履歴を保存（オプション: Supabaseに保存）
+    if (supabaseServer) {
+      try {
+        await supabaseServer.from('issued_cards').insert({
+          user_id: userId,
+          last_name: lastName,
+          first_name: firstName,
+          rank: rank,
+          total_points: totalPoints || 0,
+          power_level: powerLevel || 1,
+          image_url: `/generated/cards/${filename}`,
+          created_at: new Date().toISOString(),
+        })
+      } catch (error) {
+        console.warn('発行履歴の保存に失敗しました（画像は生成済み）:', error)
+      }
+    }
+
+    // 7. 画像URLを返す
+    const imageUrl = `/generated/cards/${filename}`
+    let updatedSummary: { points: number }
+    try {
+      updatedSummary = await getOrCreatePointsSummary(userId)
+    } catch (error: any) {
+      console.error('❌ 更新後のKP残高取得エラー:', error)
+      // エラーが発生しても画像は生成済みなので、発行前の残高から計算
+      updatedSummary = { points: Math.max(0, summary.points - KP_COST_ISSUE) }
+    }
+    console.log('✅ 発行完了:', imageUrl)
+
+    return NextResponse.json({
+      success: true,
+      imageUrl,
+      kpBalance: updatedSummary.points,
+    })
+  } catch (error: any) {
+    console.error('❌ ランクカード発行エラー:', error)
+    console.error('エラー詳細:', error.stack)
+    
+    // エラーメッセージを詳細化
+    let errorMessage = error.message || 'ランクカード発行に失敗しました'
+    
+    if (errorMessage.includes('Invalid API key') || errorMessage.includes('API key')) {
+      errorMessage = 'Supabase設定エラー: APIキーが無効です。SUPABASE_SERVICE_ROLE_KEY を確認してください。'
+    } else if (errorMessage.includes('Supabase環境変数')) {
+      errorMessage = 'Supabase環境変数が設定されていません。.env.local に SUPABASE_SERVICE_ROLE_KEY を追加してください。'
+    } else if (errorMessage.includes('row-level security') || errorMessage.includes('RLS')) {
+      errorMessage = 'データベースアクセスエラー: RLSポリシーの問題です。SUPABASE_SERVICE_ROLE_KEY が正しく設定されているか確認してください。'
+    }
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+      },
+      { status: 500 }
+    )
+  }
+}
+
