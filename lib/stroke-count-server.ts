@@ -37,6 +37,10 @@ export const strokeCountData: Record<string, number> = {
   帆: 6,
   不: 4,
   室: 9,
+  布: 5,
+  袋: 11,
+  寅: 11,
+  泰: 9,
 }
 
 function getDefaultStrokeByCharType(char: string): number {

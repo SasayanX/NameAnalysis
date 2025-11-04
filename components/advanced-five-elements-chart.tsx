@@ -92,17 +92,32 @@ export function AdvancedFiveElementsChart({
             <CardTitle>陰陽五行分析</CardTitle>
             <CardDescription>あなたの名前と生年月日から導き出される五行のバランス</CardDescription>
           </div>
-          <Badge
-            className={`
-            ${gogyoResult.dominantElement === "木" ? "bg-green-100 text-green-800" : ""}
-            ${gogyoResult.dominantElement === "火" ? "bg-red-100 text-red-800" : ""}
-            ${gogyoResult.dominantElement === "土" ? "bg-amber-100 text-amber-800" : ""}
-            ${gogyoResult.dominantElement === "金" ? "bg-yellow-100 text-yellow-800" : ""}
-            ${gogyoResult.dominantElement === "水" ? "bg-blue-100 text-blue-800" : ""}
-          `}
-          >
-            {gogyoResult.dominantElement}が優勢（{gogyoResult.yinYang}）
-          </Badge>
+          {(() => {
+            // グラフの実際の値から最大値を計算
+            const elementArray = [
+              { element: "木" as const, count: woodCount },
+              { element: "火" as const, count: fireCount },
+              { element: "土" as const, count: earthCount },
+              { element: "金" as const, count: metalCount },
+              { element: "水" as const, count: waterCount },
+            ]
+            elementArray.sort((a, b) => b.count - a.count)
+            const actualDominantElement = elementArray[0].element
+            
+            return (
+              <Badge
+                className={`
+                ${actualDominantElement === "木" ? "bg-green-100 text-green-800" : ""}
+                ${actualDominantElement === "火" ? "bg-red-100 text-red-800" : ""}
+                ${actualDominantElement === "土" ? "bg-amber-100 text-amber-800" : ""}
+                ${actualDominantElement === "金" ? "bg-yellow-100 text-yellow-800" : ""}
+                ${actualDominantElement === "水" ? "bg-blue-100 text-blue-800" : ""}
+              `}
+              >
+                {actualDominantElement}が優勢（{gogyoResult.yinYang}）
+              </Badge>
+            )
+          })()}
         </div>
       </CardHeader>
       <CardContent>
@@ -191,28 +206,46 @@ export function AdvancedFiveElementsChart({
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mt-2">
               <h4 className="font-medium mb-2">五行バランス分析</h4>
               <p className="text-sm text-gray-700 dark:text-gray-200">
-                あなたは{gogyoResult.dominantElement}の気が強く、
-                {gogyoResult.dominantElement === "木" &&
-                  "成長力と発展力に恵まれています。明るく活発で、何事にも意欲的に取り組むことができます。"}
-                {gogyoResult.dominantElement === "火" &&
-                  "情熱的でエネルギッシュな性質を持っています。美的感覚に優れ、芸術的な才能に恵まれています。"}
-                {gogyoResult.dominantElement === "土" &&
-                  "穏やかで落ち着いており、誰からも信頼される性質を持っています。思慮深く、辛抱強いので、大きなことを成し遂げることができます。"}
-                {gogyoResult.dominantElement === "金" &&
-                  "冷静で知的、美的センスに優れ、人を惹きつける魅力があります。社交上手で、人とのコミュニケーションを大切にします。"}
-                {gogyoResult.dominantElement === "水" &&
-                  "知性的でクール、物事を深く考えることを好みます。感受性が強く、芸術的な才能に恵まれています。"}
-                一方で{gogyoResult.weakElement}の気が弱いため、
-                {gogyoResult.weakElement === "木" &&
-                  "成長力や発展力が不足しがちです。新しいことに挑戦する意欲を高めることが大切です。"}
-                {gogyoResult.weakElement === "火" &&
-                  "情熱や活力が不足しがちです。自分の感情を表現することを意識すると良いでしょう。"}
-                {gogyoResult.weakElement === "土" &&
-                  "安定感や忍耐力が不足しがちです。物事を地道に続ける習慣を身につけると良いでしょう。"}
-                {gogyoResult.weakElement === "金" &&
-                  "冷静さや判断力が不足しがちです。物事を論理的に考える訓練をすると良いでしょう。"}
-                {gogyoResult.weakElement === "水" &&
-                  "柔軟性や適応力が不足しがちです。新しい知識を吸収する習慣をつけると良いでしょう。"}
+                {(() => {
+                  // グラフの実際の値から最大値と最小値を計算
+                  const elementArray = [
+                    { element: "木" as const, count: woodCount },
+                    { element: "火" as const, count: fireCount },
+                    { element: "土" as const, count: earthCount },
+                    { element: "金" as const, count: metalCount },
+                    { element: "水" as const, count: waterCount },
+                  ]
+                  elementArray.sort((a, b) => b.count - a.count)
+                  const actualDominantElement = elementArray[0].element
+                  const actualWeakElement = elementArray[elementArray.length - 1].element
+                  
+                  return (
+                    <>
+                      あなたは{actualDominantElement}の気が強く、
+                      {actualDominantElement === "木" &&
+                        "成長力と発展力に恵まれています。明るく活発で、何事にも意欲的に取り組むことができます。"}
+                      {actualDominantElement === "火" &&
+                        "情熱的でエネルギッシュな性質を持っています。美的感覚に優れ、芸術的な才能に恵まれています。"}
+                      {actualDominantElement === "土" &&
+                        "穏やかで落ち着いており、誰からも信頼される性質を持っています。思慮深く、辛抱強いので、大きなことを成し遂げることができます。"}
+                      {actualDominantElement === "金" &&
+                        "冷静で知的、美的センスに優れ、人を惹きつける魅力があります。社交上手で、人とのコミュニケーションを大切にします。"}
+                      {actualDominantElement === "水" &&
+                        "知性的でクール、物事を深く考えることを好みます。感受性が強く、芸術的な才能に恵まれています。"}
+                      一方で{actualWeakElement}の気が弱いため、
+                      {actualWeakElement === "木" &&
+                        "成長力や発展力が不足しがちです。新しいことに挑戦する意欲を高めることが大切です。"}
+                      {actualWeakElement === "火" &&
+                        "情熱や活力が不足しがちです。自分の感情を表現することを意識すると良いでしょう。"}
+                      {actualWeakElement === "土" &&
+                        "安定感や忍耐力が不足しがちです。物事を地道に続ける習慣を身につけると良いでしょう。"}
+                      {actualWeakElement === "金" &&
+                        "冷静さや判断力が不足しがちです。物事を論理的に考える訓練をすると良いでしょう。"}
+                      {actualWeakElement === "水" &&
+                        "柔軟性や適応力が不足しがちです。新しい知識を吸収する習慣をつけると良いでしょう。"}
+                    </>
+                  )
+                })()}
               </p>
               
               {/* 生年月日と名前の要素の詳細内訳 */}
@@ -248,27 +281,39 @@ export function AdvancedFiveElementsChart({
             </div>
 
             {/* プレミアム会員向けの詳細アドバイス - プレミアム会員のみ表示 */}
-            {membershipType === "premium" && (
+            {membershipType === "premium" && (() => {
+              // グラフの実際の値から最小値を計算
+              const elementArray = [
+                { element: "木" as const, count: woodCount },
+                { element: "火" as const, count: fireCount },
+                { element: "土" as const, count: earthCount },
+                { element: "金" as const, count: metalCount },
+                { element: "水" as const, count: waterCount },
+              ]
+              elementArray.sort((a, b) => a.count - b.count)
+              const actualWeakElement = elementArray[0].element
+              
+              return (
               <div className="p-4 bg-indigo-50 dark:bg-indigo-900 rounded-lg">
                 <h4 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">
-                  {gogyoResult.weakElement}の気を高めるアドバイス
+                  {actualWeakElement}の気を高めるアドバイス
                 </h4>
                 <p className="text-sm text-indigo-700 dark:text-indigo-300 mb-3">
-                  {gogyoResult.weakElement === "木" &&
+                  {actualWeakElement === "木" &&
                     "木の気は成長、発展、創造性を象徴します。以下の方法で木の気を高めることができます。"}
-                  {gogyoResult.weakElement === "火" &&
+                  {actualWeakElement === "火" &&
                     "火の気は情熱、活力、喜びを象徴します。以下の方法で火の気を高めることができます。"}
-                  {gogyoResult.weakElement === "土" &&
+                  {actualWeakElement === "土" &&
                     "土の気は安定、調和、思いやりを象徴します。以下の方法で土の気を高めることができます。"}
-                  {gogyoResult.weakElement === "金" &&
+                  {actualWeakElement === "金" &&
                     "金の気は明晰さ、精度、決断力を象徴します。以下の方法で金の気を高めることができます。"}
-                  {gogyoResult.weakElement === "水" &&
+                  {actualWeakElement === "水" &&
                     "水の気は知恵、柔軟性、内省を象徴します。以下の方法で水の気を高めることができます。"}
                 </p>
 
                 <div className="space-y-3">
                   {/* 木のアドバイス */}
-                  {gogyoResult.weakElement === "木" && (
+                  {actualWeakElement === "木" && (
                     <>
                       <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
                         <h5 className="font-medium text-indigo-700 dark:text-indigo-300 mb-1">食事</h5>
@@ -292,7 +337,7 @@ export function AdvancedFiveElementsChart({
                   )}
 
                   {/* 火のアドバイス */}
-                  {gogyoResult.weakElement === "火" && (
+                  {actualWeakElement === "火" && (
                     <>
                       <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
                         <h5 className="font-medium text-indigo-700 dark:text-indigo-300 mb-1">食事</h5>
@@ -316,7 +361,7 @@ export function AdvancedFiveElementsChart({
                   )}
 
                   {/* 土のアドバイス */}
-                  {gogyoResult.weakElement === "土" && (
+                  {actualWeakElement === "土" && (
                     <>
                       <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
                         <h5 className="font-medium text-indigo-700 dark:text-indigo-300 mb-1">食事</h5>
@@ -340,7 +385,7 @@ export function AdvancedFiveElementsChart({
                   )}
 
                   {/* 金のアドバイス */}
-                  {gogyoResult.weakElement === "金" && (
+                  {actualWeakElement === "金" && (
                     <>
                       <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
                         <h5 className="font-medium text-indigo-700 dark:text-indigo-300 mb-1">食事</h5>
@@ -364,7 +409,7 @@ export function AdvancedFiveElementsChart({
                   )}
 
                   {/* 水のアドバイス */}
-                  {gogyoResult.weakElement === "水" && (
+                  {actualWeakElement === "水" && (
                     <>
                       <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
                         <h5 className="font-medium text-indigo-700 dark:text-indigo-300 mb-1">食事</h5>
@@ -391,15 +436,15 @@ export function AdvancedFiveElementsChart({
                 <div className="mt-4 pt-3 border-t border-indigo-100 dark:border-indigo-800">
                   <h5 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">季節に合わせたアドバイス</h5>
                   <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                    {gogyoResult.weakElement === "木" &&
+                    {actualWeakElement === "木" &&
                       "春は木の気が最も強まる季節です。この時期に木の気を高める活動を特に意識すると効果的です。"}
-                    {gogyoResult.weakElement === "火" &&
+                    {actualWeakElement === "火" &&
                       "夏は火の気が最も強まる季節です。この時期に火の気を高める活動を特に意識すると効果的です。"}
-                    {gogyoResult.weakElement === "土" &&
+                    {actualWeakElement === "土" &&
                       "季節の変わり目は土の気が強まる時期です。特に立夏、立秋、立冬、立春の前後2週間は土の気を高める活動が効果的です。"}
-                    {gogyoResult.weakElement === "金" &&
+                    {actualWeakElement === "金" &&
                       "秋は金の気が最も強まる季節です。この時期に金の気を高める活動を特に意識すると効果的です。"}
-                    {gogyoResult.weakElement === "水" &&
+                    {actualWeakElement === "水" &&
                       "冬は水の気が最も強まる季節です。この時期に水の気を高める活動を特に意識すると効果的です。"}
                   </p>
                 </div>
@@ -415,22 +460,37 @@ export function AdvancedFiveElementsChart({
                   </ul>
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             {/* プロ会員向けの表示（プレミアム会員ではない場合） */}
-            {membershipType === "pro" && (
+            {membershipType === "pro" && (() => {
+              // グラフの実際の値から最大値と最小値を計算
+              const elementArray = [
+                { element: "木" as const, count: woodCount },
+                { element: "火" as const, count: fireCount },
+                { element: "土" as const, count: earthCount },
+                { element: "金" as const, count: metalCount },
+                { element: "水" as const, count: waterCount },
+              ]
+              elementArray.sort((a, b) => b.count - a.count)
+              const actualDominantElement = elementArray[0].element
+              const actualWeakElement = elementArray[elementArray.length - 1].element
+              
+              return (
               <div className="p-4 bg-indigo-50 dark:bg-indigo-900 rounded-lg">
                 <h4 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">五行バランスの基本</h4>
                 <p className="text-sm text-indigo-700 dark:text-indigo-300 mb-3">
-                  五行のバランスを整えることで、心身の調和を保つことができます。あなたは{gogyoResult.dominantElement}
-                  の気が強く、{gogyoResult.weakElement}の気が弱い傾向があります。
+                  五行のバランスを整えることで、心身の調和を保つことができます。あなたは{actualDominantElement}
+                  の気が強く、{actualWeakElement}の気が弱い傾向があります。
                 </p>
 
                 <div className="mt-3 p-2 bg-amber-50 rounded text-center text-xs text-amber-800">
                   プレミアム会員にアップグレードすると、詳細な五行バランスのアドバイスが表示されます
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             {/* 非会員向けの表示 */}
             {membershipType === "none" && (

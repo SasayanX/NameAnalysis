@@ -232,20 +232,48 @@ export default function FortuneComprehensivePage() {
                 </CardHeader>
                 <CardContent>
                   <AdvancedFiveElementsChart
-                    elements={{
-                      woodCount: gogyoResult.elements.wood,
-                      fireCount: gogyoResult.elements.fire,
-                      earthCount: gogyoResult.elements.earth,
-                      metalCount: gogyoResult.elements.metal,
-                      waterCount: gogyoResult.elements.water,
-                      dominantElement: gogyoResult.dominantElement,
-                      weakElement: gogyoResult.weakElement,
-                    }}
-                    healthAdvice={{
-                      generalAdvice: `あなたは${gogyoResult.dominantElement}の気が強く、${gogyoResult.weakElement}の気が弱い傾向があります。`,
-                      weeklyHealthForecast: [],
-                      balanceAdvice: `バランスを整えるには、${gogyoResult.weakElement}の気を高める活動を取り入れると良いでしょう。`,
-                    }}
+                    elements={(() => {
+                      // グラフの実際の値から最大値と最小値を計算
+                      const elementArray = [
+                        { element: "木" as const, count: gogyoResult.elements.wood },
+                        { element: "火" as const, count: gogyoResult.elements.fire },
+                        { element: "土" as const, count: gogyoResult.elements.earth },
+                        { element: "金" as const, count: gogyoResult.elements.metal },
+                        { element: "水" as const, count: gogyoResult.elements.water },
+                      ]
+                      elementArray.sort((a, b) => b.count - a.count)
+                      const actualDominantElement = elementArray[0].element
+                      const actualWeakElement = elementArray[elementArray.length - 1].element
+                      
+                      return {
+                        woodCount: gogyoResult.elements.wood,
+                        fireCount: gogyoResult.elements.fire,
+                        earthCount: gogyoResult.elements.earth,
+                        metalCount: gogyoResult.elements.metal,
+                        waterCount: gogyoResult.elements.water,
+                        dominantElement: actualDominantElement,
+                        weakElement: actualWeakElement,
+                      }
+                    })()}
+                    healthAdvice={(() => {
+                      // グラフの実際の値から最大値と最小値を計算
+                      const elementArray = [
+                        { element: "木" as const, count: gogyoResult.elements.wood },
+                        { element: "火" as const, count: gogyoResult.elements.fire },
+                        { element: "土" as const, count: gogyoResult.elements.earth },
+                        { element: "金" as const, count: gogyoResult.elements.metal },
+                        { element: "水" as const, count: gogyoResult.elements.water },
+                      ]
+                      elementArray.sort((a, b) => b.count - a.count)
+                      const actualDominantElement = elementArray[0].element
+                      const actualWeakElement = elementArray[elementArray.length - 1].element
+                      
+                      return {
+                        generalAdvice: `あなたは${actualDominantElement}の気が強く、${actualWeakElement}の気が弱い傾向があります。`,
+                        weeklyHealthForecast: [],
+                        balanceAdvice: `バランスを整えるには、${actualWeakElement}の気を高める活動を取り入れると良いでしょう。`,
+                      }
+                    })()}
                   />
                 </CardContent>
               </Card>

@@ -178,6 +178,18 @@ export function NameAnalyzer() {
             const gogyoResult = calculateGogyo(lastName, firstName, birthdate)
             console.log("✅ 五行分析完了:", gogyoResult)
 
+            // グラフの実際の値から最大値と最小値を計算
+            const elementArray = [
+              { element: "木" as const, count: gogyoResult.elements.wood },
+              { element: "火" as const, count: gogyoResult.elements.fire },
+              { element: "土" as const, count: gogyoResult.elements.earth },
+              { element: "金" as const, count: gogyoResult.elements.metal },
+              { element: "水" as const, count: gogyoResult.elements.water },
+            ]
+            elementArray.sort((a, b) => b.count - a.count)
+            const actualDominantElement = elementArray[0].element
+            const actualWeakElement = elementArray[elementArray.length - 1].element
+
             const advancedData = {
               hasBirthdate: true,
               sixStar: sixStarData,
@@ -188,13 +200,13 @@ export function NameAnalyzer() {
                   earthCount: gogyoResult.elements.earth,
                   metalCount: gogyoResult.elements.metal,
                   waterCount: gogyoResult.elements.water,
-                  dominantElement: gogyoResult.dominantElement,
-                  weakElement: gogyoResult.weakElement,
+                  dominantElement: actualDominantElement,
+                  weakElement: actualWeakElement,
                 },
                 healthAdvice: {
-                  generalAdvice: `あなたは${gogyoResult.dominantElement}の気が強く、${gogyoResult.weakElement}の気が弱い傾向があります。`,
+                  generalAdvice: `あなたは${actualDominantElement}の気が強く、${actualWeakElement}の気が弱い傾向があります。`,
                   weeklyHealthForecast: [],
-                  balanceAdvice: `バランスを整えるには、${gogyoResult.weakElement}の気を高める活動を取り入れると良いでしょう。`,
+                  balanceAdvice: `バランスを整えるには、${actualWeakElement}の気を高める活動を取り入れると良いでしょう。`,
                 },
               },
               gogyoResult,
@@ -205,6 +217,18 @@ export function NameAnalyzer() {
             console.error("❌ 六星占術計算エラー:", sixStarError)
             // 六星占術でエラーが発生しても、基本的な五行分析は実行
             const gogyoResult = calculateGogyo(lastName, firstName)
+            // グラフの実際の値から最大値と最小値を計算
+            const elementArray = [
+              { element: "木" as const, count: gogyoResult.elements.wood },
+              { element: "火" as const, count: gogyoResult.elements.fire },
+              { element: "土" as const, count: gogyoResult.elements.earth },
+              { element: "金" as const, count: gogyoResult.elements.metal },
+              { element: "水" as const, count: gogyoResult.elements.water },
+            ]
+            elementArray.sort((a, b) => b.count - a.count)
+            const actualDominantElement = elementArray[0].element
+            const actualWeakElement = elementArray[elementArray.length - 1].element
+
             const advancedData = {
               hasBirthdate: false,
               fiveElements: {
@@ -214,13 +238,13 @@ export function NameAnalyzer() {
                   earthCount: gogyoResult.elements.earth,
                   metalCount: gogyoResult.elements.metal,
                   waterCount: gogyoResult.elements.water,
-                  dominantElement: gogyoResult.dominantElement,
-                  weakElement: gogyoResult.weakElement,
+                  dominantElement: actualDominantElement,
+                  weakElement: actualWeakElement,
                 },
                 healthAdvice: {
-                  generalAdvice: `あなたは${gogyoResult.dominantElement}の気が強く、${gogyoResult.weakElement}の気が弱い傾向があります。`,
+                  generalAdvice: `あなたは${actualDominantElement}の気が強く、${actualWeakElement}の気が弱い傾向があります。`,
                   weeklyHealthForecast: [],
-                  balanceAdvice: `バランスを整えるには、${gogyoResult.weakElement}の気を高める活動を取り入れると良いでしょう。`,
+                  balanceAdvice: `バランスを整えるには、${actualWeakElement}の気を高める活動を取り入れると良いでしょう。`,
                 },
               },
               gogyoResult,
@@ -231,6 +255,18 @@ export function NameAnalyzer() {
           // 生年月日なしの場合は基本的な五行分析のみ
           console.log("📅 生年月日なし - 基本五行分析のみ実行")
           const gogyoResult = calculateGogyo(lastName, firstName)
+          // グラフの実際の値から最大値と最小値を計算
+          const elementArray = [
+            { element: "木" as const, count: gogyoResult.elements.wood },
+            { element: "火" as const, count: gogyoResult.elements.fire },
+            { element: "土" as const, count: gogyoResult.elements.earth },
+            { element: "金" as const, count: gogyoResult.elements.metal },
+            { element: "水" as const, count: gogyoResult.elements.water },
+          ]
+          elementArray.sort((a, b) => b.count - a.count)
+          const actualDominantElement = elementArray[0].element
+          const actualWeakElement = elementArray[elementArray.length - 1].element
+
           const advancedData = {
             hasBirthdate: false,
             fiveElements: {
@@ -240,13 +276,13 @@ export function NameAnalyzer() {
                 earthCount: gogyoResult.elements.earth,
                 metalCount: gogyoResult.elements.metal,
                 waterCount: gogyoResult.elements.water,
-                dominantElement: gogyoResult.dominantElement,
-                weakElement: gogyoResult.weakElement,
+                dominantElement: actualDominantElement,
+                weakElement: actualWeakElement,
               },
               healthAdvice: {
-                generalAdvice: `あなたは${gogyoResult.dominantElement}の気が強く、${gogyoResult.weakElement}の気が弱い傾向があります。`,
+                generalAdvice: `あなたは${actualDominantElement}の気が強く、${actualWeakElement}の気が弱い傾向があります。`,
                 weeklyHealthForecast: [],
-                balanceAdvice: `バランスを整えるには、${gogyoResult.weakElement}の気を高める活動を取り入れると良いでしょう。`,
+                balanceAdvice: `バランスを整えるには、${actualWeakElement}の気を高める活動を取り入れると良いでしょう。`,
               },
             },
             gogyoResult,
