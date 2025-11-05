@@ -25,7 +25,52 @@ export function getSupabaseClient(): SupabaseClient | null {
     return null
   }
 
-  cachedClient = createClient(supabaseUrl, supabaseAnonKey)
+  // URLの妥当性チェック
+  try {
+    const url = new URL(supabaseUrl)
+    if (!url.hostname || url.hostname.length === 0) {
+      console.error("❌ Supabase URLが無効です:", supabaseUrl)
+      return null
+    }
+  } catch (e) {
+    console.error("❌ Supabase URLの解析に失敗しました:", supabaseUrl, e)
+    return null
+  }
+
+  // Supabaseクライアントを作成（グローバルエラーハンドリングを設定）
+  cachedClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      // エラーハンドリングを改善
+      flowType: 'pkce',
+    },
+    global: {
+      headers: {
+        'x-client-info': 'nameanalysis-app',
+      },
+    },
+  })
+
+  // グローバルエラーハンドラーを設定
+  if (typeof window !== "undefined") {
+    cachedClient.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" && session === null) {
+        // ログアウト時は正常
+        return
+      }
+      if (event === "TOKEN_REFRESHED") {
+        // トークンリフレッシュは正常
+        return
+      }
+      // その他のイベントでエラーがある場合はログ出力
+      if (session?.error) {
+        console.error("❌ Supabase認証エラー:", session.error)
+      }
+    })
+  }
+
   return cachedClient
 }
 

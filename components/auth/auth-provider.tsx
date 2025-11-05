@@ -24,13 +24,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const supabase = getSupabaseClient()
     if (!supabase) {
+      console.warn("⚠️ Supabaseクライアントが利用できません")
       setLoading(false)
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Supabase URLを検証
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!supabaseUrl) {
+      console.error("❌ NEXT_PUBLIC_SUPABASE_URLが設定されていません")
+      setLoading(false)
+      return
+    }
+
+    // URLの妥当性チェック
+    try {
+      const url = new URL(supabaseUrl)
+      if (!url.hostname || url.hostname.includes("localhost")) {
+        console.warn("⚠️ Supabase URLがローカルまたは無効です:", supabaseUrl)
+      }
+    } catch (e) {
+      console.error("❌ Supabase URLが無効です:", supabaseUrl)
+      setLoading(false)
+      return
+    }
+
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("❌ セッション取得エラー:", error)
+        if (error.message?.includes("404") || error.status === 404) {
+          console.error("❌ Supabase 404エラー: URL設定を確認してください")
+        }
+      }
       setSession(session)
       setUser(session?.user ?? null)
+      setLoading(false)
+    }).catch((error) => {
+      console.error("❌ セッション取得例外:", error)
       setLoading(false)
     })
 
@@ -87,7 +117,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       return { error: { message: "Supabase環境変数が設定されていません" } }
     }
-    return await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const result = await supabase.auth.signInWithPassword({ email, password })
+      if (result.error) {
+        console.error("❌ ログインエラー:", result.error)
+        // 404エラーの場合は詳細なメッセージを表示
+        if (result.error.message?.includes("404") || result.error.status === 404) {
+          return {
+            error: {
+              message: "Supabaseサーバーに接続できません。URL設定を確認してください。",
+              details: result.error.message,
+            },
+          }
+        }
+      }
+      return result
+    } catch (error: any) {
+      console.error("❌ ログイン例外エラー:", error)
+      return {
+        error: {
+          message: error.message || "ログインに失敗しました",
+          details: error.toString(),
+        },
+      }
+    }
   }
 
   const signOut = async () => {

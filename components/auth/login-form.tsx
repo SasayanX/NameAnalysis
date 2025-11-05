@@ -31,6 +31,14 @@ export function LoginForm() {
         const { error } = await signIn(email, password)
         if (error) {
           setError(error.message)
+        } else {
+          // ログイン成功後、元のページに戻る
+          const returnUrl = sessionStorage.getItem('returnUrl')
+          if (returnUrl) {
+            sessionStorage.removeItem('returnUrl')
+            window.location.href = returnUrl
+            return
+          }
         }
       } else {
         const { data, error } = await signUp(email, password, name)
@@ -42,6 +50,13 @@ export function LoginForm() {
         } else if (data?.session) {
           // メール確認がスキップされた場合（開発環境など）
           setSuccessMessage("登録が完了しました！")
+          // 登録成功後、元のページに戻る
+          const returnUrl = sessionStorage.getItem('returnUrl')
+          if (returnUrl) {
+            sessionStorage.removeItem('returnUrl')
+            window.location.href = returnUrl
+            return
+          }
         }
       }
     } catch {
@@ -101,7 +116,21 @@ export function LoginForm() {
 
           {error && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error}
+                {error.includes("404") || error.includes("接続できません") ? (
+                  <div className="mt-2">
+                    <a
+                      href="/debug-supabase"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm underline hover:no-underline"
+                    >
+                      Supabase接続診断ページを開く
+                    </a>
+                  </div>
+                ) : null}
+              </AlertDescription>
             </Alert>
           )}
 
