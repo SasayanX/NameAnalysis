@@ -9,21 +9,27 @@ import { KanauPointsManager } from "@/lib/kanau-points-system"
 import Link from "next/link"
 
 export function KanauPointsHeader() {
-  const { user: authUser } = useAuth()
+  const { user: authUser, loading: authLoading } = useAuth()
   const [points, setPoints] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    // 認証状態の読み込み中は待機
+    if (authLoading) {
+      return
+    }
+
     const loadPoints = async () => {
       try {
         if (authUser) {
+          // ログイン済み：Supabaseから読み込み
           const summary = await getOrCreatePointsSummary(authUser.id)
           setPoints(summary.points)
         } else {
-          // ゲストKp（ローカル保存）を表示
+          // ゲストモード：ローカルストレージから読み込み
           const manager = KanauPointsManager.getInstance()
           manager.loadFromStorage()
-          const guestId = "guest"
+          const guestId = "demo_user_001" // ゲストユーザーID
           let user = manager.getUser(guestId)
           if (!user) {
             user = manager.initializeUser(guestId)
@@ -40,10 +46,12 @@ export function KanauPointsHeader() {
 
     loadPoints()
 
-    // 定期的に更新（30秒ごと）
-    const interval = setInterval(loadPoints, 30000)
-    return () => clearInterval(interval)
-  }, [authUser])
+    // 定期的に更新（30秒ごと）- ログイン済みの場合のみ
+    if (authUser) {
+      const interval = setInterval(loadPoints, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [authUser, authLoading]) // authLoadingも依存配列に追加
 
   return (
     <Link href="/points" className="flex items-center gap-2 hover:opacity-80 transition-opacity">

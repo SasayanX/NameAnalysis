@@ -202,22 +202,38 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
 
   // ポイント残高を取得（API Route経由）
   useEffect(() => {
+    // ログインユーザーが確定したらKPを読み込む
     if (authUser) {
-      fetch(`/api/kp/balance?userId=${encodeURIComponent(authUser.id)}`)
-        .then((res) => res.json())
-        .then((data) => {
+      const loadPoints = async () => {
+        try {
+          const response = await fetch(`/api/kp/balance?userId=${encodeURIComponent(authUser.id)}`)
+          const data = await response.json()
           if (data.success) {
             setPoints(data.points || 0)
           }
-        })
-        .catch(() => {})
+        } catch (error) {
+          console.error("KP読み込みエラー:", error)
+        }
+      }
+      loadPoints()
+    } else {
+      // ログアウト時はポイントをリセット
+      setPoints(null)
     }
-  }, [authUser])
+  }, [authUser]) // authUserが変更されたら再実行（セッション復元時も含む）
 
   // ランキング登録処理
   const handleRegisterRanking = async () => {
     if (!authUser) {
-      setRegisterError("ログインが必要です")
+      const shouldRedirect = window.confirm(
+        "ランキングに登録するにはログインが必要です。\nログインページに移動しますか？"
+      )
+      if (shouldRedirect) {
+        // ログイン後に戻るためのURLを保存
+        const currentUrl = window.location.pathname + window.location.search
+        sessionStorage.setItem('returnUrl', currentUrl)
+        window.location.href = '/login'
+      }
       return
     }
 

@@ -27,6 +27,7 @@ export function LoginBonusNotification() {
   const [showNotification, setShowNotification] = useState(false)
   const [bonusData, setBonusData] = useState<LoginBonusData | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [migratedPoints, setMigratedPoints] = useState<number | null>(null)
 
   useEffect(() => {
     const checkAndProcessLoginBonus = async () => {
@@ -78,6 +79,34 @@ export function LoginBonusNotification() {
     }
   }, [user])
 
+  // ゲストKP移行通知をリッスン
+  useEffect(() => {
+    const handleMigration = (event: CustomEvent<{ points: number }>) => {
+      setMigratedPoints(event.detail.points)
+      // 移行通知を表示（ログインボーナス通知の後に表示）
+      setTimeout(() => {
+        setShowNotification(true)
+        setBonusData({
+          basePoints: 0,
+          consecutiveBonus: 0,
+          totalPoints: event.detail.points,
+          consecutiveDays: 0,
+          message: `ゲストモードで獲得した${event.detail.points}KPを引き継ぎました！`,
+        })
+        // 10秒後に自動で閉じる
+        setTimeout(() => {
+          setShowNotification(false)
+          setMigratedPoints(null)
+        }, 10000)
+      }, 2000) // ログインボーナス通知の2秒後に表示
+    }
+
+    window.addEventListener("guest-points-migrated", handleMigration as EventListener)
+    return () => {
+      window.removeEventListener("guest-points-migrated", handleMigration as EventListener)
+    }
+  }, [])
+
   if (!showNotification || !bonusData) return null
 
   return (
@@ -94,7 +123,9 @@ export function LoginBonusNotification() {
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
               <Gift className="h-6 w-6 text-yellow-600 animate-bounce" />
-              <h3 className="font-bold text-lg text-yellow-800">ログインボーナス獲得！</h3>
+              <h3 className="font-bold text-lg text-yellow-800">
+                {migratedPoints ? "ゲストKP移行完了！" : "ログインボーナス獲得！"}
+              </h3>
             </div>
             <Button
               variant="ghost"

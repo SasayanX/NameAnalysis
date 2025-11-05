@@ -77,11 +77,11 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
           const today = new Date().toISOString().split('T')[0]
           if ((summary.last_login_bonus_date || "") !== today) setShowLoginBonus(true)
         } catch (e) {
-          console.error(e)
+          console.error("KP読み込みエラー:", e)
           setIsLoading(false)
         }
       } else {
-        // ローカルマネージャ
+        // ローカルマネージャ（ゲストモード）
         pointsManager.loadFromStorage()
         let userData = pointsManager.getUser(userId)
         if (!userData) {
@@ -94,7 +94,7 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
       }
     }
     init()
-  }, [userId, authUser])
+  }, [userId, authUser]) // authUserが変更されたら再実行（セッション復元時も含む）
 
   const handleLoginBonus = async () => {
     if (authUser) {

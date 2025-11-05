@@ -34,10 +34,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // ログイン時にゲストKPを移行
+      if (session?.user && _event === "SIGNED_IN") {
+        // 非同期で実行（ログインをブロックしない）
+        setTimeout(async () => {
+          try {
+            const { migrateGuestPointsToSupabase } = await import("@/lib/migrate-guest-points")
+            const migratedPoints = await migrateGuestPointsToSupabase(session.user!.id)
+            if (migratedPoints > 0) {
+              console.log(`✅ ゲストKP移行完了: ${migratedPoints}KP`)
+              
+              // カスタムイベントを発行して、他のコンポーネントに通知
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("guest-points-migrated", {
+                  detail: { points: migratedPoints }
+                }))
+              }
+            }
+          } catch (error) {
+            console.error("ゲストKP移行エラー:", error)
+            // エラーが発生してもログインは継続
+          }
+        }, 1000) // 1秒後に実行（ログイン処理を優先）
+      }
     })
 
     return () => subscription.unsubscribe()
