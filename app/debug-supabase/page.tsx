@@ -60,15 +60,41 @@ export default function DebugSupabasePage() {
       if (!url.hostname || url.hostname.length === 0) {
         throw new Error("ホスト名が無効です")
       }
+      
+      // ダッシュボードURLが設定されている場合はエラー
+      if (url.hostname.includes("supabase.com") && url.pathname.includes("/dashboard")) {
+        setChecks((prev) => ({ ...prev, urlValid: "error" }))
+        newMessages.push("❌ 誤ったSupabase URLが設定されています")
+        newMessages.push("   URLにはダッシュボードのURLではなく、プロジェクトのAPI URLを設定してください")
+        newMessages.push("   正しい形式: https://[プロジェクトID].supabase.co")
+        newMessages.push("   Supabaseダッシュボード → Settings → API → Project URL から正しいURLをコピーしてください")
+        newDetails.urlValid = {
+          error: "ダッシュボードURLが設定されています",
+          currentUrl: supabaseUrl,
+          correctFormat: "https://[プロジェクトID].supabase.co",
+        }
+        setMessages(newMessages)
+        setDetails(newDetails)
+        return
+      }
+      
       if (!url.protocol || !url.protocol.startsWith("https")) {
         newMessages.push("⚠️ URLがHTTPSではありません（開発環境では問題ありません）")
       }
+      
+      // 正しいSupabase URLの形式チェック
+      if (!url.hostname.endsWith(".supabase.co")) {
+        newMessages.push("⚠️ Supabase URLの形式が通常と異なります")
+        newMessages.push("   通常の形式: https://[プロジェクトID].supabase.co")
+      }
+      
       setChecks((prev) => ({ ...prev, urlValid: "ok" }))
       newMessages.push("✅ Supabase URLは有効です")
       newDetails.urlValid = {
         hostname: url.hostname,
         protocol: url.protocol,
         pathname: url.pathname,
+        isValidFormat: url.hostname.endsWith(".supabase.co"),
       }
     } catch (e: any) {
       setChecks((prev) => ({ ...prev, urlValid: "error" }))

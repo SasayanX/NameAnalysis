@@ -32,6 +32,22 @@ export function getSupabaseClient(): SupabaseClient | null {
       console.error("❌ Supabase URLが無効です:", supabaseUrl)
       return null
     }
+    
+    // ダッシュボードURLが設定されている場合は警告
+    if (url.hostname.includes("supabase.com") && url.pathname.includes("/dashboard")) {
+      console.error("❌ 誤ったSupabase URLが設定されています")
+      console.error("   URLにはダッシュボードのURLではなく、プロジェクトのAPI URLを設定してください")
+      console.error("   正しい形式: https://[プロジェクトID].supabase.co")
+      console.error("   現在のURL:", supabaseUrl)
+      console.error("   Supabaseダッシュボード → Settings → API → Project URL から正しいURLをコピーしてください")
+      return null
+    }
+    
+    // 正しいSupabase URLの形式チェック（.supabase.coで終わる）
+    if (!url.hostname.endsWith(".supabase.co")) {
+      console.warn("⚠️ Supabase URLの形式が通常と異なります:", url.hostname)
+      console.warn("   通常の形式: https://[プロジェクトID].supabase.co")
+    }
   } catch (e) {
     console.error("❌ Supabase URLの解析に失敗しました:", supabaseUrl, e)
     return null

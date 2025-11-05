@@ -40,11 +40,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // URLの妥当性チェック
     try {
       const url = new URL(supabaseUrl)
-      if (!url.hostname || url.hostname.includes("localhost")) {
-        console.warn("⚠️ Supabase URLがローカルまたは無効です:", supabaseUrl)
+      if (!url.hostname || url.hostname.length === 0) {
+        console.error("❌ Supabase URLが無効です:", supabaseUrl)
+        setLoading(false)
+        return
+      }
+      
+      // ダッシュボードURLが設定されている場合はエラー
+      if (url.hostname.includes("supabase.com") && url.pathname.includes("/dashboard")) {
+        console.error("❌ 誤ったSupabase URLが設定されています")
+        console.error("   URLにはダッシュボードのURLではなく、プロジェクトのAPI URLを設定してください")
+        console.error("   正しい形式: https://[プロジェクトID].supabase.co")
+        console.error("   現在のURL:", supabaseUrl)
+        console.error("   Supabaseダッシュボード → Settings → API → Project URL から正しいURLをコピーしてください")
+        setLoading(false)
+        return
+      }
+      
+      // 正しいSupabase URLの形式チェック
+      if (!url.hostname.endsWith(".supabase.co")) {
+        console.warn("⚠️ Supabase URLの形式が通常と異なります:", url.hostname)
+        console.warn("   通常の形式: https://[プロジェクトID].supabase.co")
       }
     } catch (e) {
-      console.error("❌ Supabase URLが無効です:", supabaseUrl)
+      console.error("❌ Supabase URLが無効です:", supabaseUrl, e)
       setLoading(false)
       return
     }
