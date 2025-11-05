@@ -101,14 +101,15 @@ export default function RankCardIssueSection({
     // ユーザーがログインしていない場合
     if (!authUser) {
       console.warn('⚠️ ユーザー未ログイン')
-      toast({
-        title: "ログインが必要です",
-        description: "ランクカードを発行するにはログインが必要です。ログインページに移動しますか？",
-        variant: "destructive",
-        duration: 5000,
-      })
-      // オプション: ログインページにリダイレクト
-      // window.location.href = '/login'
+      const shouldRedirect = window.confirm(
+        "ランクカードを発行するにはログインが必要です。\nログインページに移動しますか？"
+      )
+      if (shouldRedirect) {
+        // ログイン後に戻るためのURLを保存
+        const currentUrl = window.location.pathname + window.location.search
+        sessionStorage.setItem('returnUrl', currentUrl)
+        window.location.href = '/login'
+      }
       return
     }
     
@@ -320,6 +321,20 @@ export default function RankCardIssueSection({
               console.log('🖱️ 発行ボタンクリック', { authUser: !!authUser, authLoading })
               e.preventDefault()
               e.stopPropagation()
+              
+              // 未ログインの場合はログインページへ誘導
+              if (!authLoading && !authUser) {
+                const shouldRedirect = window.confirm(
+                  "ランクカードを発行するにはログインが必要です。\nログインページに移動しますか？"
+                )
+                if (shouldRedirect) {
+                  const currentUrl = window.location.pathname + window.location.search
+                  sessionStorage.setItem('returnUrl', currentUrl)
+                  window.location.href = '/login'
+                }
+                return
+              }
+              
               try {
                 await handleOpenModal()
               } catch (error: any) {
@@ -339,7 +354,7 @@ export default function RankCardIssueSection({
             {authLoading 
               ? "読み込み中..." 
               : !authUser 
-                ? "ログインが必要です（ランクカード発行）"
+                ? "ログインしてランクカードを発行"
                 : `ランクカードを発行する（${KP_COST_ISSUE}KP）`
             }
           </Button>

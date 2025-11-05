@@ -1,4 +1,18 @@
 import { getSupabaseClient } from "@/lib/supabase-client"
+import { getSupabaseServerClient } from "@/lib/supabase-server"
+import type { SupabaseClient } from "@supabase/supabase-js"
+
+/**
+ * サーバーサイドまたはクライアントサイドに応じたSupabaseクライアントを取得
+ */
+function getSupabaseClientForOperation(): SupabaseClient | null {
+  // サーバーサイド（typeof window === 'undefined'）の場合はサービスロールキーを使用
+  if (typeof window === 'undefined') {
+    return getSupabaseServerClient()
+  }
+  // クライアントサイドの場合は通常のクライアントを使用
+  return getSupabaseClient()
+}
 
 export type SupaPointsSummary = {
   user_id: string
@@ -11,21 +25,96 @@ export type SupaPointsSummary = {
 }
 
 export async function getOrCreatePointsSummary(userId: string): Promise<SupaPointsSummary> {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
 
-  const { data, error } = await supabase
+  // まず、複数行が存在する可能性を考慮して全て取得
+  const { data: allRecords, error: selectError } = await supabase
     .from("kanau_points")
-    .select("user_id, points, total_earned, total_spent, consecutive_login_days, last_login_date, last_login_bonus_date")
+    .select("id, user_id, points, total_earned, total_spent, consecutive_login_days, last_login_date, last_login_bonus_date, updated_at")
     .eq("user_id", userId)
-    .maybeSingle()
+    .order("updated_at", { ascending: false })
 
-  if (error) throw error
+  if (selectError) throw selectError
 
-  if (data) return data as SupaPointsSummary
+  // 複数行が存在する場合は、重複を解決
+  if (allRecords && allRecords.length > 1) {
+    console.warn(`⚠️ kanau_pointsに重複レコードが存在します (user_id: ${userId}, 件数: ${allRecords.length})。重複を解決します。`)
+    
+    // 最新のレコード（updated_atが最も新しい）を保持
+    const latestRecord = allRecords[0]
+    
+    // 古いレコードのポイントを合計
+    let totalPoints = latestRecord.points || 0
+    let totalEarned = latestRecord.total_earned || 0
+    let totalSpent = latestRecord.total_spent || 0
+    
+    for (let i = 1; i < allRecords.length; i++) {
+      const oldRecord = allRecords[i]
+      totalPoints += oldRecord.points || 0
+      totalEarned += oldRecord.total_earned || 0
+      totalSpent += oldRecord.total_spent || 0
+    }
+    
+    // 最新レコードを更新（ポイントを合計）
+    const { error: updateError } = await supabase
+      .from("kanau_points")
+      .update({
+        points: totalPoints,
+        total_earned: totalEarned,
+        total_spent: totalSpent,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", latestRecord.id)
+    
+    if (updateError) {
+      console.error("❌ 重複レコード統合エラー:", updateError)
+      throw updateError
+    }
+    
+    // 古いレコードを削除
+    const oldIds = allRecords.slice(1).map(r => r.id)
+    const { error: deleteError } = await supabase
+      .from("kanau_points")
+      .delete()
+      .in("id", oldIds)
+    
+    if (deleteError) {
+      console.error("❌ 古いレコード削除エラー:", deleteError)
+      // 削除エラーは警告のみ（データ整合性には影響しない）
+      console.warn("⚠️ 古いレコードの削除に失敗しましたが、処理を継続します")
+    } else {
+      console.log(`✅ 重複レコードを統合しました (${allRecords.length - 1}件削除)`)
+    }
+    
+    // 更新後のレコードを返す
+    return {
+      user_id: latestRecord.user_id,
+      points: totalPoints,
+      total_earned: totalEarned,
+      total_spent: totalSpent,
+      consecutive_login_days: latestRecord.consecutive_login_days || 0,
+      last_login_date: latestRecord.last_login_date,
+      last_login_bonus_date: latestRecord.last_login_bonus_date,
+    }
+  }
 
+  // 1件のみ存在する場合
+  if (allRecords && allRecords.length === 1) {
+    return {
+      user_id: allRecords[0].user_id,
+      points: allRecords[0].points || 0,
+      total_earned: allRecords[0].total_earned || 0,
+      total_spent: allRecords[0].total_spent || 0,
+      consecutive_login_days: allRecords[0].consecutive_login_days || 0,
+      last_login_date: allRecords[0].last_login_date,
+      last_login_bonus_date: allRecords[0].last_login_bonus_date,
+    }
+  }
+
+  // レコードが存在しない場合は新規作成
   const insertPayload = {
     user_id: userId,
     points: 0,
@@ -54,7 +143,7 @@ export async function addTransaction(
   category: "login_bonus" | "ranking_reward" | "ranking_entry" | "special_reward" | "purchase",
   metadata?: Record<string, any>,
 ) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
@@ -76,7 +165,7 @@ export async function hasEarnedPointsToday(
   userId: string,
   reason: string,
 ): Promise<boolean> {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
@@ -109,7 +198,7 @@ export async function addPointsSupa(
   category: "special_reward" | "purchase" = "special_reward",
   checkDailyLimit: boolean = false,
 ) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
@@ -144,7 +233,7 @@ export async function spendPointsSupa(
   reason: string,
   category: "ranking_entry" | "purchase",
 ) {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
@@ -168,7 +257,7 @@ export async function spendPointsSupa(
 }
 
 export async function getSeasonalItemBonus(userId: string): Promise<number> {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     return 0
   }
@@ -199,7 +288,7 @@ function getBasePointsByPlan(plan: "free" | "basic" | "premium" = "free"): numbe
 }
 
 export async function processLoginBonusSupa(userId: string, plan?: "free" | "basic" | "premium") {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
@@ -293,7 +382,7 @@ export async function processLoginBonusSupa(userId: string, plan?: "free" | "bas
 
 // 今日獲得した機能実行ボーナスKpを計算（上限管理用）
 export async function getTodayFeatureBonusEarned(userId: string): Promise<number> {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     return 0
   }
@@ -320,7 +409,7 @@ export async function addFeatureBonus(
   amount: number,
   featureName: string,
 ): Promise<{ actualAmount: number; remaining: number; message: string }> {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     return {
       actualAmount: 0,
@@ -385,7 +474,7 @@ export async function getPointTransactions(
   limit: number = 50,
   offset: number = 0,
 ): Promise<PointTransaction[]> {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
@@ -414,7 +503,7 @@ export interface PointStatistics {
 }
 
 export async function getPointStatistics(userId: string, days: number = 30): Promise<PointStatistics> {
-  const supabase = getSupabaseClient()
+  const supabase = getSupabaseClientForOperation()
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }

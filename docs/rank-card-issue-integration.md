@@ -132,7 +132,8 @@ export default function ResultPage() {
    - `/api/issue-card` を呼び出し
    - KP消費（5KP）
    - 画像生成（`generateRareCardImage`）
-   - 画像保存（`public/generated/cards/`）
+   - 画像をSupabase Storageにアップロード（`rare-cards`バケット）
+   - 永続的な公開URLを取得
    - 発行履歴保存（Supabase）
 
 3. **共有**
@@ -143,10 +144,13 @@ export default function ResultPage() {
 
 ## 注意事項
 
-1. **画像保存先**: `public/generated/cards/` ディレクトリが存在することを確認
+1. **画像保存先**: Supabase Storageの`rare-cards`バケットに保存されます（永続的な公開URL）
+   - 詳細なセットアップ手順は `docs/supabase-storage-setup.md` を参照
+   - バケットが存在しない場合、エラーが発生します
 2. **KP残高**: 発行前に必ずサーバー側で残高を再確認
 3. **共有制限**: 1日1回の制限を設定（`addPointsSupa`の`checkDailyLimit`を使用）
 4. **認証**: 発行・共有には認証が必要（`useAuth`フックを使用）
+5. **URL共有**: 公開URLは永続的で、再デプロイ後も404エラーになりません
 
 ## カスタマイズ
 

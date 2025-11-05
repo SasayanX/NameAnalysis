@@ -153,6 +153,20 @@ export async function generateRareCardImage(
   const cardWidth = width - padding * 2
   const cardHeight = height - padding * 2
 
+  // ランク別の色設定（RareCard.tsxと同じ）- gradientDefより前に定義する必要がある
+  const rankColors: Record<RankType, { main: string; glow: string; shadow: string; bg: string }> = {
+    SSS: { main: '#FFF8D9', glow: '#FFD76A', shadow: '#B8860B', bg: '#FFD700' },
+    SS: { main: '#F2F7FF', glow: '#BFD1FF', shadow: '#8FA7CC', bg: '#F5F5F5' },
+    S: { main: '#FFE1CC', glow: '#FF8040', shadow: '#993300', bg: '#FF8A80' },
+    'A+': { main: '#DDE8FF', glow: '#B0C8FF', shadow: '#203060', bg: '#80CBC4' },
+    A: { main: '#EAF5CC', glow: '#BFE87A', shadow: '#667A3A', bg: '#A5D6A7' },
+    'B+': { main: '#DCE8FF', glow: '#99BFFF', shadow: '#334A66', bg: '#C8E6C9' },
+    B: { main: '#F5F5F5', glow: '#CCCCCC', shadow: '#555555', bg: '#E0E0E0' },
+    C: { main: '#F2E0C6', glow: '#E5B67E', shadow: '#5C3A24', bg: '#F9E79F' },
+    D: { main: '#FFD1A6', glow: '#CC5A2E', shadow: '#330000', bg: '#E5E7E9' },
+  }
+  const colors = rankColors[rank]
+
   // グラデーション定義（SVG用）- Phase 2: SSS特別演出追加
   const gradientId = `gradient-${rank}`
   const glowIntensity = rank === 'SSS' || rank === 'SS' ? 4 : rank === 'S' || rank === 'A+' || rank === 'A' ? 3 : 2
@@ -175,12 +189,12 @@ export async function generateRareCardImage(
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
-      <!-- 強力な発光フィルター -->
+      <!-- 強力な発光フィルター（SSS用、RareCard.tsxと同じ） -->
       <filter id="strong-glow">
-        <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+        <feGaussianBlur stdDeviation="8" result="blur"/>
         <feMerge>
-          <feMergeNode in="coloredBlur"/>
-          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="blur"/>
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
@@ -276,6 +290,41 @@ export async function generateRareCardImage(
         <stop offset="50%" style="stop-color:${design.bgColors[1]};stop-opacity:1" />
         <stop offset="100%" style="stop-color:${design.bgColors[2]};stop-opacity:1" />
       </linearGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="6" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <!-- ランク別色付きグローフィルター（RareCard.tsxのtextShadowを完全再現: 0 0 6px glow, 0 0 14px glow, 0 4px 4px shadow） -->
+      <filter id="glow-colored-${rank}" x="-100%" y="-100%" width="300%" height="300%">
+        <!-- 0 0 6px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur1"/>
+        <feOffset in="blur1" dx="0" dy="0" result="offset1"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.8" result="glowColor1"/>
+        <feComposite in="glowColor1" in2="offset1" operator="in" result="glow1"/>
+        
+        <!-- 0 0 14px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="blur2"/>
+        <feOffset in="blur2" dx="0" dy="0" result="offset2"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.6" result="glowColor2"/>
+        <feComposite in="glowColor2" in2="offset2" operator="in" result="glow2"/>
+        
+        <!-- 0 4px 4px ${colors.shadow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur3"/>
+        <feOffset in="blur3" dx="0" dy="4" result="offset3"/>
+        <feFlood flood-color="${colors.shadow}" flood-opacity="0.6" result="shadowColor"/>
+        <feComposite in="shadowColor" in2="offset3" operator="in" result="shadow"/>
+        
+        <!-- マージ: 影 → 外側グロー → 内側グロー → テキスト -->
+        <feMerge>
+          <feMergeNode in="shadow"/>
+          <feMergeNode in="glow2"/>
+          <feMergeNode in="glow1"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
       <filter id="glow-${rank}">
         <feGaussianBlur stdDeviation="${glowIntensity}" result="coloredBlur"/>
         <feMerge>
@@ -287,94 +336,63 @@ export async function generateRareCardImage(
     </defs>
   `
 
-  // 縦書き名前の配置（画像に合わせて中央寄り、大きく）
+  // 縦書き名前の配置（RareCard.tsxと同じ計算ロジックを使用）
   const nameChars = Array.from(fullName)
-  const charSize = rank === 'SSS' ? 180 : 140  // SSSはより大きく
-  const charSpacing = rank === 'SSS' ? 220 : 180  // SSSはより間隔を広く
+  
+  // セーフゾーン（RareCard.tsxと同じ）
+  const safeZone = { top: 120, bottom: 120, left: 80, right: 80 }
+  const nameAreaWidth = width - safeZone.left - safeZone.right
+  const nameAreaHeight = height - safeZone.top - safeZone.bottom
+  
+  // 文字サイズと行間を自動計算（RareCard.tsxと同じ）
+  const charSize = Math.min(180, Math.floor(nameAreaWidth / nameChars.length * 1.2))
+  const charSpacing = charSize * 1.05
   const nameStartX = width / 2
-  const nameStartY = rank === 'SSS' ? 550 : 500  // SSSは少し下に
+  const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
 
-  // 名前の文字要素 - Phase 2: SSS特別演出追加（3D効果付き）
+  // 名前の文字要素（RareCard.tsxと同じ実装）
   const nameElements = nameChars.map((char, index) => {
     const y = nameStartY + index * charSpacing
-    const textFilter = rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-${rank})`
-    // SSSは3D効果を追加（多段影で彫り込み＋発光）
-    if (rank === 'SSS') {
-      return `
-        <!-- 後光エフェクト（背後） -->
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#FFD700" 
-              filter="url(#name-halo)"
-              opacity="0.6"
-              letter-spacing="0.1em">${char}</text>
-        
-        <!-- 多段影（text-shadow風） -->
-        <!-- 外側の強い発光 -->
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#fff7c0" 
-              opacity="0.8"
-              filter="url(#strong-glow)"
-              letter-spacing="0.1em">${char}</text>
-        
-        <!-- 中段の発光 -->
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#ffd700" 
-              opacity="0.9"
-              filter="url(#strong-glow)"
-              letter-spacing="0.1em">${char}</text>
-        
-        <!-- 深い影（彫り込み効果） -->
-        <text x="${nameStartX + 2}" y="${y + 3}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#a67c00" 
-              opacity="0.6"
-              letter-spacing="0.1em">${char}</text>
-        
-        <!-- メインテキスト（最前面） -->
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#FFD700" 
-              filter="${textFilter}"
-              letter-spacing="0.1em">${char}</text>
-        
-        <!-- 内側のハイライト（光反射） -->
-        <text x="${nameStartX - 1}" y="${y - 2}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize * 0.98}" 
-              font-weight="900" 
-              fill="rgba(255,255,255,0.4)" 
-              opacity="0.5"
-              letter-spacing="0.1em">${char}</text>
-      `
-    }
+
     return `
+      <!-- 後光エフェクト（SSSのみ） -->
+      ${rank === 'SSS' ? `
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="${design.fontFamily}" 
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
             font-size="${charSize}" 
-            font-weight="${design.fontWeight}" 
-            fill="${design.textColor}" 
-            filter="${textFilter}"
-            letter-spacing="0.1em">${char}</text>
+            font-weight="900" 
+            fill="${colors.glow}" 
+            opacity="0.6"
+            filter="url(#strong-glow)">${char}</text>
+      ` : ''}
+      
+      <!-- 多段影（RareCard.tsxと同じ） -->
+      <text x="${nameStartX + 2}" y="${y + 3}" 
+            text-anchor="middle" dominant-baseline="central"
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-size="${charSize}" 
+            font-weight="900" 
+            fill="${colors.shadow}" 
+            opacity="0.6">${char}</text>
+      
+      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用） -->
+      <text x="${nameStartX}" y="${y}" 
+            text-anchor="middle" dominant-baseline="central"
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-size="${charSize}" 
+            font-weight="900" 
+            fill="${colors.main}" 
+            filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-colored-${rank})`}">${char}</text>
+      
+      <!-- 内側ハイライト（RareCard.tsxと同じ） -->
+      <text x="${nameStartX - 1}" y="${y - 2}" 
+            text-anchor="middle" dominant-baseline="central"
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-size="${charSize * 0.98}" 
+            font-weight="900" 
+            fill="rgba(255,255,255,0.4)" 
+            opacity="0.5">${char}</text>
     `
   }).join('\n')
 
@@ -558,23 +576,25 @@ export async function generateRareCardImage(
       <!-- 名前（縦書き） -->
       ${nameElements}
       
-      <!-- パワーポイント表示（金色のプラーク風） -->
-      <g transform="translate(${width / 2}, ${nameStartY + nameChars.length * charSpacing + 120})">
-        ${rank === 'SSS' ? `
-          <!-- プラーク背景 -->
-          <rect x="-100" y="-35" width="200" height="70" rx="8" ry="8"
-                fill="#FFD700" opacity="0.9" stroke="#FFA500" stroke-width="3" filter="url(#strong-glow)"/>
-          <rect x="-95" y="-30" width="190" height="60" rx="6" ry="6"
-                fill="none" stroke="#FFD700" stroke-width="1"/>
-        ` : ''}
+      <!-- パワーポイント表示（RareCard.tsxと同じ位置: height - 130） -->
+      <g transform="translate(${width / 2}, ${height - 130})">
+        <!-- スコア帯背景（RareCard.tsxと同じ） -->
+        <rect x="-100" y="-35" width="200" height="70" rx="8" ry="8"
+              fill="${rank === 'SSS' ? colors.bg : 'rgba(0,0,0,0.5)'}"
+              opacity="0.9"
+              stroke="${colors.glow}"
+              stroke-width="3"
+              filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}"/>
+        <!-- ポイント表示（RareCard.tsxと同じ） -->
         <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
-              font-family="Arial, sans-serif" font-size="${rank === 'SSS' ? '68' : '64'}" font-weight="900"
-              fill="${rank === 'SSS' ? '#FFFFFF' : design.textColor}" 
-              filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-${rank})`}">${totalPoints}pt</text>
+              font-family="Arial, sans-serif" font-size="64" font-weight="900"
+              fill="#FFFFFF" 
+              filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}">${totalPoints}pt</text>
+        <!-- パワーレベル表示（RareCard.tsxと同じ） -->
         <text x="0" y="65" text-anchor="middle"
-              font-family="${design.fontFamily}" font-size="32"
-              fill="${rank === 'SSS' ? '#FFFFFF' : design.textColor}" 
-              opacity="${rank === 'SSS' ? '1' : '0.9'}">パワーレベル ${powerLevel}/10</text>
+              font-family="Arial, sans-serif" font-size="32"
+              fill="#FFFFFF" 
+              opacity="0.9">パワーレベル ${powerLevel}/10</text>
       </g>
       
       <!-- フッター -->
@@ -616,141 +636,130 @@ async function generateRareCardWithBaseImage(
   const cardWidth = width - padding * 2
   const cardHeight = height - padding * 2
   
-  // 名前テキストの配置
-  const charSize = rank === 'SSS' ? 180 : 140
-  const charSpacing = rank === 'SSS' ? 220 : 180
+  // 名前テキストの配置（RareCard.tsxと同じ計算ロジックを使用）
+  // セーフゾーン（RareCard.tsxと同じ）
+  const safeZone = { top: 120, bottom: 120, left: 80, right: 80 }
+  const nameAreaWidth = width - safeZone.left - safeZone.right
+  const nameAreaHeight = height - safeZone.top - safeZone.bottom
+  
+  // 文字サイズと行間を自動計算（RareCard.tsxと同じ）
+  const charSize = Math.min(180, Math.floor(nameAreaWidth / nameChars.length * 1.2))
+  const charSpacing = charSize * 1.05
   const nameStartX = width / 2
-  const nameStartY = rank === 'SSS' ? 550 : 500
+  const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
   
-  // エフェクト定義（SSSの場合）
-  let textEffectsDef = ''
-  let nameElements = ''
-  
-  if (rank === 'SSS') {
-    // SSS特別演出のエフェクト定義
-    textEffectsDef = `
-      <defs>
-        <!-- 後光エフェクト用フィルター -->
-        <filter id="name-halo" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="15" result="haloBlur"/>
-          <feComponentTransfer in="haloBlur" result="haloColor">
-            <feFuncA type="linear" slope="0.5"/>
-            <feFuncR type="discrete" tableValues="1.0"/>
-            <feFuncG type="discrete" tableValues="0.84"/>
-            <feFuncB type="discrete" tableValues="0.0"/>
-          </feComponentTransfer>
-          <feMerge>
-            <feMergeNode in="haloColor"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-        
-        <!-- 強力な発光フィルター -->
-        <filter id="strong-glow">
-          <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-    `
-    
-    // 名前テキスト要素（多段影）
-    nameElements = nameChars.map((char, index) => {
-      const y = nameStartY + index * charSpacing
-      return `
-        <!-- 後光エフェクト（背後） -->
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#FFD700" 
-              filter="url(#name-halo)"
-              opacity="0.6"
-              letter-spacing="0.1em">${char}</text>
-        
-        <!-- 多段影 -->
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#fff7c0" 
-              opacity="0.8"
-              filter="url(#strong-glow)"
-              letter-spacing="0.1em">${char}</text>
-        
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#ffd700" 
-              opacity="0.9"
-              filter="url(#strong-glow)"
-              letter-spacing="0.1em">${char}</text>
-        
-        <text x="${nameStartX + 2}" y="${y + 3}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#a67c00" 
-              opacity="0.6"
-              letter-spacing="0.1em">${char}</text>
-        
-        <!-- メインテキスト -->
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="900" 
-              fill="#FFD700" 
-              filter="url(#strong-glow)"
-              letter-spacing="0.1em">${char}</text>
-        
-        <text x="${nameStartX - 1}" y="${y - 2}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize * 0.98}" 
-              font-weight="900" 
-              fill="rgba(255,255,255,0.4)" 
-              opacity="0.5"
-              letter-spacing="0.1em">${char}</text>
-      `
-    }).join('\n')
-  } else {
-    // 他のランクの場合はシンプルなテキスト
-    const glowIntensity = rank === 'SS' ? 4 : rank === 'S' || rank === 'A+' || rank === 'A' ? 3 : 2
-    textEffectsDef = `
-      <defs>
-        <filter id="glow-${rank}">
-          <feGaussianBlur stdDeviation="${glowIntensity}" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-    `
-    
-    nameElements = nameChars.map((char, index) => {
-      const y = nameStartY + index * charSpacing
-      return `
-        <text x="${nameStartX}" y="${y}" 
-              text-anchor="middle" dominant-baseline="central"
-              font-family="${design.fontFamily}" 
-              font-size="${charSize}" 
-              font-weight="${design.fontWeight}" 
-              fill="${design.textColor}" 
-              filter="url(#glow-${rank})"
-              letter-spacing="0.1em">${char}</text>
-      `
-    }).join('\n')
+  // ランク別の色設定（RareCard.tsxと同じ）
+  const rankColors: Record<RankType, { main: string; glow: string; shadow: string; bg: string }> = {
+    SSS: { main: '#FFF8D9', glow: '#FFD76A', shadow: '#B8860B', bg: '#FFD700' },
+    SS: { main: '#F2F7FF', glow: '#BFD1FF', shadow: '#8FA7CC', bg: '#F5F5F5' },
+    S: { main: '#FFE1CC', glow: '#FF8040', shadow: '#993300', bg: '#FF8A80' },
+    'A+': { main: '#DDE8FF', glow: '#B0C8FF', shadow: '#203060', bg: '#80CBC4' },
+    A: { main: '#EAF5CC', glow: '#BFE87A', shadow: '#667A3A', bg: '#A5D6A7' },
+    'B+': { main: '#DCE8FF', glow: '#99BFFF', shadow: '#334A66', bg: '#C8E6C9' },
+    B: { main: '#F5F5F5', glow: '#CCCCCC', shadow: '#555555', bg: '#E0E0E0' },
+    C: { main: '#F2E0C6', glow: '#E5B67E', shadow: '#5C3A24', bg: '#F9E79F' },
+    D: { main: '#FFD1A6', glow: '#CC5A2E', shadow: '#330000', bg: '#E5E7E9' },
   }
+  const colors = rankColors[rank]
+
+  // エフェクト定義（RareCard.tsxと同じ）
+  const textEffectsDef = `
+    <defs>
+      <!-- 発光フィルター（RareCard.tsxと同じ） -->
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="6" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      
+      <!-- 強力な発光フィルター（SSS用、RareCard.tsxと同じ） -->
+      <filter id="strong-glow">
+        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      
+      <!-- ランク別色付きグローフィルター（RareCard.tsxのtextShadowを完全再現: 0 0 6px glow, 0 0 14px glow, 0 4px 4px shadow） -->
+      <filter id="glow-colored-${rank}" x="-100%" y="-100%" width="300%" height="300%">
+        <!-- 0 0 6px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur1"/>
+        <feOffset in="blur1" dx="0" dy="0" result="offset1"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.8" result="glowColor1"/>
+        <feComposite in="glowColor1" in2="offset1" operator="in" result="glow1"/>
+        
+        <!-- 0 0 14px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="blur2"/>
+        <feOffset in="blur2" dx="0" dy="0" result="offset2"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.6" result="glowColor2"/>
+        <feComposite in="glowColor2" in2="offset2" operator="in" result="glow2"/>
+        
+        <!-- 0 4px 4px ${colors.shadow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur3"/>
+        <feOffset in="blur3" dx="0" dy="4" result="offset3"/>
+        <feFlood flood-color="${colors.shadow}" flood-opacity="0.6" result="shadowColor"/>
+        <feComposite in="shadowColor" in2="offset3" operator="in" result="shadow"/>
+        
+        <!-- マージ: 影 → 外側グロー → 内側グロー → テキスト -->
+        <feMerge>
+          <feMergeNode in="shadow"/>
+          <feMergeNode in="glow2"/>
+          <feMergeNode in="glow1"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+  `
+  
+  // 名前テキスト要素（RareCard.tsxと同じ実装）
+  const nameElements = nameChars.map((char, index) => {
+    const y = nameStartY + index * charSpacing
+
+    return `
+      <!-- 後光エフェクト（SSSのみ、RareCard.tsxと同じ） -->
+      ${rank === 'SSS' ? `
+      <text x="${nameStartX}" y="${y}" 
+            text-anchor="middle" dominant-baseline="central"
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-size="${charSize}" 
+            font-weight="900" 
+            fill="${colors.glow}" 
+            opacity="0.6"
+            filter="url(#strong-glow)">${char}</text>
+      ` : ''}
+      
+      <!-- 多段影（RareCard.tsxと同じ） -->
+      <text x="${nameStartX + 2}" y="${y + 3}" 
+            text-anchor="middle" dominant-baseline="central"
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-size="${charSize}" 
+            font-weight="900" 
+            fill="${colors.shadow}" 
+            opacity="0.6">${char}</text>
+      
+      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用） -->
+      <text x="${nameStartX}" y="${y}" 
+            text-anchor="middle" dominant-baseline="central"
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-size="${charSize}" 
+            font-weight="900" 
+            fill="${colors.main}" 
+            filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-colored-${rank})`}">${char}</text>
+      
+      <!-- 内側ハイライト（RareCard.tsxと同じ） -->
+      <text x="${nameStartX - 1}" y="${y - 2}" 
+            text-anchor="middle" dominant-baseline="central"
+            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-size="${charSize * 0.98}" 
+            font-weight="900" 
+            fill="rgba(255,255,255,0.4)" 
+            opacity="0.5">${char}</text>
+    `
+  }).join('\n')
   
   // テキストレイヤーのSVG生成
   const textLayerSvg = `
@@ -760,30 +769,26 @@ async function generateRareCardWithBaseImage(
       <!-- 名前（縦書き） -->
       ${nameElements}
       
-      <!-- パワーポイント表示（SSSの場合のみ金色プラーク） -->
-      ${rank === 'SSS' ? `
-        <g transform="translate(${width / 2}, ${nameStartY + nameChars.length * charSpacing + 120})">
-          <rect x="-100" y="-35" width="200" height="70" rx="8" ry="8"
-                fill="#FFD700" opacity="0.9" stroke="#FFA500" stroke-width="3" filter="url(#strong-glow)"/>
-          <rect x="-95" y="-30" width="190" height="60" rx="6" ry="6"
-                fill="none" stroke="#FFD700" stroke-width="1"/>
-          <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
-                font-family="Arial, sans-serif" font-size="68" font-weight="900"
-                fill="#FFFFFF" filter="url(#strong-glow)">${totalPoints}pt</text>
-          <text x="0" y="65" text-anchor="middle"
-                font-family="${design.fontFamily}" font-size="32"
-                fill="#FFFFFF">パワーレベル ${powerLevel}/10</text>
-        </g>
-      ` : `
-        <g transform="translate(${width / 2}, ${nameStartY + nameChars.length * charSpacing + 120})">
-          <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
-                font-family="Arial, sans-serif" font-size="64" font-weight="900"
-                fill="${design.textColor}" filter="url(#glow-${rank})">${totalPoints}pt</text>
-          <text x="0" y="60" text-anchor="middle"
-                font-family="${design.fontFamily}" font-size="32"
-                fill="${design.textColor}" opacity="0.9">パワーレベル ${powerLevel}/10</text>
-        </g>
-      `}
+      <!-- パワーポイント表示（RareCard.tsxと同じ） -->
+      <g transform="translate(${width / 2}, ${height - 130})">
+        <!-- スコア帯背景（RareCard.tsxと同じ） -->
+        <rect x="-100" y="-35" width="200" height="70" rx="8" ry="8"
+              fill="${rank === 'SSS' ? colors.bg : 'rgba(0,0,0,0.5)'}"
+              opacity="0.9"
+              stroke="${colors.glow}"
+              stroke-width="3"
+              filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}"/>
+        <!-- ポイント表示（RareCard.tsxと同じ） -->
+        <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
+              font-family="Arial, sans-serif" font-size="64" font-weight="900"
+              fill="#FFFFFF" 
+              filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}">${totalPoints}pt</text>
+        <!-- パワーレベル表示（RareCard.tsxと同じ） -->
+        <text x="0" y="65" text-anchor="middle"
+              font-family="Arial, sans-serif" font-size="32"
+              fill="#FFFFFF" 
+              opacity="0.9">パワーレベル ${powerLevel}/10</text>
+      </g>
     </svg>
   `
   
