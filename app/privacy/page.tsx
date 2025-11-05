@@ -43,9 +43,20 @@ export default function PrivacyPage() {
 
             <section>
               <h2 className="text-xl font-semibold mb-3">5. お問い合わせ</h2>
-              <p>
-                個人情報の取り扱いに関するお問い合わせは、特定商取引法に基づく表記に 記載の連絡先までご連絡ください。
+              <p className="mb-3">
+                個人情報の取り扱いに関するお問い合わせは、以下の連絡先までご連絡ください。
               </p>
+              <div className="bg-muted/50 p-4 rounded-md space-y-2">
+                <p className="font-medium">お問い合わせ先</p>
+                <p>
+                  <a href="mailto:kanaukiryu@gmail.com" className="text-primary hover:underline">
+                    kanaukiryu@gmail.com
+                  </a>
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  なお、特定商取引法に基づく表記については、<a href="/legal/tokusho" className="text-primary hover:underline">こちら</a>をご確認ください。
+                </p>
+              </div>
             </section>
           </CardContent>
         </Card>

@@ -5,10 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, Sparkles } from "lucide-react"
-import { fetchSeasonRanking, getCurrentSeasonKey, type RankingEntry, submitRankingEntry, submitRankingEntryFromNameAnalysis } from "@/lib/ranking-repo"
-import { getOrCreatePointsSummary } from "@/lib/kanau-points-supabase"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { fetchSeasonRanking, getCurrentSeasonKey, type RankingEntry } from "@/lib/ranking-repo"
 import { useAuth } from "@/components/auth/auth-provider"
 import Link from "next/link"
 
@@ -17,10 +14,6 @@ export default function RankingPage() {
   const [entries, setEntries] = useState<RankingEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>("")
-  const [entryName, setEntryName] = useState("")
-  const [entryPower, setEntryPower] = useState<number>(70)
-  const [submitting, setSubmitting] = useState(false)
-  const [points, setPoints] = useState<number | null>(null)
   const { user } = useAuth()
 
   const seasonOptions = useMemo(() => {
@@ -42,13 +35,6 @@ export default function RankingPage() {
       .finally(() => setLoading(false))
   }, [season])
 
-  useEffect(() => {
-    if (user) {
-      getOrCreatePointsSummary(user.id)
-        .then((s) => setPoints(s.points || 0))
-        .catch(() => {})
-    }
-  }, [user])
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -87,40 +73,21 @@ export default function RankingPage() {
           {!loading && !error && (
             <div className="space-y-2">
               {user && (
-                <div className="p-3 border rounded-md space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">ランキングに登録（5Kp消費）</div>
-                    {points !== null && (
-                      <div className="text-sm text-muted-foreground">所持ポイント: {points}Kp</div>
-                    )}
+                <div className="p-3 border rounded-md bg-muted/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                      重要
+                    </Badge>
+                    <div className="text-sm font-medium">ランキング登録について</div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <Input placeholder="名前（例: 陽翔）" value={entryName} onChange={(e) => setEntryName(e.target.value)} />
-                    <Input type="number" min={1} max={100} value={entryPower} onChange={(e) => setEntryPower(Number(e.target.value))} placeholder="パワースコア" />
-                    <Button disabled={!entryName || submitting || (points !== null && points < 5)} onClick={async () => {
-                      try {
-                        setSubmitting(true)
-                        await submitRankingEntry(user.id, entryName, entryPower)
-                        // 再読込
-                        const list = await fetchSeasonRanking(season)
-                        setEntries(list)
-                        setEntryName("")
-                        const updated = await getOrCreatePointsSummary(user.id)
-                        setPoints(updated.points || 0)
-                      } catch (e: any) {
-                        setError(e.message || "登録に失敗しました")
-                      } finally {
-                        setSubmitting(false)
-                      }
-                    }}>登録</Button>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {points !== null && points < 5 && (
-                      <span className="text-red-600">
-                        ※ ポイントが不足しています。まず<Link href="/kanau-points" className="underline">ログインボーナス</Link>を受け取ってください。
-                      </span>
-                    )}
-                    {points !== null && points >= 5 && "季節の漢字を含むと+10%（例: 春/夏/秋/冬/桜/陽/紅/雪 など）。アイテム所持で更に最大+50%。"}
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>ランキングへの登録は、<strong>姓名判断システムを通じてのみ</strong>可能です。</p>
+                    <p>不正防止のため、このページからの直接登録はできません。</p>
+                    <p className="mt-2">
+                      <Link href="/" className="text-primary underline hover:no-underline">
+                        → 姓名判断を実行してランキングに登録
+                      </Link>
+                    </p>
                   </div>
                 </div>
               )}

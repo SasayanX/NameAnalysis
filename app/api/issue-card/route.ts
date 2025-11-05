@@ -125,6 +125,10 @@ export async function POST(request: NextRequest) {
 
       if (uploadError) {
         console.error('❌ Storageアップロードエラー:', uploadError)
+        // バケットが存在しない場合のエラーメッセージを改善
+        if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
+          throw new Error(`Supabase Storageバケット「rare-cards」が見つかりません。バケットを作成してください。詳細: docs/supabase-storage-setup.md`)
+        }
         throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`)
       }
 
