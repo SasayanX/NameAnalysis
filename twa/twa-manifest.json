@@ -21,8 +21,8 @@
     "path": "D:\\project\\NameAnalysis\\twa\\android.keystore",
     "alias": "android"
   },
-  "appVersionName": "7",
-  "appVersionCode": 7,
+  "appVersionName": "9",
+  "appVersionCode": 9,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://seimei.app/manifest.json",
@@ -48,5 +48,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "7"
+  "appVersion": "9"
 }
