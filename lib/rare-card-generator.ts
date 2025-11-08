@@ -376,13 +376,17 @@ export async function generateRareCardImage(
             fill="${colors.shadow}" 
             opacity="0.6">${char}</text>
       
-      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用） -->
+      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用、SSランクは縁取り強化） -->
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
             font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.main}" 
+            stroke="${rank === 'SS' ? '#1A3A5F' : colors.shadow}"
+            stroke-width="${rank === 'SS' ? 6 : 4}"
+            stroke-linejoin="round"
+            stroke-linecap="round"
             filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-colored-${rank})`}">${char}</text>
       
       <!-- 内側ハイライト（RareCard.tsxと同じ） -->
@@ -741,13 +745,17 @@ async function generateRareCardWithBaseImage(
             fill="${colors.shadow}" 
             opacity="0.6">${char}</text>
       
-      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用） -->
+      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用、SSランクは縁取り強化） -->
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
             font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.main}" 
+            stroke="${rank === 'SS' ? '#1A3A5F' : colors.shadow}"
+            stroke-width="${rank === 'SS' ? 6 : 4}"
+            stroke-linejoin="round"
+            stroke-linecap="round"
             filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-colored-${rank})`}">${char}</text>
       
       <!-- 内側ハイライト（RareCard.tsxと同じ） -->

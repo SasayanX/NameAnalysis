@@ -99,13 +99,6 @@ export default function TokushoPage() {
                 </p>
                 <p className="text-sm text-gray-600">税込価格</p>
               </div>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h3 className="font-semibold mb-2">年額プラン</h3>
-                <p className="text-2xl font-bold">
-                  2,200円<span className="text-sm">/年</span>
-                </p>
-                <p className="text-sm text-gray-600">月額183円相当</p>
-              </div>
             </div>
             <p className="text-sm text-gray-600">
               ※価格は全て税込表示です。消費税率の変更に伴い価格が変更される場合があります。

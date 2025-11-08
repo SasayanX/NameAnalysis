@@ -278,6 +278,69 @@ export class SubscriptionManager {
     }
   }
 
+  // Google Play Billingでのサブスクリプション開始
+  async startGooglePlayBillingSubscription(
+    planId: PlanType,
+    purchaseToken: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId)
+      if (!plan) {
+        return { success: false, error: "Invalid plan" }
+      }
+
+      // 購入レシートを検証
+      const verifyResponse = await fetch("/api/verify-google-play-purchase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          purchaseToken,
+          productId: planId === "basic" ? "basic-monthly" : "premium-monthly",
+        }),
+      })
+
+      const verifyResult = await verifyResponse.json()
+
+      if (!verifyResult.success || !verifyResult.verified) {
+        return { success: false, error: verifyResult.error || "Purchase verification failed" }
+      }
+
+      // 検証成功：プランを有効化
+      const purchaseData = verifyResult.purchaseData || {}
+      const expiryTimeMillis = purchaseData.expiryTimeMillis || 0
+      const expiresAt = expiryTimeMillis > 0 ? new Date(expiryTimeMillis) : null
+
+      // 有効期限が設定されていない場合は、1ヶ月後に設定
+      const finalExpiresAt = expiresAt || (() => {
+        const date = new Date()
+        date.setMonth(date.getMonth() + 1)
+        return date
+      })()
+
+      this.currentSubscription = {
+        plan: planId,
+        expiresAt: finalExpiresAt,
+        isActive: true,
+        trialEndsAt: null,
+        status: purchaseData.isActive !== false ? "active" : "pending",
+        paymentMethod: "google_play",
+        amount: plan.price,
+        nextBillingDate: finalExpiresAt,
+        lastPaymentDate: new Date(),
+      }
+
+      this.saveSubscription()
+      this.notifyListeners()
+
+      return { success: true }
+    } catch (error) {
+      console.error("Error starting Google Play Billing subscription:", error)
+      return { success: false, error: "Failed to start subscription" }
+    }
+  }
+
   // 本番環境：GMO決済でのサブスクリプション開始
   async startGMOSubscription(planId: PlanType): Promise<{ success: boolean; error?: string }> {
     try {
@@ -467,6 +530,10 @@ export function useSubscription() {
   const getTrialDaysRemaining = useCallback(() => manager.getTrialDaysRemaining(), [manager])
   const startSquareSubscription = useCallback((planId: PlanType) => manager.startSquareSubscription(planId), [manager])
   const startGMOSubscription = useCallback((planId: PlanType) => manager.startGMOSubscription(planId), [manager])
+  const startGooglePlayBillingSubscription = useCallback(
+    (planId: PlanType, purchaseToken: string) => manager.startGooglePlayBillingSubscription(planId, purchaseToken),
+    [manager]
+  )
   const cancelSubscription = useCallback(() => manager.cancelSubscription(), [manager])
   const getSubscriptionInfo = useCallback(() => manager.getSubscriptionInfo(), [manager])
   const getNextBillingDate = useCallback(() => manager.getNextBillingDate(), [manager])
@@ -481,6 +548,7 @@ export function useSubscription() {
     getTrialDaysRemaining,
     startSquareSubscription,
     startGMOSubscription,
+    startGooglePlayBillingSubscription,
     cancelSubscription,
     getSubscriptionInfo,
     getNextBillingDate,

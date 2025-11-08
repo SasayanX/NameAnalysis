@@ -13,6 +13,7 @@ import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { LoginBonusNotification } from "@/components/login-bonus-notification"
 import { SEOHead } from "@/components/seo-head"
+import { GooglePlayBillingInitializer } from "@/components/google-play-billing-initializer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -124,6 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Toaster />
                   <PWAInstallPrompt />
                   <LoginBonusNotification />
+                  <GooglePlayBillingInitializer />
                 </StrokeDataProvider>
               </FortuneDataProvider>
             </UserPreferencesProvider>

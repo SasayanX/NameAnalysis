@@ -327,7 +327,17 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
       </Card>
 
       {/* デバッグ: Kp付与（開発時のみ表示） */}
-      {(process.env.NODE_ENV !== "production") && (
+      {(() => {
+        // 開発環境チェック: NODE_ENVとhostnameの両方をチェック
+        const isDevelopment = process.env.NODE_ENV === "development" ||
+          (typeof window !== "undefined" && (
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1" ||
+            window.location.hostname.startsWith("192.168.") ||
+            window.location.hostname.endsWith(".local")
+          ))
+        return isDevelopment
+      })() && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">デバッグモード: Kp付与</CardTitle>

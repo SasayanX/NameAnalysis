@@ -52,7 +52,7 @@ export function SiteFooter() {
             </div>
             <div className="flex items-center space-x-1">
               <Mail className="h-4 w-4 text-muted-foreground" />
-              <Link href="mailto:kanaukiryu@gmail.com" className="text-sm text-muted-foreground hover:underline">
+              <Link href="/contact" className="text-sm text-muted-foreground hover:underline">
                 お問い合わせ
               </Link>
             </div>

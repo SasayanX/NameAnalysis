@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Check, Crown, Star, Zap } from "lucide-react"
 import { SubscriptionManager, SUBSCRIPTION_PLANS } from "@/lib/subscription-manager"
+import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
 
 interface PlanSelectorModalProps {
   isOpen: boolean
@@ -18,6 +19,24 @@ interface PlanSelectorModalProps {
 export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPlanSelect }: PlanSelectorModalProps) {
   const [isLoading, setIsLoading] = React.useState(false)
   const [subscriptionManager] = React.useState(() => SubscriptionManager.getInstance())
+  const [isGooglePlayAvailable, setIsGooglePlayAvailable] = React.useState(false)
+
+  // プラットフォーム検出：Google Play Billingが利用可能か確認
+  React.useEffect(() => {
+    if (isOpen) {
+      const checkPlatform = async () => {
+        const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+        if (isTWA) {
+          // TWA環境：初期化済みか確認
+          const isAvailable = await GooglePlayBillingDetector.initialize()
+          setIsGooglePlayAvailable(isAvailable)
+        } else {
+          setIsGooglePlayAvailable(false)
+        }
+      }
+      checkPlatform()
+    }
+  }, [isOpen])
 
   const handlePlanSelect = async (planId: "free" | "basic" | "premium") => {
     if (planId === currentPlan) {
@@ -41,13 +60,44 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
           onPlanSelect?.(planId)
           onClose()
         } else {
-          // アップグレード処理（Square決済）
-          const result = await subscriptionManager.startSquareSubscription(planId)
-          if (result.success) {
-            onPlanSelect?.(planId)
-            onClose()
+          // プラットフォームに応じて決済方法を切り替え
+          if (isGooglePlayAvailable) {
+            // Google Play Billing（TWA環境）
+            try {
+              const productId = planId === "basic" ? "basic-monthly" : "premium-monthly"
+              
+              // 商品を購入
+              const purchase = await GooglePlayBillingDetector.purchase(productId)
+              
+              // 購入成功：レシート検証とプラン有効化
+              const result = await subscriptionManager.startGooglePlayBillingSubscription(
+                planId,
+                purchase.purchaseToken
+              )
+
+              if (result.success) {
+                onPlanSelect?.(planId)
+                onClose()
+              } else {
+                alert(`プラン変更に失敗しました: ${result.error}`)
+              }
+            } catch (error: any) {
+              console.error("Google Play Billing purchase error:", error)
+              // エラーメッセージをユーザーフレンドリーに
+              const errorMessage = error.message?.includes("User cancelled") 
+                ? "購入がキャンセルされました"
+                : `購入に失敗しました: ${error.message || "不明なエラー"}`
+              alert(errorMessage)
+            }
           } else {
-            alert(`プラン変更に失敗しました: ${result.error}`)
+            // Square決済（Web環境）
+            const result = await subscriptionManager.startSquareSubscription(planId)
+            if (result.success) {
+              onPlanSelect?.(planId)
+              onClose()
+            } else {
+              alert(`プラン変更に失敗しました: ${result.error}`)
+            }
           }
         }
       }
@@ -164,6 +214,9 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
                     7日間無料トライアル付き
                     <br />
                     いつでもキャンセル可能
+                    {isGooglePlayAvailable && (
+                      <span className="block mt-1 text-blue-600">Google Play経由で購入</span>
+                    )}
                   </p>
                 )}
               </CardContent>

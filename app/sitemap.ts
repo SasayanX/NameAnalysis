@@ -155,6 +155,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // その他のページ
   const otherPages = [
     {
+      url: `${baseUrl}/ranking`,
+      lastModified: currentDate,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+    },
+    {
       url: `${baseUrl}/my-subscription`,
       lastModified: currentDate,
       changeFrequency: "monthly" as const,

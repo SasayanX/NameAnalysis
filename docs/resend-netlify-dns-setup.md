@@ -1,107 +1,170 @@
-# Resend ドメイン認証の設定方法（簡単版）
+# Resend ドメイン認証 - Netlify設定ガイド
 
-## 📋 やること
-Resendで`kanau-kiryu.com`を使えるようにするため、Netlifyに4つのDNSレコードを追加します。
+## 問題の概要
 
-## 🎯 手順（5分で完了）
+Resendのドメイン認証がNetlifyで完了しない場合の対処方法です。
 
-### ステップ1: Netlifyにログイン
-1. https://app.netlify.com/ にアクセス
-2. ログイン
+## 重要なポイント
 
-### ステップ2: DNS設定画面を開く
-1. 左メニューから「**Domain settings**」をクリック
-2. または「**Site settings**」→「**Domain management**」を開く
-3. `kanau-kiryu.com`をクリック
-4. 「**DNS records**」タブを開く
+### 1. ドメイン管理の場所を確認
 
-### ステップ3: 4つのレコードを追加
+**seimei.app**のドメインがどこで管理されているかを確認してください：
 
-画面にある「**Add DNS record**」ボタンから、以下を1つずつ追加します。
+- **Netlifyで管理している場合**: NetlifyのDNS設定から追加
+- **外部DNSプロバイダー（例：お名前.com、ムームードメイン等）で管理している場合**: **外部DNSプロバイダー**で設定する必要があります
 
----
+⚠️ **注意**: Netlifyでホスティングしていても、ドメインが外部DNSプロバイダーで管理されている場合は、**NetlifyのDNS設定ではなく、外部DNSプロバイダーで設定**する必要があります。
 
-#### レコード1: DKIM（一番重要！）
-1. 「**Add DNS record**」をクリック
-2. 入力欄を埋める：
-   - **Type**: `TXT` を選択
-   - **Hostname**: `resend._domainkey` と入力
-   - **Value**: 以下の長い文字列をコピペ（改行なし）
-     ```
-     p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCkred69U+aUi84A4i2fgxOKZ80Nlw+YwFnkvNfE8nimfpACnc9UuUow228mlu643Xo0OAiw3vl5TN2W6d89qY//SHKL4o0LOQlwv9dGCaKlBwgI4fiEanGG30LoGRraA5cwhGV7PsGaIvIttm/7iQ1Fuhxim/6qGjggBaY1z2e7wIDAQAB
-     ```
-3. 「**Add record**」をクリック
+## Netlifyでドメイン管理している場合
 
----
+### 手順
 
-#### レコード2: SPF
-1. 「**Add DNS record**」をクリック
-2. 入力欄を埋める：
-   - **Type**: `TXT` を選択
-   - **Hostname**: `send` と入力
-   - **Value**: `v=spf1 include:amazonses.com ~all` と入力
-3. 「**Add record**」をクリック
+1. **Netlify Dashboardにログイン**
+   - https://app.netlify.com/
 
----
+2. **ドメイン設定を開く**
+   - サイトを選択 → **Domain settings** → **DNS configuration**
 
-#### レコード3: DMARC（任意）
-1. 「**Add DNS record**」をクリック
-2. 入力欄を埋める：
-   - **Type**: `TXT` を選択
-   - **Hostname**: `_dmarc` と入力
-   - **Value**: `v=DMARC1; p=none;` と入力
-3. 「**Add record**」をクリック
+3. **ResendのDNSレコードを追加**
+   - Resendダッシュボードで表示される以下のレコードを追加：
+     - **SPFレコード** (TXT)
+     - **DKIMレコード** (TXT、通常3つ)
+     - **DMARCレコード** (TXT、オプション)
 
----
-
-#### レコード4: MX
-1. 「**Add DNS record**」をクリック
-2. 入力欄を埋める：
-   - **Type**: `MX` を選択
-   - **Hostname**: `send` と入力
-   - **Value**: `feedback-smtp.ap-northeast-1.amazonses.com` と入力
-   - **Priority**: `10` と入力
-3. 「**Add record**」をクリック
-
----
-
-## ✅ 設定後の確認
-
-### 確認方法1: Resendダッシュボード
-1. Resendにログイン（https://resend.com/domains）
-2. `kanau-kiryu.com`を開く
-3. 4つのレコードがすべて✅（緑色のチェック）になればOK
-4. もし❌（赤）のままなら、**数時間待つ**（DNS伝播に時間がかかります）
-
-### 確認方法2: オンラインツール（簡単）
-ブラウザで以下を開いて確認：
-- https://www.whatsmydns.net/#TXT/resend._domainkey.kanau-kiryu.com
-- 世界中のDNSサーバーでレコードが見つかればOK
-
-## ⏰ 時間がかかる場合
-
-- **通常**: 数分〜1時間
-- **遅い場合**: 最大24時間
-- **48時間経っても認証されない**: 設定ミスの可能性があります
-
-## ❌ うまくいかない場合
-
-### チェックリスト
-- [ ] 4つすべてのレコードを追加したか？
-- [ ] Hostname（ホスト名）を正しく入力したか？（特に`resend._domainkey`にスペースがないか）
-- [ ] Value（値）を正確にコピペしたか？（特にDKIMは長いので間違いやすい）
-- [ ] 24時間以上待ったか？
+4. **レコードの追加方法**
+   - 「Add DNS record」をクリック
+   - タイプを選択（TXT、MX等）
+   - **Name**: Resendが指定するホスト名（例：`_resend`、`default._domainkey`等）
+   - **Value**: Resendが提供する値（**完全にコピー**）
+   - TTLはデフォルト（3600）でOK
 
 ### よくある間違い
-1. **Hostnameに`.kanau-kiryu.com`を付けない**
-   - ✅ 正しい: `resend._domainkey`
-   - ❌ 間違い: `resend._domainkey.kanau-kiryu.com`
-2. **DKIMの値に改行が入っている**
-   - 1行でコピペしてください
 
-## 📞 それでもダメな場合
-Resendのサポートに連絡してください。
+❌ **間違い**: 値の一部だけをコピーしてしまう
+✅ **正しい**: 値全体を完全にコピー（引用符やスペースも含む）
 
----
+❌ **間違い**: ホスト名を省略する（`_resend.seimei.app`ではなく`_resend`だけ）
+✅ **正しい**: Resendが指定するホスト名をそのまま使用
 
-**完成！** 4つのレコードがすべて✅になれば、メール送信が使えるようになります。
+## 外部DNSプロバイダーでドメイン管理している場合
+
+### 手順
+
+1. **ドメインの管理画面にログイン**
+   - お名前.com、ムームードメイン、Route53等の管理画面
+
+2. **DNS設定を開く**
+   - ドメイン管理 → DNS設定/DNSレコード設定
+
+3. **ResendのDNSレコードを追加**
+   - Netlifyと同様に、Resendが提供するレコードを追加
+
+4. **NetlifyのDNS設定は変更しない**
+   - 外部DNSで管理している場合、NetlifyのDNS設定は使用されません
+
+## DNSレコードの伝播確認
+
+### 確認方法
+
+1. **DNS伝播チェックツールを使用**
+   - https://dnschecker.org/
+   - `seimei.app`を入力
+   - 設定したレコードタイプ（TXT、MX等）を選択
+   - グローバルに反映されているか確認
+
+2. **コマンドラインで確認**
+   ```bash
+   # SPFレコードの確認
+   nslookup -type=TXT seimei.app
+   
+   # DKIMレコードの確認（例：default._domainkey）
+   nslookup -type=TXT default._domainkey.seimei.app
+   ```
+
+### 伝播時間
+
+- **通常**: 数分〜数時間
+- **最大**: 48時間（ただし、通常は数時間以内）
+
+## トラブルシューティング
+
+### 問題1: レコードが反映されない
+
+**確認事項**:
+1. レコードの値が完全にコピーされているか
+2. ホスト名が正しいか（`_resend`、`default._domainkey`等）
+3. レコードタイプが正しいか（TXT、MX等）
+4. 既存のレコードと競合していないか
+
+**解決方法**:
+- Resendのダッシュボードで表示されるレコードを**一字一句正確に**コピー
+- 値の前後に余分なスペースや引用符がないか確認
+
+### 問題2: ドメイン認証が失敗し続ける
+
+**確認事項**:
+1. **ドメイン管理の場所を再確認**
+   - Netlifyで管理しているか、外部DNSプロバイダーで管理しているか
+   - 外部DNSで管理している場合、NetlifyのDNS設定は無視されます
+
+2. **DNS伝播が完了しているか**
+   - DNSチェッカーツールで確認
+   - すべてのDNSサーバーに反映されているか確認
+
+**解決方法**:
+- ドメイン管理の場所を正しく特定
+- 管理しているDNSプロバイダーで設定
+- 24時間待ってから再確認
+
+### 問題3: 既存のレコードと競合
+
+**確認事項**:
+- 既存のSPFレコードがある場合、新しい値と**統合**する必要がある
+- 既存のDKIMレコードがある場合、追加で設定（通常は問題なし）
+
+**解決方法（SPFレコードの場合）**:
+```
+# 既存のSPFレコード例
+v=spf1 include:_spf.google.com ~all
+
+# ResendのSPFレコードを追加
+v=spf1 include:_spf.google.com include:resend.com ~all
+```
+
+## 当面の対応（ドメイン認証が完了していない場合）
+
+現在のコードでは、ドメイン認証が完了していなくても動作するように実装されています：
+
+- **自動フォールバック**: ドメイン認証エラーを検出すると、自動的に`onboarding@resend.dev`を使用
+- **正常動作**: お問い合わせフォームは正常に動作します
+
+### 環境変数の設定
+
+```env
+# RESEND_FROM_EMAILを設定しない（またはコメントアウト）
+# RESEND_FROM_EMAIL=noreply@seimei.app
+
+# これにより、自動的にonboarding@resend.devが使用されます
+```
+
+## Resendサポートへの問い合わせ
+
+上記の手順を試しても解決しない場合：
+
+1. **Resendのサポートに問い合わせ**
+   - サポートページ: https://resend.com/support
+   - エラーメッセージのスクリーンショット
+   - 設定したDNSレコードの内容
+   - ドメイン管理の場所（Netlify or 外部DNS）
+
+2. **提供する情報**
+   - ドメイン名: `seimei.app`
+   - DNSプロバイダー: Netlify（または外部DNSプロバイダー名）
+   - 設定したDNSレコードの詳細
+   - エラーメッセージ
+
+## 参考リンク
+
+- [Resend DNS設定ドキュメント](https://resend.com/docs/dashboard/domains/introduction)
+- [Netlify DNS設定ドキュメント](https://docs.netlify.com/domains-https/custom-domains/configure-dns/)
+- [DNS伝播チェッカー](https://dnschecker.org/)

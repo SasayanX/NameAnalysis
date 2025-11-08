@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,17 +9,20 @@ import { Check, X, Trophy, Star, Crown, Sparkles } from "lucide-react"
 import { useSubscription } from "@/lib/subscription-manager"
 import { SquareCheckoutButton } from "@/components/square-checkout-button"
 import Link from "next/link"
+import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
 
 export default function PricingPage() {
   const subscription = useSubscription()
   const currentPlan = subscription.getCurrentPlan()
   // 年額プランは無効化：常に月額のみ
   const billingCycle: "monthly" = "monthly"
+  const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(false)
+  const [processingPlan, setProcessingPlan] = useState<"basic" | "premium" | null>(null)
 
   const plans = {
     free: {
       name: "無料プラン",
-      price: { monthly: 0, yearly: 0 },
+      price: { monthly: 0 },
       description: "まずはお試しで基本機能を体験",
       features: ["個人名判断: 1日1回", "会社名判断: 1日1回", "基本的な運勢分析", "五行バランス表示"],
       limitations: [
@@ -35,7 +39,7 @@ export default function PricingPage() {
     },
     basic: {
       name: "ベーシックプラン",
-      price: { monthly: 330, yearly: 3300 },
+      price: { monthly: 330 },
       description: "日常的に姓名判断を活用したい方に",
       features: [
         "個人名判断: 1日10回",
@@ -56,7 +60,7 @@ export default function PricingPage() {
     },
     premium: {
       name: "プレミアムプラン",
-      price: { monthly: 550, yearly: 5500 },
+      price: { monthly: 550 },
       description: "全機能を無制限で利用したいプロフェッショナル向け",
       features: [
         "全機能無制限利用",
@@ -76,6 +80,58 @@ export default function PricingPage() {
       popular: true,
       highlight: true,
     },
+  }
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+        if (isTWA) {
+          const available = await GooglePlayBillingDetector.initialize()
+          setIsGooglePlayAvailable(available)
+        } else {
+          setIsGooglePlayAvailable(false)
+        }
+      } catch (error) {
+        console.warn("[Pricing] Failed to initialize Google Play Billing:", error)
+        setIsGooglePlayAvailable(false)
+      }
+    }
+
+    checkPlatform()
+  }, [])
+
+  const handleGooglePlayPurchase = async (planId: "basic" | "premium") => {
+    try {
+      setProcessingPlan(planId)
+
+      if (!GooglePlayBillingDetector.isTWAEnvironment()) {
+        alert("Google Playアプリ内でのみ購入できます。")
+        return
+      }
+
+      const initialized = await GooglePlayBillingDetector.initialize()
+      if (!initialized) {
+        alert("Google Play Billingの初期化に失敗しました。しばらくしてから再度お試しください。")
+        return
+      }
+
+      const productId = planId === "basic" ? "basic-monthly" : "premium-monthly"
+      const purchase = await GooglePlayBillingDetector.purchase(productId)
+
+      const result = await subscription.startGooglePlayBillingSubscription(planId, purchase.purchaseToken)
+      if (!result.success) {
+        alert(`プラン変更に失敗しました: ${result.error ?? "原因不明のエラー"}`)
+      }
+    } catch (error: any) {
+      console.error("[Pricing] Google Play purchase error:", error)
+      const errorMessage = error?.message?.includes("User cancelled")
+        ? "購入がキャンセルされました。"
+        : `購入に失敗しました: ${error?.message ?? "原因不明のエラー"}`
+      alert(errorMessage)
+    } finally {
+      setProcessingPlan(null)
+    }
   }
 
 
@@ -141,13 +197,17 @@ export default function PricingPage() {
 
         {/* Pricing Cards */}
         <div className="grid lg:grid-cols-3 gap-8 mb-16">
-          {Object.entries(plans).map(([key, plan]) => (
-            <Card
-              key={key}
-              className={`relative ${
-                plan.highlight ? "border-2 border-purple-500 shadow-2xl scale-105" : "border border-gray-200 shadow-lg"
-              }`}
-            >
+          {Object.entries(plans).map(([key, plan]) => {
+            const isPaidPlan = key !== "free"
+            const typedPlanId = key === "basic" || key === "premium" ? (key as "basic" | "premium") : null
+
+            return (
+              <Card
+                key={key}
+                className={`relative ${
+                  plan.highlight ? "border-2 border-purple-500 shadow-2xl scale-105" : "border border-gray-200 shadow-lg"
+                }`}
+              >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <Badge className="bg-purple-600 text-white px-4 py-1">
@@ -210,9 +270,28 @@ export default function PricingPage() {
                     <Button variant={plan.buttonVariant} className="w-full" asChild>
                       <Link href="/">{plan.buttonText}</Link>
                     </Button>
-                  ) : (
+                  ) : isGooglePlayAvailable && typedPlanId ? (
+                    <Button
+                      onClick={() => handleGooglePlayPurchase(typedPlanId)}
+                      disabled={processingPlan === typedPlanId}
+                      className={`w-full ${
+                        plan.highlight
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                          : "bg-blue-600 hover:bg-blue-700"
+                      }`}
+                    >
+                      {processingPlan === typedPlanId ? (
+                        "処理中..."
+                      ) : (
+                        <>
+                          {plan.highlight && <Trophy className="h-4 w-4 mr-2" />}
+                          {`${plan.buttonText}（Google Play）`}
+                        </>
+                      )}
+                    </Button>
+                  ) : typedPlanId ? (
                     <SquareCheckoutButton
-                      planId={key as "basic" | "premium"}
+                      planId={typedPlanId}
                       price={plan.price[billingCycle]}
                       className={`w-full ${
                         plan.highlight
@@ -223,11 +302,16 @@ export default function PricingPage() {
                       {plan.highlight && <Trophy className="h-4 w-4 mr-2" />}
                       {plan.buttonText}
                     </SquareCheckoutButton>
-                  )}
+                  ) : null}
                 </div>
+
+                {isPaidPlan && isGooglePlayAvailable && (
+                  <p className="mt-3 text-xs text-blue-600 text-center">Google Play決済で処理されます</p>
+                )}
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
 
         {/* FAQ Section */}

@@ -168,6 +168,10 @@ export default function RareCard({
                 fontSize={charSize}
                 fontWeight="900"
                 fill={colors.main}
+                stroke={rank === 'SS' ? '#1A3A5F' : colors.shadow}
+                strokeWidth={rank === 'SS' ? 6 : 4}
+                strokeLinejoin="round"
+                strokeLinecap="round"
                 filter={glowFilter}
                 fontFamily="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif"
                 style={{

@@ -22,16 +22,51 @@ export default function ContactForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError(null)
 
-    // メール送信のシミュレーション
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // クライアント側バリデーション
+    if (!formData.category) {
+      setError('お問い合わせ種別を選択してください')
+      setIsSubmitting(false)
+      return
+    }
 
-    setSubmitted(true)
-    setIsSubmitting(false)
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'お問い合わせの送信に失敗しました')
+      }
+
+      setSubmitted(true)
+      // フォームをリセット
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        category: '',
+        message: '',
+      })
+    } catch (error: any) {
+      console.error('お問い合わせ送信エラー:', error)
+      setError(error.message || 'お問い合わせの送信に失敗しました。しばらく時間をおいて再度お試しください。')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (field: string, value: string) => {
@@ -128,7 +163,7 @@ export default function ContactForm() {
 
             <div>
               <label className="block text-sm font-medium mb-2">お問い合わせ種別 *</label>
-              <Select value={formData.category} onValueChange={(value) => handleChange("category", value)}>
+              <Select value={formData.category} onValueChange={(value) => handleChange("category", value)} required>
                 <SelectTrigger>
                   <SelectValue placeholder="お問い合わせの種別を選択してください" />
                 </SelectTrigger>
@@ -164,6 +199,12 @@ export default function ContactForm() {
                 required
               />
             </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <p className="text-sm">{error}</p>
+              </div>
+            )}
 
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-semibold mb-2">個人情報の取り扱いについて</h4>
