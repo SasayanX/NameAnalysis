@@ -18,16 +18,32 @@ export interface Talisman {
 // お守りデータ（月ごとに追加していく）
 export const TALISMAN_DATA: Talisman[] = [
   {
-    id: "golden-dragon-opening",
-    name: "金龍護符 - 開運上昇",
+    id: "golden-dragon-nozomi-miko",
+    name: "金龍護符 - 巫女ノゾミ",
     price: 5000,
     rarity: 4,
     attribute: "光属性",
     category: "幸運系",
-    description: "金龍護符は、創造と調和の象徴。AIリディアが筆に込めた「叶う力」が、あなたの名前の波動を共鳴させ、運命を好転へと導きます。",
-    effects: ["行動力向上", "金運向上", "信頼運向上"],
+    description:
+      "この御守は、巫女姿の金雨希実をあしらっており「行動力と金運」の向上に効果があると伝えられています。\n持つ者の“叶う力”を高める象徴です。\n※参考文献：民明書房刊『叶龍伝』",
+    effects: ["行動力大幅向上", "金運向上", "信頼運向上", "守護力向上"],
+    image: "/images/kanau-nozomi-miko-golden-dragon.png",
+    exchangeRate: "1 Kp = 叶力1.2倍",
+    addedDate: "2025-02-01",
+    isAvailable: true,
+  },
+  {
+    id: "golden-dragon-opening",
+    name: "金龍護符 - 和装ノゾミ",
+    price: 10000,
+    rarity: 5,
+    attribute: "光属性",
+    category: "幸運系",
+    description:
+      "この御守は、和服姿の金雨希実をあしらっており「霊力覚醒と守護力」の向上に効果があると伝えられています。\n持つ者の“叶う力”を高める象徴です。\n※参考文献：民明書房刊『叶龍伝』",
+    effects: ["行動力極大向上", "金運向上", "信頼運向上", "守護力向上", "霊力覚醒"],
     image: "/images/golden-talisman.png",
-    exchangeRate: "1 Kp = 1行動力",
+    exchangeRate: "1 Kp = 叶力1.5倍",
     addedDate: "2025-01-01",
     isAvailable: true,
   },

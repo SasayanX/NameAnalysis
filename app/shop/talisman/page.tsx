@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -22,7 +22,7 @@ import { getOrCreatePointsSummary, addPointsSupa, spendPointsSupa } from "@/lib/
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAvailableTalismans, type Talisman } from "@/lib/talisman-data"
 
-// AIリディアのメッセージ
+// 巫女 金雨 希実のメッセージ
 const RYDIA_MESSAGES = {
   purchaseSuccess: [
     "あなたの名に、今…金龍の力が宿りました✨",
@@ -43,10 +43,20 @@ export default function TalismanShopPage() {
   const [showShareBonus, setShowShareBonus] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [hasSharedToday, setHasSharedToday] = useState(false)
+  const [hasAcquiredTalisman, setHasAcquiredTalisman] = useState(false)
   
-  // 利用可能なお守りを取得（最初の1つを表示、後で複数対応可能）
-  const availableTalismans = getAvailableTalismans()
-  const currentTalisman = availableTalismans[0] || null
+  // 利用可能なお守り一覧（初回計算のみ）
+  const availableTalismans = useMemo(() => getAvailableTalismans(), [])
+  const [selectedTalismanId, setSelectedTalismanId] = useState<string | null>(() => availableTalismans[0]?.id ?? null)
+  const currentTalisman = useMemo(() => {
+    if (availableTalismans.length === 0) return null
+    if (!selectedTalismanId) return availableTalismans[0]
+    return availableTalismans.find((t) => t.id === selectedTalismanId) || availableTalismans[0]
+  }, [availableTalismans, selectedTalismanId])
+
+  useEffect(() => {
+    setImageError(false)
+  }, [currentTalisman?.id])
 
   useEffect(() => {
     const init = async () => {
@@ -152,6 +162,7 @@ export default function TalismanShopPage() {
       const randomMessage = RYDIA_MESSAGES.purchaseSuccess[Math.floor(Math.random() * RYDIA_MESSAGES.purchaseSuccess.length)]
       setPurchaseMessage(randomMessage)
       setShowPurchaseEffect(true)
+      setHasAcquiredTalisman(true)
 
       // 特別報酬の抽選（10%の確率）
       const hasSpecialReward = Math.random() < 0.1
@@ -176,8 +187,14 @@ export default function TalismanShopPage() {
   const handleShare = async () => {
     if (typeof window === "undefined") return
 
+    if (!hasAcquiredTalisman) {
+      alert("まずはお守りを授かってからシェアしてください。")
+      return
+    }
+
     const shareText = currentTalisman ? `あなたも「${currentTalisman.name}」を授かりました✨\n#カナウ護符 #AI姓名判断 #開運アプリ\nhttps://seimei.app/shop/talisman` : ""
     const shareReason = "お守りショップSNS共有ボーナス"
+    const shareTitle = currentTalisman ? `${currentTalisman.name}を授かりました` : "金龍護符を授かりました"
     
     try {
       // 日次制限チェック（ゲストモード）
@@ -192,7 +209,7 @@ export default function TalismanShopPage() {
 
       if (navigator.share) {
         await navigator.share({
-          title: "金龍護符を授かりました",
+          title: shareTitle,
           text: shareText,
           url: "https://seimei.app/shop/talisman",
         })
@@ -333,13 +350,85 @@ export default function TalismanShopPage() {
             🐉 金龍護符シリーズ
           </h1>
           <p className="text-xl md:text-2xl font-medium text-yellow-100">
-            開運上昇
+            {currentTalisman?.category || "開運上昇"}
           </p>
           <p className="text-lg text-yellow-50 italic">
-            リディアが筆で描く運命の守り
+            巫女 金雨希実が筆で描く運命の守り
           </p>
         </div>
       </div>
+
+      {/* 護符セレクション */}
+      <Card className="border-2 border-yellow-200 dark:border-yellow-800">
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-xl font-semibold">授与する護符を選択</h2>
+            <p className="text-sm text-muted-foreground">ラインアップから1つ選んで授与を受けられます</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {availableTalismans.map((talisman) => {
+              const isSelected = talisman.id === currentTalisman?.id
+              return (
+                <button
+                  key={talisman.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTalismanId(talisman.id)
+                    setPurchaseMessage("")
+                  }}
+                  className={`group relative rounded-xl border-2 p-4 text-left transition-all ${
+                    isSelected
+                      ? "border-yellow-500 ring-2 ring-yellow-400/60 shadow-lg shadow-yellow-500/30"
+                      : "border-transparent hover:border-yellow-300 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/20"
+                  }`}
+                  aria-pressed={isSelected}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0 rounded-lg border-2 border-yellow-200 bg-white/80 p-2 dark:border-yellow-700 dark:bg-yellow-950/40">
+                      <Image
+                        src={talisman.image}
+                        alt={talisman.name}
+                        width={110}
+                        height={110}
+                        className="h-24 w-24 object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-lg font-semibold leading-tight">{talisman.name}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{talisman.description}</p>
+                        </div>
+                        <Badge className="bg-yellow-600 text-white">
+                          {talisman.price.toLocaleString()} Kp
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{talisman.attribute}</span>
+                        <span>•</span>
+                        <span>{talisman.category}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-yellow-500">
+                        {Array(talisman.rarity)
+                          .fill(null)
+                          .map((_, index) => (
+                            <Star key={index} className="h-3 w-3 fill-current" />
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <div className="absolute -right-3 -top-3 rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white shadow">
+                      選択中
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* カード展示セクション */}
       <Card className="overflow-hidden border-2 border-yellow-200 dark:border-yellow-800">
@@ -403,7 +492,7 @@ export default function TalismanShopPage() {
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Gift className="h-5 w-5 mx-auto mb-1 text-purple-600" />
               <p className="text-sm text-muted-foreground">特典</p>
-              <p className="text-xs">AIリディアメッセージ</p>
+              <p className="text-xs">巫女 金雨 希実のメッセージ</p>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Star className="h-5 w-5 mx-auto mb-1 text-red-600" />
@@ -498,7 +587,7 @@ export default function TalismanShopPage() {
           <Card className="border-dashed">
             <CardContent className="pt-6 space-y-4">
               <div className="text-center space-y-2">
-                <h4 className="font-semibold">あなたも「金龍護符 - 開運上昇」を授かりました✨</h4>
+                <h4 className="font-semibold">あなたも「{currentTalisman.name}」を授かりました✨</h4>
                 <p className="text-sm text-muted-foreground">
                   #カナウ護符 #AI姓名判断 #開運アプリ
                 </p>
@@ -507,15 +596,24 @@ export default function TalismanShopPage() {
                 onClick={handleShare}
                 variant="outline"
                 className="w-full"
-                disabled={hasSharedToday}
+                disabled={hasSharedToday || !hasAcquiredTalisman}
               >
                 <Share2 className="h-4 w-4 mr-2" />
-                {hasSharedToday ? "今日はすでに獲得済み" : "シェアして +20 Kp 獲得"}
+                {hasSharedToday
+                  ? "今日はすでに獲得済み"
+                  : !hasAcquiredTalisman
+                    ? "授与後にシェア可能"
+                    : "シェアして +20 Kp 獲得"}
               </Button>
-              {hasSharedToday && (
+              {hasSharedToday ? (
                 <p className="text-xs text-center text-muted-foreground">
                   明日またお試しください
                 </p>
+              ) : !hasAcquiredTalisman ? (
+                <p className="text-xs text-center text-muted-foreground">
+                  先にお守りを授かるとシェアボーナスが解放されます
+                </p>
+              ) : null}
               )}
               {showShareBonus && (
                 <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
