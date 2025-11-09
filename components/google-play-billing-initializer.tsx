@@ -7,6 +7,7 @@
 import { useEffect } from 'react'
 import { GooglePlayBillingDetector } from '@/lib/google-play-billing-detector'
 import { SubscriptionManager } from '@/lib/subscription-manager'
+import { GOOGLE_PLAY_PRODUCT_IDS } from '@/lib/google-play-product-ids'
 
 export function GooglePlayBillingInitializer() {
   useEffect(() => {
@@ -30,8 +31,8 @@ export function GooglePlayBillingInitializer() {
               
               for (const purchase of purchases) {
                 // 商品IDからプランIDを判定
-                const planId = purchase.itemId === 'basic-monthly' ? 'basic' 
-                             : purchase.itemId === 'premium-monthly' ? 'premium' 
+                const planId = purchase.itemId === GOOGLE_PLAY_PRODUCT_IDS.basic ? 'basic' 
+                             : purchase.itemId === GOOGLE_PLAY_PRODUCT_IDS.premium ? 'premium' 
                              : null
                 
                 if (planId) {

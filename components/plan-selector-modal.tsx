@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Check, Crown, Star, Zap } from "lucide-react"
 import { SubscriptionManager, SUBSCRIPTION_PLANS } from "@/lib/subscription-manager"
 import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
+import { getGooglePlayProductId } from "@/lib/google-play-product-ids"
 
 interface PlanSelectorModalProps {
   isOpen: boolean
@@ -20,12 +21,14 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
   const [isLoading, setIsLoading] = React.useState(false)
   const [subscriptionManager] = React.useState(() => SubscriptionManager.getInstance())
   const [isGooglePlayAvailable, setIsGooglePlayAvailable] = React.useState(false)
+  const [isTWAContext, setIsTWAContext] = React.useState(false)
 
   // プラットフォーム検出：Google Play Billingが利用可能か確認
   React.useEffect(() => {
     if (isOpen) {
       const checkPlatform = async () => {
         const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+        setIsTWAContext(isTWA)
         if (isTWA) {
           // TWA環境：初期化済みか確認
           const isAvailable = await GooglePlayBillingDetector.initialize()
@@ -61,10 +64,10 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
           onClose()
         } else {
           // プラットフォームに応じて決済方法を切り替え
-          if (isGooglePlayAvailable) {
+          if (isGooglePlayAvailable || isTWAContext) {
             // Google Play Billing（TWA環境）
             try {
-              const productId = planId === "basic" ? "basic-monthly" : "premium-monthly"
+              const productId = getGooglePlayProductId(planId === "premium" ? "premium" : "basic")
               
               // 商品を購入
               const purchase = await GooglePlayBillingDetector.purchase(productId)
@@ -214,7 +217,7 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
                     7日間無料トライアル付き
                     <br />
                     いつでもキャンセル可能
-                    {isGooglePlayAvailable && (
+                    {(isGooglePlayAvailable || isTWAContext) && (
                       <span className="block mt-1 text-blue-600">Google Play経由で購入</span>
                     )}
                   </p>

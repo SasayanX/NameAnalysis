@@ -2,6 +2,8 @@
 
 // サブスクリプション管理とプラン制御（本番環境対応版）
 
+import { getGooglePlayProductId } from "./google-play-product-ids"
+
 export type PlanType = "free" | "basic" | "premium"
 
 export interface UserSubscription {
@@ -17,7 +19,7 @@ export interface UserSubscription {
   lastPaymentDate?: Date
   lastFailureReason?: string
   cancelledAt?: Date
-  paymentMethod?: "square" | "gmo" | "manual"
+  paymentMethod?: "square" | "gmo" | "manual" | "google_play"
 }
 
 export interface SubscriptionPlan {
@@ -289,6 +291,11 @@ export class SubscriptionManager {
         return { success: false, error: "Invalid plan" }
       }
 
+      const productKey = planId === "premium" ? "premium" : planId === "basic" ? "basic" : null
+      if (!productKey) {
+        return { success: false, error: "Invalid Google Play subscription plan" }
+      }
+
       // 購入レシートを検証
       const verifyResponse = await fetch("/api/verify-google-play-purchase", {
         method: "POST",
@@ -297,7 +304,7 @@ export class SubscriptionManager {
         },
         body: JSON.stringify({
           purchaseToken,
-          productId: planId === "basic" ? "basic-monthly" : "premium-monthly",
+          productId: getGooglePlayProductId(productKey),
         }),
       })
 

@@ -31,51 +31,61 @@ interface Purchase {
   purchaseTime: number
 }
 
+const RETRY_ATTEMPTS = 5
+const INITIAL_RETRY_DELAY_MS = 250
+
 export class GooglePlayBillingDetector {
-  private static initialized = false
   private static service: DigitalGoodsService | null = null
+  private static initializingPromise: Promise<boolean> | null = null
 
   /**
    * Digital Goods APIの初期化（最小限の実装）
    * アプリ起動時に呼び出すことで、Google PlayがBilling実装を検知します
    */
   static async initialize(): Promise<boolean> {
-    if (this.initialized) {
-      return this.service !== null
-    }
-
-    if (typeof window === 'undefined') {
-      return false
-    }
-
-    // TWA環境でのみ利用可能
-    if (!('getDigitalGoodsService' in window)) {
-      console.log('[Google Play Billing] Digital Goods API is not available (not in TWA environment)')
-      this.initialized = true
-      return false
-    }
-
-    try {
-      const service = await window.getDigitalGoodsService!('https://play.google.com/billing')
-      this.service = service
-      this.initialized = true
-      console.log('[Google Play Billing] Digital Goods API initialized successfully')
+    if (this.service) {
       return true
-    } catch (error) {
-      console.warn('[Google Play Billing] Failed to initialize:', error)
-      this.initialized = true
-      return false
     }
+
+    if (this.initializingPromise) {
+      return this.initializingPromise
+    }
+
+    this.initializingPromise = this.tryInitializeWithRetries()
+
+    const result = await this.initializingPromise
+    if (!result) {
+      this.initializingPromise = null
+    }
+
+    return result
   }
 
   /**
    * TWA環境かどうかを判定
    */
   static isTWAEnvironment(): boolean {
-    if (typeof window === 'undefined') return false
-    
-    // Digital Goods APIが利用可能 = TWA環境
-    return 'getDigitalGoodsService' in window
+    if (typeof window === "undefined") return false
+
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent?.toLowerCase() ?? ""
+      if (ua.includes("twa") || ua.includes("androidbrowserhelper") || ua.includes("bubblewrap")) {
+        return true
+      }
+    }
+
+    if (typeof document !== "undefined") {
+      const referrer = document.referrer || ""
+      if (referrer.startsWith("android-app://")) {
+        return true
+      }
+    }
+
+    if ("getDigitalGoodsService" in window) {
+      return true
+    }
+
+    return false
   }
 
   /**
@@ -142,6 +152,35 @@ export class GooglePlayBillingDetector {
       console.error('[Google Play Billing] Purchase failed:', error)
       throw error
     }
+  }
+
+  private static async tryInitializeWithRetries(): Promise<boolean> {
+    if (typeof window === "undefined") {
+      return false
+    }
+
+    for (let attempt = 0; attempt <= RETRY_ATTEMPTS; attempt++) {
+      if ("getDigitalGoodsService" in window) {
+        try {
+          const service = await window.getDigitalGoodsService!("https://play.google.com/billing")
+          this.service = service
+          console.log("[Google Play Billing] Digital Goods API initialized successfully")
+          return true
+        } catch (error) {
+          console.warn("[Google Play Billing] Failed to initialize:", error)
+        }
+      } else if (attempt === 0 && this.isTWAEnvironment()) {
+        console.log("[Google Play Billing] Digital Goods API not yet available, will retry")
+      }
+
+      if (attempt < RETRY_ATTEMPTS) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+      }
+    }
+
+    console.warn("[Google Play Billing] Digital Goods API not available after retries")
+    return false
   }
 }
 

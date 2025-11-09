@@ -10,6 +10,7 @@ import { useSubscription } from "@/lib/subscription-manager"
 import { SquareCheckoutButton } from "@/components/square-checkout-button"
 import Link from "next/link"
 import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
+import { getGooglePlayProductId } from "@/lib/google-play-product-ids"
 
 export default function PricingPage() {
   const subscription = useSubscription()
@@ -17,6 +18,7 @@ export default function PricingPage() {
   // 年額プランは無効化：常に月額のみ
   const billingCycle: "monthly" = "monthly"
   const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(false)
+  const [isTWAContext, setIsTWAContext] = useState(false)
   const [processingPlan, setProcessingPlan] = useState<"basic" | "premium" | null>(null)
 
   const plans = {
@@ -86,6 +88,8 @@ export default function PricingPage() {
     const checkPlatform = async () => {
       try {
         const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+        setIsTWAContext(isTWA)
+
         if (isTWA) {
           const available = await GooglePlayBillingDetector.initialize()
           setIsGooglePlayAvailable(available)
@@ -116,7 +120,7 @@ export default function PricingPage() {
         return
       }
 
-      const productId = planId === "basic" ? "basic-monthly" : "premium-monthly"
+      const productId = getGooglePlayProductId(planId)
       const purchase = await GooglePlayBillingDetector.purchase(productId)
 
       const result = await subscription.startGooglePlayBillingSubscription(planId, purchase.purchaseToken)
@@ -270,7 +274,7 @@ export default function PricingPage() {
                     <Button variant={plan.buttonVariant} className="w-full" asChild>
                       <Link href="/">{plan.buttonText}</Link>
                     </Button>
-                  ) : isGooglePlayAvailable && typedPlanId ? (
+                  ) : (isGooglePlayAvailable || isTWAContext) && typedPlanId ? (
                     <Button
                       onClick={() => handleGooglePlayPurchase(typedPlanId)}
                       disabled={processingPlan === typedPlanId}
@@ -305,7 +309,7 @@ export default function PricingPage() {
                   ) : null}
                 </div>
 
-                {isPaidPlan && isGooglePlayAvailable && (
+                {isPaidPlan && (isGooglePlayAvailable || isTWAContext) && (
                   <p className="mt-3 text-xs text-blue-600 text-center">Google Play決済で処理されます</p>
                 )}
               </CardContent>
