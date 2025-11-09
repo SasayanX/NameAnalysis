@@ -45,6 +45,7 @@ export const commonKanjiData: Record<string, number> = {
   乾: 11,
   燥: 16,
   潤: 16, // 修正: 16画
+  澄: 16,
   滑: 13,
   犬: 4,
   猫: 11,

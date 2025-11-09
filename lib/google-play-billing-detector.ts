@@ -67,22 +67,38 @@ export class GooglePlayBillingDetector {
   static isTWAEnvironment(): boolean {
     if (typeof window === "undefined") return false
 
+    const isStandaloneDisplayMode =
+      typeof window !== "undefined" &&
+      "matchMedia" in window &&
+      window.matchMedia("(display-mode: standalone)").matches
+
     if (typeof navigator !== "undefined") {
       const ua = navigator.userAgent?.toLowerCase() ?? ""
-      if (ua.includes("twa") || ua.includes("androidbrowserhelper") || ua.includes("bubblewrap")) {
+      const isKnownTWAUA = ua.includes("twa") || ua.includes("androidbrowserhelper") || ua.includes("bubblewrap")
+
+      if (isKnownTWAUA) {
+        return true
+      }
+
+      // Chrome Custom Tabs 等で付与される "customtab" は除外する
+      if (ua.includes("customtab")) {
+        return false
+      }
+
+      if (
+        isStandaloneDisplayMode &&
+        (ua.includes("chrome/") || ua.includes("safari/")) &&
+        document?.referrer?.startsWith("android-app://")
+      ) {
         return true
       }
     }
 
     if (typeof document !== "undefined") {
       const referrer = document.referrer || ""
-      if (referrer.startsWith("android-app://")) {
+      if (referrer.startsWith("android-app://") && isStandaloneDisplayMode) {
         return true
       }
-    }
-
-    if ("getDigitalGoodsService" in window) {
-      return true
     }
 
     return false
@@ -140,16 +156,83 @@ export class GooglePlayBillingDetector {
    * 商品を購入
    */
   static async purchase(productId: string): Promise<Purchase> {
-    if (!this.service) {
-      throw new Error('Digital Goods Service is not initialized')
+    const initialized = await this.initialize()
+    if (!initialized || !this.service) {
+      throw new Error("Digital Goods Service is not initialized")
+    }
+
+    if (typeof window === "undefined" || typeof PaymentRequest === "undefined") {
+      throw new Error("PaymentRequest API is not available")
     }
 
     try {
-      const purchase = await this.service.purchase(productId)
-      console.log('[Google Play Billing] Purchase successful:', purchase)
+      const service = this.service
+
+      // 商品情報が取得できるか事前に確認し、SKU の存在を検証
+      try {
+        await service.getDetails([productId])
+      } catch (detailsError) {
+        console.warn("[Google Play Billing] Unable to fetch SKU details before purchase:", detailsError)
+      }
+
+      const paymentMethodData = [
+        {
+          supportedMethods: "https://play.google.com/billing",
+          data: {
+            sku: productId,
+          },
+        },
+      ]
+
+      const paymentDetails = {
+        total: {
+          label: "Total",
+          amount: { currency: "JPY", value: "0" },
+        },
+      }
+
+      console.log("[Google Play Billing] Launching PaymentRequest for SKU:", productId)
+
+      const request = new PaymentRequest(paymentMethodData, paymentDetails)
+      const response = await request.show()
+
+      if (response.methodName !== "https://play.google.com/billing") {
+        await response.complete("fail")
+        throw new Error(`Unexpected payment method returned: ${response.methodName}`)
+      }
+
+      const paymentDetailsResponse = response.details as {
+        purchaseToken?: string
+        sku?: string
+      }
+
+      await response.complete("success")
+
+      const resolvedSku = paymentDetailsResponse?.sku ?? productId
+      const resolvedToken = paymentDetailsResponse?.purchaseToken
+
+      // PaymentRequest のレスポンスにトークンが含まれないケースは listPurchases から取得
+      let purchase: Purchase | undefined
+
+      if (resolvedToken) {
+        purchase = {
+          itemId: resolvedSku,
+          purchaseToken: resolvedToken,
+          purchaseTime: Date.now(),
+        }
+      } else {
+        const purchases = await service.listPurchases()
+        purchase = purchases.find((p) => p.itemId === resolvedSku)
+      }
+
+      if (!purchase) {
+        throw new Error("Purchase token could not be retrieved after PaymentRequest")
+      }
+
+      console.log("[Google Play Billing] Purchase successful:", purchase)
       return purchase
     } catch (error) {
-      console.error('[Google Play Billing] Purchase failed:', error)
+      console.error("[Google Play Billing] Purchase failed:", error)
       throw error
     }
   }

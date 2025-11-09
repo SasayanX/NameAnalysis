@@ -1,12 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Bell, Clock, Star, Zap } from "lucide-react"
 import { SubscriptionManager } from "@/lib/subscription-manager"
+import { dailyFortunePush, DEFAULT_NOTIFICATION_TIME, type NotificationTime } from "@/lib/daily-fortune-push"
 
 interface NotificationSettings {
   morningFortune: boolean
@@ -24,6 +27,9 @@ export function EnhancedFortuneNotifications() {
     weeklyFortune: false,
   })
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default")
+  const [userName, setUserName] = useState<string>("")
+  const [notificationTime, setNotificationTime] = useState<string>(formatNotificationTime(DEFAULT_NOTIFICATION_TIME))
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const subscriptionManager = SubscriptionManager.getInstance()
@@ -39,6 +45,17 @@ export function EnhancedFortuneNotifications() {
     if (saved) {
       setSettings(JSON.parse(saved))
     }
+
+    const savedDailySettings = dailyFortunePush.loadNotificationSettings()
+    if (savedDailySettings) {
+      setUserName(savedDailySettings.userName ?? "")
+      setNotificationTime(formatNotificationTime(savedDailySettings.time))
+      if (savedDailySettings.enabled) {
+        setSettings((prev) => ({ ...prev, morningFortune: true }))
+      }
+    }
+
+    dailyFortunePush.restoreScheduledNotification()
   }, [])
 
   const requestNotificationPermission = async () => {
@@ -48,20 +65,70 @@ export function EnhancedFortuneNotifications() {
     }
   }
 
-  const updateSetting = (key: keyof NotificationSettings, value: boolean) => {
+  const resolveCurrentNotificationTime = useCallback((): NotificationTime => {
+    return parseTimeInput(notificationTime) ?? DEFAULT_NOTIFICATION_TIME
+  }, [notificationTime])
+
+  const persistDailySettings = useCallback(
+    (enabled: boolean, time: NotificationTime) => {
+      dailyFortunePush.saveNotificationSettings({
+        enabled,
+        time,
+        userName: userName.trim(),
+      })
+    },
+    [userName]
+  )
+
+  const updateSetting = async (key: keyof NotificationSettings, value: boolean) => {
+    if (key === "morningFortune") {
+      if (value) {
+        if (!userName.trim()) {
+          setErrorMessage("通知を受け取る名前を入力してください")
+          return
+        }
+        setErrorMessage(null)
+        const currentTime = resolveCurrentNotificationTime()
+        await dailyFortunePush.scheduleDailyNotification(userName.trim(), currentTime)
+        persistDailySettings(true, currentTime)
+      } else {
+        dailyFortunePush.cancelScheduledNotification()
+        persistDailySettings(false, resolveCurrentNotificationTime())
+      }
+    }
+
     const newSettings = { ...settings, [key]: value }
     setSettings(newSettings)
     localStorage.setItem("notificationSettings", JSON.stringify(newSettings))
+  }
 
-    // 実際の通知スケジュールを設定
-    if (value && notificationPermission === "granted") {
-      scheduleNotification(key)
+  const handleUserNameChange = (value: string) => {
+    setUserName(value)
+    if (!value.trim()) {
+      setErrorMessage("通知を受け取る名前を入力してください")
+      persistDailySettings(false, resolveCurrentNotificationTime())
+      return
+    }
+    setErrorMessage(null)
+    const currentTime = resolveCurrentNotificationTime()
+    persistDailySettings(settings.morningFortune, currentTime)
+    if (settings.morningFortune) {
+      dailyFortunePush.scheduleDailyNotification(value.trim(), currentTime)
     }
   }
 
-  const scheduleNotification = (type: keyof NotificationSettings) => {
-    // 実際の通知スケジューリング（Service Workerで実装）
-    console.log(`Scheduling ${type} notifications`)
+  const handleNotificationTimeChange = (value: string) => {
+    setNotificationTime(value)
+    const parsed = parseTimeInput(value)
+    if (!parsed) {
+      setErrorMessage("有効な通知時刻を入力してください（例: 08:00）")
+      return
+    }
+    setErrorMessage(null)
+    persistDailySettings(settings.morningFortune, parsed)
+    if (settings.morningFortune && userName.trim()) {
+      dailyFortunePush.scheduleDailyNotification(userName.trim(), parsed)
+    }
   }
 
   const notificationTypes = [
@@ -132,6 +199,28 @@ export function EnhancedFortuneNotifications() {
             </div>
           )}
 
+          <div className="grid gap-4 p-4 border rounded-lg bg-muted/20">
+            <div className="grid gap-2">
+              <Label htmlFor="notification-user-name">通知に使用する名前</Label>
+              <Input
+                id="notification-user-name"
+                placeholder="例: 山田太郎"
+                value={userName}
+                onChange={(event) => handleUserNameChange(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="notification-time">配信時刻</Label>
+              <Input
+                id="notification-time"
+                type="time"
+                value={notificationTime}
+                onChange={(event) => handleNotificationTimeChange(event.target.value)}
+              />
+            </div>
+            {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+          </div>
+
           {notificationTypes.map((type) => {
             const canUse = canUseFeature(type.requiredPlan)
             const isEnabled = settings[type.key] && canUse && notificationPermission === "granted"
@@ -172,4 +261,30 @@ export function EnhancedFortuneNotifications() {
       )}
     </div>
   )
+}
+
+function formatNotificationTime(time: NotificationTime): string {
+  const hour = Math.max(0, Math.min(23, time.hour))
+  const minute = Math.max(0, Math.min(59, time.minute))
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
+}
+
+function parseTimeInput(value: string): NotificationTime | null {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) {
+    return null
+  }
+
+  const [hourString, minuteString] = value.split(":")
+  const hour = Number(hourString)
+  const minute = Number(minuteString)
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return null
+  }
+
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null
+  }
+
+  return { hour, minute }
 }

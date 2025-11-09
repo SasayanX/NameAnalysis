@@ -18,8 +18,31 @@ export interface DailyFortuneNotification {
   delivered: boolean
 }
 
+export type NotificationTime = {
+  hour: number
+  minute: number
+}
+
+export const DEFAULT_NOTIFICATION_TIME: NotificationTime = { hour: 8, minute: 0 }
+
+interface StoredNotificationSettings {
+  enabled: boolean
+  time: NotificationTime
+  userName: string
+}
+
+type NotificationPayload = {
+  title: string
+  options: NotificationOptions
+}
+
 export class DailyFortunePushSystem {
   private static instance: DailyFortunePushSystem
+
+  private readonly settingsStorageKey = "dailyFortuneNotificationSettings"
+  private notificationTimer: ReturnType<typeof setTimeout> | null = null
+  private currentSchedule: { userName: string; time: NotificationTime } | null = null
+  private registration: ServiceWorkerRegistration | null = null
 
   static getInstance(): DailyFortunePushSystem {
     if (!DailyFortunePushSystem.instance) {
@@ -53,9 +76,31 @@ export class DailyFortunePushSystem {
     try {
       const registration = await navigator.serviceWorker.register("/sw.js")
       console.log("Service Worker registered:", registration)
-      return registration
+      this.registration = registration
+      if (!registration.active) {
+        this.registration = await navigator.serviceWorker.ready
+      }
+      return this.registration
     } catch (error) {
       console.error("Service Worker registration failed:", error)
+      return null
+    }
+  }
+
+  private async ensureRegistration(): Promise<ServiceWorkerRegistration | null> {
+    if (this.registration?.active) {
+      return this.registration
+    }
+    const registration = await this.registerServiceWorker()
+    if (registration?.active) {
+      this.registration = registration
+      return registration
+    }
+    try {
+      this.registration = await navigator.serviceWorker.ready
+      return this.registration
+    } catch (error) {
+      console.error("Failed to obtain active Service Worker registration:", error)
       return null
     }
   }
@@ -93,36 +138,161 @@ export class DailyFortunePushSystem {
   }
 
   // 通知スケジューリング
-  async scheduleDailyNotification(userName: string, notificationTime: { hour: number; minute: number }): Promise<void> {
-    const registration = await this.registerServiceWorker()
+  async scheduleDailyNotification(userName: string, notificationTime: NotificationTime): Promise<void> {
+    if (!userName) {
+      console.warn("通知をスケジュールするにはユーザー名が必要です")
+      return
+    }
+
+    const registration = await this.ensureRegistration()
     if (!registration) return
 
-    // 明日の通知をスケジュール
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(notificationTime.hour, notificationTime.minute, 0, 0)
+    this.cancelScheduledNotification()
 
-    const fortune = this.calculateDailyFortune(userName, tomorrow)
+    const nextTrigger = this.getNextTriggerDate(notificationTime)
+    const delay = Math.max(nextTrigger.getTime() - Date.now(), 0)
 
-    const notificationData = {
-      title: `${userName}さんの今日の運勢`,
-      body: `${fortune.overall}\nラッキーカラー: ${fortune.lucky.color}`,
-      icon: "/icon-192x192.png",
-      badge: "/icon-72x72.png",
+    this.currentSchedule = { userName, time: notificationTime }
+
+    this.notificationTimer = setTimeout(async () => {
+      await this.showDailyFortuneNotification(registration, userName, nextTrigger)
+      this.notificationTimer = null
+
+      // 次回の通知（翌日）をスケジュール
+      const followingDay = new Date(nextTrigger)
+      followingDay.setDate(followingDay.getDate() + 1)
+      await this.scheduleDailyNotification(userName, notificationTime)
+    }, delay)
+  }
+
+  cancelScheduledNotification(): void {
+    if (this.notificationTimer) {
+      clearTimeout(this.notificationTimer)
+      this.notificationTimer = null
+    }
+    this.currentSchedule = null
+  }
+
+  async restoreScheduledNotification(): Promise<void> {
+    const settings = this.loadNotificationSettings()
+    if (!settings || !settings.enabled) {
+      return
+    }
+    if (!("Notification" in window) || Notification.permission !== "granted") {
+      return
+    }
+    await this.scheduleDailyNotification(settings.userName, settings.time)
+  }
+
+  saveNotificationSettings(settings: StoredNotificationSettings): void {
+    localStorage.setItem(this.settingsStorageKey, JSON.stringify(settings))
+  }
+
+  loadNotificationSettings(): StoredNotificationSettings | null {
+    const stored = localStorage.getItem(this.settingsStorageKey)
+    if (!stored) {
+      return null
+    }
+    try {
+      const parsed = JSON.parse(stored) as StoredNotificationSettings
+      if (!parsed.time) {
+        parsed.time = DEFAULT_NOTIFICATION_TIME
+      }
+      return parsed
+    } catch (error) {
+      console.error("通知設定の読み込みに失敗しました", error)
+      return null
+    }
+  }
+
+  private async showDailyFortuneNotification(
+    registration: ServiceWorkerRegistration,
+    userName: string,
+    targetDate: Date
+  ): Promise<void> {
+    const fortune = this.calculateDailyFortune(userName, targetDate)
+    const payload = this.buildNotificationPayload(userName, fortune, targetDate)
+    await this.displayNotification(registration, payload)
+  }
+
+  private async displayNotification(
+    registration: ServiceWorkerRegistration,
+    payload: NotificationPayload
+  ): Promise<void> {
+    try {
+      if ("showNotification" in registration) {
+        await registration.showNotification(payload.title, payload.options)
+      } else if (registration.active) {
+        registration.active.postMessage({
+          type: "SHOW_NOTIFICATION",
+          payload,
+        })
+      }
+    } catch (error) {
+      console.error("通知の表示に失敗しました", error)
+    }
+  }
+
+  private buildNotificationPayload(
+    userName: string,
+    fortune: DailyFortuneNotification["fortune"],
+    targetDate: Date
+  ): NotificationPayload {
+    const luckySummary = `ラッキーカラー: ${fortune.lucky.color}｜ナンバー: ${fortune.lucky.number}｜方角: ${fortune.lucky.direction}`
+    const formattedDate = targetDate.toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long",
+    })
+
+    const body = [
+      `${formattedDate}の運勢スコア: ${fortune.score}点`,
+      fortune.overall,
+      luckySummary,
+      fortune.advice,
+    ].join("\n")
+
+    const options: NotificationOptions = {
+      body,
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/icon-72x72.png",
+      lang: "ja",
+      tag: "daily-fortune-notification",
+      renotify: true,
+      requireInteraction: false,
+      timestamp: targetDate.getTime(),
+      vibrate: [100, 50, 100],
       data: {
+        url: "/daily-fortune",
+        userName,
         fortune,
-        url: "/",
+        scheduledAt: new Date().toISOString(),
+        targetDate: targetDate.toISOString(),
       },
+      actions: [
+        {
+          action: "open-app",
+          title: "詳しく見る",
+        },
+      ],
     }
 
-    // Service Workerに通知データを送信
-    if (registration.active) {
-      registration.active.postMessage({
-        type: "SCHEDULE_NOTIFICATION",
-        data: notificationData,
-        scheduledTime: tomorrow.getTime(),
-      })
+    return {
+      title: `${userName}さんの今日の運勢`,
+      options,
     }
+  }
+
+  private getNextTriggerDate(notificationTime: NotificationTime): Date {
+    const now = new Date()
+    const target = new Date()
+    target.setHours(notificationTime.hour, notificationTime.minute, 0, 0)
+
+    if (target.getTime() <= now.getTime()) {
+      target.setDate(target.getDate() + 1)
+    }
+    return target
   }
 
   // ヘルパーメソッド
@@ -132,25 +302,6 @@ export class DailyFortunePushSystem {
 
   private calculateDateValue(date: Date): number {
     return date.getFullYear() + date.getMonth() + date.getDate()
-  }
-
-  // 通知設定の保存
-  saveNotificationSettings(settings: {
-    enabled: boolean
-    time: { hour: number; minute: number }
-    userName: string
-  }): void {
-    localStorage.setItem("dailyFortuneNotificationSettings", JSON.stringify(settings))
-  }
-
-  // 通知設定の読み込み
-  loadNotificationSettings(): {
-    enabled: boolean
-    time: { hour: number; minute: number }
-    userName: string
-  } | null {
-    const stored = localStorage.getItem("dailyFortuneNotificationSettings")
-    return stored ? JSON.parse(stored) : null
   }
 }
 

@@ -89,3 +89,39 @@ self.addEventListener('push', (event) => {
   // 将来の実装: 日次運勢通知など
 });
 
+self.addEventListener('message', (event) => {
+  if (!event.data) {
+    return;
+  }
+
+  if (event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data.payload || {};
+    if (title && options) {
+      event.waitUntil(self.registration.showNotification(title, options));
+    }
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification?.data?.url || '/';
+  const action = event.action;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      const matchingClient = clientList.find((client) => client.url.includes(targetUrl));
+
+      if (matchingClient) {
+        return matchingClient.focus();
+      }
+
+      if (action === 'open-app' || action === '') {
+        return clients.openWindow(targetUrl);
+      }
+
+      return undefined;
+    })
+  );
+});
+
