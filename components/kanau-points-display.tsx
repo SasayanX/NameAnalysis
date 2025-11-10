@@ -74,8 +74,7 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
           }
           setUser(mapped)
           setIsLoading(false)
-          const today = new Date().toISOString().split('T')[0]
-          if ((summary.last_login_bonus_date || "") !== today) setShowLoginBonus(true)
+          setShowLoginBonus(false)
         } catch (e) {
           console.error("KP読み込みエラー:", e)
           setIsLoading(false)
@@ -167,7 +166,7 @@ export function KanauPointsDisplay({ userId, onLoginBonus }: KanauPointsDisplayP
   return (
     <div className="space-y-4">
       {/* ログインボーナスモーダル */}
-      {showLoginBonus && (() => {
+      {!authUser && showLoginBonus && (() => {
         // 現在のプランを取得して基礎ポイントを計算
         const manager = SubscriptionManager.getInstance()
         const currentPlan = manager.getCurrentPlan()

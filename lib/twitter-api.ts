@@ -45,7 +45,7 @@ export async function postToTwitter(content: string, imageBuffer?: Buffer): Prom
     }
     return `dev_${Date.now()}`
   }
-  
+
   // 認証情報が揃っている場合は、開発環境でも実際に投稿を試みる
   if (apiKey && apiSecret && accessToken && accessTokenSecret) {
     console.log("✅ 認証情報が揃っています。実際のX投稿を試みます。")

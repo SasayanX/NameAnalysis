@@ -19,21 +19,21 @@ export function SitemapValidator() {
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
   const expectedPages = [
-    { url: "https://seimei.kanau-kiryu.com/", priority: 1.0, type: "ホーム" },
-    { url: "https://seimei.kanau-kiryu.com/", priority: 0.9, type: "メイン機能" },
-    { url: "https://seimei.kanau-kiryu.com/articles", priority: 0.8, type: "記事一覧" },
-    { url: "https://seimei.kanau-kiryu.com/articles/kyujitai-seimeihandan", priority: 0.9, type: "SEO記事" },
-    { url: "https://seimei.kanau-kiryu.com/articles/tengaku-kyousuu-myouji", priority: 0.9, type: "SEO記事" },
-    { url: "https://seimei.kanau-kiryu.com/articles/2025-baby-names-ranking", priority: 0.9, type: "SEO記事" },
-    { url: "https://seimei.kanau-kiryu.com/articles/gogyo-aishou-shindan", priority: 0.9, type: "SEO記事" },
-    { url: "https://seimei.kanau-kiryu.com/articles/gogyo-five-elements", priority: 0.8, type: "SEO記事" },
-    { url: "https://seimei.kanau-kiryu.com/articles/rokuseisensei-fortune", priority: 0.8, type: "SEO記事" },
-    { url: "https://seimei.kanau-kiryu.com/privacy", priority: 0.3, type: "法的" },
-    { url: "https://seimei.kanau-kiryu.com/contact", priority: 0.3, type: "法的" },
-    { url: "https://seimei.kanau-kiryu.com/pricing", priority: 0.6, type: "課金" },
-    { url: "https://seimei.kanau-kiryu.com/legal/terms-of-service", priority: 0.2, type: "法的" },
-    { url: "https://seimei.kanau-kiryu.com/legal/tokusho", priority: 0.2, type: "法的" },
-    { url: "https://seimei.kanau-kiryu.com/legal/refund-policy", priority: 0.2, type: "法的" },
+    { url: "https://seimei.app/", priority: 1.0, type: "ホーム" },
+    { url: "https://seimei.app/", priority: 0.9, type: "メイン機能" },
+    { url: "https://seimei.app/articles", priority: 0.8, type: "記事一覧" },
+    { url: "https://seimei.app/articles/kyujitai-seimeihandan", priority: 0.9, type: "SEO記事" },
+    { url: "https://seimei.app/articles/tengaku-kyousuu-myouji", priority: 0.9, type: "SEO記事" },
+    { url: "https://seimei.app/articles/2025-baby-names-ranking", priority: 0.9, type: "SEO記事" },
+    { url: "https://seimei.app/articles/gogyo-aishou-shindan", priority: 0.9, type: "SEO記事" },
+    { url: "https://seimei.app/articles/gogyo-five-elements", priority: 0.8, type: "SEO記事" },
+    { url: "https://seimei.app/articles/rokuseisensei-fortune", priority: 0.8, type: "SEO記事" },
+    { url: "https://seimei.app/privacy", priority: 0.3, type: "法的" },
+    { url: "https://seimei.app/contact", priority: 0.3, type: "法的" },
+    { url: "https://seimei.app/pricing", priority: 0.6, type: "課金" },
+    { url: "https://seimei.app/legal/terms-of-service", priority: 0.2, type: "法的" },
+    { url: "https://seimei.app/legal/tokusho", priority: 0.2, type: "法的" },
+    { url: "https://seimei.app/legal/refund-policy", priority: 0.2, type: "法的" },
   ]
 
   const fetchSitemap = async () => {
@@ -68,7 +68,7 @@ export function SitemapValidator() {
 
   const openSearchConsole = () => {
     window.open(
-      "https://search.google.com/search-console/sitemaps?resource_id=sc-domain%3Aseimei.kanau-kiryu.com",
+      "https://search.google.com/search-console/sitemaps?resource_id=sc-domain%3Aseimei.app",
       "_blank",
     )
   }
@@ -127,7 +127,7 @@ export function SitemapValidator() {
             <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <h3 className="font-bold mb-2">2. 新しいサイトマップ送信</h3>
               <p className="text-sm text-orange-700">
-                <code className="bg-white px-2 py-1 rounded">https://seimei.kanau-kiryu.com/sitemap.xml</code>
+                <code className="bg-white px-2 py-1 rounded">https://seimei.app/sitemap.xml</code>
               </p>
             </div>
 

@@ -12,37 +12,37 @@ export function IndexingAccelerator() {
   const criticalPages = [
     {
       title: "メインページ",
-      url: "https://seimei.kanau-kiryu.com/",
+      url: "https://seimei.app/",
       status: "indexed",
       priority: "最高",
     },
     {
       title: "姓名判断ツール",
-      url: "https://seimei.kanau-kiryu.com/",
+      url: "https://seimei.app/",
       status: "not-indexed",
       priority: "最高",
     },
     {
       title: "記事一覧",
-      url: "https://seimei.kanau-kiryu.com/articles",
+      url: "https://seimei.app/articles",
       status: "not-indexed",
       priority: "高",
     },
     {
       title: "旧字体姓名判断記事",
-      url: "https://seimei.kanau-kiryu.com/articles/kyujitai-seimeihandan",
+      url: "https://seimei.app/articles/kyujitai-seimeihandan",
       status: "not-indexed",
       priority: "高",
     },
     {
       title: "天格強数記事",
-      url: "https://seimei.kanau-kiryu.com/articles/tengaku-kyousuu-myouji",
+      url: "https://seimei.app/articles/tengaku-kyousuu-myouji",
       status: "not-indexed",
       priority: "高",
     },
     {
       title: "六星占術記事",
-      url: "https://seimei.kanau-kiryu.com/articles/rokuseisensei-fortune",
+      url: "https://seimei.app/articles/rokuseisensei-fortune",
       status: "not-indexed",
       priority: "高",
     },
@@ -57,7 +57,7 @@ export function IndexingAccelerator() {
   const openGoogleSearchConsole = (url: string) => {
     const encodedUrl = encodeURIComponent(url)
     window.open(
-      `https://search.google.com/search-console/inspect?resource_id=sc-domain%3Aseimei.kanau-kiryu.com&id=${encodedUrl}`,
+      `https://search.google.com/search-console/inspect?resource_id=sc-domain%3Aseimei.app&id=${encodedUrl}`,
       "_blank",
     )
   }

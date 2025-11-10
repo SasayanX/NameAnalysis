@@ -15,22 +15,22 @@ export function UrlRemovalGuide() {
 
   const removalUrls = [
     {
-      url: "https://seimei.kanau-kiryu.com/fortune-flow",
+      url: "https://seimei.app/fortune-flow",
       reason: "不要な機能ページ",
       priority: "高",
     },
     {
-      url: "https://seimei.kanau-kiryu.com/fortune-comprehensive",
+      url: "https://seimei.app/fortune-comprehensive",
       reason: "不要な機能ページ",
       priority: "高",
     },
     {
-      url: "https://seimei.kanau-kiryu.com/roadmap",
+      url: "https://seimei.app/roadmap",
       reason: "内部ページ",
       priority: "中",
     },
     {
-      url: "https://seimei.kanau-kiryu.com/stroke-fortune-list",
+      url: "https://seimei.app/stroke-fortune-list",
       reason: "不要な機能ページ",
       priority: "中",
     },
@@ -44,7 +44,7 @@ export function UrlRemovalGuide() {
 
   const openSearchConsole = () => {
     window.open(
-      "https://search.google.com/search-console/removals?resource_id=sc-domain%3Aseimei.kanau-kiryu.com",
+      "https://search.google.com/search-console/removals?resource_id=sc-domain%3Aseimei.app",
       "_blank",
     )
   }
@@ -82,7 +82,7 @@ export function UrlRemovalGuide() {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-bold text-blue-800 mb-2">📝 入力するURL</h3>
               <div className="space-y-2">
-                <Input value="https://seimei.kanau-kiryu.com/fortune-" readOnly className="bg-white" />
+                <Input value="https://seimei.app/fortune-" readOnly className="bg-white" />
                 <p className="text-sm text-blue-700">これで fortune- で始まるすべてのページが削除されます</p>
               </div>
             </div>
@@ -143,7 +143,7 @@ export function UrlRemovalGuide() {
               </div>
               <div>
                 <h3 className="font-bold">URLを入力</h3>
-                <code className="text-sm bg-white px-2 py-1 rounded">https://seimei.kanau-kiryu.com/fortune-</code>
+                <code className="text-sm bg-white px-2 py-1 rounded">https://seimei.app/fortune-</code>
               </div>
             </div>
 

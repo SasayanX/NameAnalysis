@@ -23,7 +23,7 @@ export function IndexingHelper() {
             "@type": "WebPage",
             name: "まいにち姓名判断",
             description: "旧字体による正確な姓名判断で運命を鑑定",
-            url: "https://seimei.kanau-kiryu.com",
+            url: "https://seimei.app",
             lastReviewed: new Date().toISOString(),
             reviewedBy: {
               "@type": "Person",

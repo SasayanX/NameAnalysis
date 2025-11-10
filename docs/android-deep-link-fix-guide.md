@@ -58,7 +58,7 @@ B766698D95C2B3A1E236143DE6DC91343DFBFD5732C8C117F0F30E46F9DC15A9
 
 ブラウザで以下のURLにアクセスして、JSONが正しく表示されるか確認：
 ```
-https://seimei.kanau-kiryu.com/.well-known/assetlinks.json
+https://seimei.app/.well-known/assetlinks.json
 ```
 
 **確認ポイント**:
@@ -71,7 +71,7 @@ https://seimei.kanau-kiryu.com/.well-known/assetlinks.json
 
 1. **Google Digital Asset Links API**を使用：
    ```
-   https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://seimei.kanau-kiryu.com&relation=delegate_permission/common.handle_all_urls
+   https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://seimei.app&relation=delegate_permission/common.handle_all_urls
    ```
 
 2. **または、Android Studioで確認**:
@@ -95,14 +95,14 @@ https://seimei.kanau-kiryu.com/.well-known/assetlinks.json
 
 **確認ポイント**:
 - ✅ `android:autoVerify="true"`が設定されている
-- ✅ `android:host`が正しいドメイン（`seimei.kanau-kiryu.com`）を指している
+- ✅ `android:host`が正しいドメイン（`seimei.app`）を指している
 
 ### 5. strings.xmlの確認
 
 `twa/app/src/main/res/values/strings.xml`を確認：
 
 ```xml
-<string name="hostName">seimei.kanau-kiryu.com</string>
+<string name="hostName">seimei.app</string>
 ```
 
 ### 6. デプロイと再検証
@@ -122,12 +122,12 @@ adb shell pm get-app-links com.nameanalysis.ai
 
 #### 方法2: ブラウザでテスト
 1. Androidデバイスでアプリをインストール
-2. ブラウザで `https://seimei.kanau-kiryu.com` を開く
+2. ブラウザで `https://seimei.app` を開く
 3. アプリが自動的に開かれるか確認
 
 #### 方法3: コマンドでテスト
 ```bash
-adb shell am start -a android.intent.action.VIEW -d "https://seimei.kanau-kiryu.com"
+adb shell am start -a android.intent.action.VIEW -d "https://seimei.app"
 ```
 
 ## よくある問題と解決方法
@@ -155,7 +155,7 @@ adb shell am start -a android.intent.action.VIEW -d "https://seimei.kanau-kiryu.
 **原因**: HTTPSが正しく設定されていない、またはリダイレクトが発生している
 
 **解決方法**:
-- `https://seimei.kanau-kiryu.com/.well-known/assetlinks.json`が直接アクセスできるか確認
+- `https://seimei.app/.well-known/assetlinks.json`が直接アクセスできるか確認
 - HTTPからHTTPSへのリダイレクトは問題ないが、JSONの内容が正しく返される必要がある
 
 ### 問題4: リンクが動作しない
@@ -177,7 +177,7 @@ adb shell am start -a android.intent.action.VIEW -d "https://seimei.kanau-kiryu.
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE"/>
     <data android:scheme="https"
-          android:host="seimei.kanau-kiryu.com"
+          android:host="seimei.app"
           android:pathPrefix="/" />
 </intent-filter>
 ```
@@ -190,14 +190,14 @@ adb shell am start -a android.intent.action.VIEW -d "https://seimei.kanau-kiryu.
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE"/>
     <data android:scheme="https"
-          android:host="seimei.kanau-kiryu.com" />
+          android:host="seimei.app" />
 </intent-filter>
 ```
 
 ## 確認チェックリスト
 
 - [ ] SHA-256フィンガープリントが正しい
-- [ ] `assetlinks.json`が正しく配信されている（`https://seimei.kanau-kiryu.com/.well-known/assetlinks.json`）
+- [ ] `assetlinks.json`が正しく配信されている（`https://seimei.app/.well-known/assetlinks.json`）
 - [ ] Content-Typeが`application/json`
 - [ ] `package_name`が`com.nameanalysis.ai`と一致
 - [ ] AndroidManifest.xmlに`android:autoVerify="true"`が設定されている

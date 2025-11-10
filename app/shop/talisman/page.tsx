@@ -496,8 +496,8 @@ export default function TalismanShopPage() {
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Star className="h-5 w-5 mx-auto mb-1 text-red-600" />
-              <p className="text-sm text-muted-foreground">限定</p>
-              <p className="text-xs">今月末まで</p>
+              <p className="text-sm text-muted-foreground">提供期間</p>
+              <p className="text-xs">無期限</p>
             </div>
           </div>
 

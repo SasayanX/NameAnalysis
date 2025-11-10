@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "姓名判断は「旧字体」で占うのが正しい理由",
     description: "なぜ姓名判断では旧字体を使うのか？歴史的背景、理論的根拠、漢字の本質から詳しく解説。",
     type: "article",
-    url: "https://seimei.kanau-kiryu.com/articles/kyujitai-seimeihandan",
+    url: "https://seimei.app/articles/kyujitai-seimeihandan",
     siteName: "まいにち姓名判断",
     locale: "ja_JP",
     images: [
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     creator: "@nameanalysis_jp",
     site: "@nameanalysis_jp",
   },
-  authors: [{ name: "姓名判断専門家", url: "https://seimei.kanau-kiryu.com" }],
+  authors: [{ name: "姓名判断専門家", url: "https://seimei.app" }],
   publisher: "まいにち姓名判断",
   publishedTime: "2025-06-15T00:00:00.000Z",
   modifiedTime: "2025-06-21T00:00:00.000Z",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://seimei.kanau-kiryu.com/articles/kyujitai-seimeihandan",
+    canonical: "https://seimei.app/articles/kyujitai-seimeihandan",
   },
 }
 
@@ -62,25 +62,25 @@ const structuredData = {
   headline: "姓名判断は「旧字体」で占うのが正しい理由",
   description:
     "なぜ姓名判断では旧字体を使うのか？歴史的背景、理論的根拠、漢字の本質から詳しく解説。専門家も採用する旧字体の重要性を理解しましょう。",
-  image: "https://seimei.kanau-kiryu.com/og-image-kyujitai.png",
+  image: "https://seimei.app/og-image-kyujitai.png",
   author: {
     "@type": "Person",
     name: "姓名判断専門家",
-    url: "https://seimei.kanau-kiryu.com",
+    url: "https://seimei.app",
   },
   publisher: {
     "@type": "Organization",
     name: "まいにち姓名判断",
     logo: {
       "@type": "ImageObject",
-      url: "https://seimei.kanau-kiryu.com/logo.png",
+      url: "https://seimei.app/logo.png",
     },
   },
   datePublished: "2025-06-15T00:00:00.000Z",
   dateModified: "2025-06-21T00:00:00.000Z",
   mainEntityOfPage: {
     "@type": "WebPage",
-    "@id": "https://seimei.kanau-kiryu.com/articles/kyujitai-seimeihandan",
+    "@id": "https://seimei.app/articles/kyujitai-seimeihandan",
   },
   articleSection: "姓名判断",
   keywords: ["姓名判断", "旧字体", "新字体", "画数", "占い", "理由", "歴史", "専門家"],

@@ -119,7 +119,7 @@ export class SecurityHasher {
 // CORS設定
 export const corsHeaders = {
   'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
-    ? 'https://seimei.kanau-kiryu.com' 
+    ? 'https://seimei.app' 
     : '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',

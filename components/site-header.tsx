@@ -2,9 +2,14 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, CreditCard, Gift, ShoppingBag } from "lucide-react"
+import { BookOpen, CreditCard, Gift, ShoppingBag, User } from "lucide-react"
+
+import { useAuth } from "@/components/auth/auth-provider"
+import { Button } from "@/components/ui/button"
 
 export function SiteHeader() {
+  const { user, loading } = useAuth()
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between py-4">
@@ -50,7 +55,20 @@ export function SiteHeader() {
             </Link>
           </nav>
         </div>
-        <div />
+        <div className="flex items-center gap-3">
+          {!loading && user ? (
+            <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium" asChild>
+              <Link href="/my-account">
+                <User className="h-4 w-4" />
+                マイアカウント
+              </Link>
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/login">ログイン</Link>
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   )

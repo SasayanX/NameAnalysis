@@ -74,12 +74,12 @@ export function SquareAppSetupGuide() {
                 <label className="font-medium">Webhook URL</label>
                 <div className="flex items-center gap-2 mt-1">
                   <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                    https://seimei.kanau-kiryu.com/api/square-webhook
+                    https://seimei.app/api/square-webhook
                   </code>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => copyToClipboard("https://seimei.kanau-kiryu.com/api/square-webhook")}
+                    onClick={() => copyToClipboard("https://seimei.app/api/square-webhook")}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>

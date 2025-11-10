@@ -2,7 +2,7 @@
 
 ## 現在の設定
 
-- **ドメイン**: `seimei.kanau-kiryu.com`
+- **ドメイン**: `seimei.app`
 - **パッケージ名**: `com.nameanalysis.ai`
 - **SHA-256**: `B766698D95C2B3A1E236143DE6DC91343DFBFD5732C8C117F0F30E46F9DC15A9`
 
@@ -46,7 +46,7 @@ Google Play Consoleで正しいSHA-256を取得：
 2. **数分待つ**（DNS反映時間）
 3. **ブラウザで確認**:
    ```
-   https://seimei.kanau-kiryu.com/.well-known/assetlinks.json
+   https://seimei.app/.well-known/assetlinks.json
    ```
    - JSONが正しく表示されるか確認
    - Content-Typeが`application/json`か確認
@@ -82,7 +82,7 @@ Google Play Consoleで正しいSHA-256を取得：
 
 - [ ] Google Play ConsoleからSHA-256フィンガープリントを取得
 - [ ] `assetlinks.json`を更新してデプロイ
-- [ ] `https://seimei.kanau-kiryu.com/.well-known/assetlinks.json`にアクセスしてJSONが表示される
+- [ ] `https://seimei.app/.well-known/assetlinks.json`にアクセスしてJSONが表示される
 - [ ] Content-Typeが`application/json`
 - [ ] SHA-256フィンガープリントが正しい
 - [ ] `package_name`が`com.nameanalysis.ai`と一致
@@ -92,7 +92,7 @@ Google Play Consoleで正しいSHA-256を取得：
 
 Googleの検証ツールを使用：
 ```
-https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://seimei.kanau-kiryu.com&relation=delegate_permission/common.handle_all_urls
+https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://seimei.app&relation=delegate_permission/common.handle_all_urls
 ```
 
 このURLにアクセスして、正しいJSONが返ってくるか確認してください。

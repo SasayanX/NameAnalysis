@@ -40,7 +40,7 @@ export default function SitemapFinalCheck() {
   const checkAllUrls = async () => {
     setIsChecking(true)
     setCheckComplete(false)
-    const baseUrl = "https://seimei.kanau-kiryu.com"
+    const baseUrl = "https://seimei.app"
 
     const initialStatuses = SITEMAP_URLS.map((item) => ({
       url: item.url,

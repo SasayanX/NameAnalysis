@@ -7,7 +7,7 @@ Twitter Developer Account申請時に提出する「X のデータと API の使
 以下のテキストをそのままコピーして使用できます（約500文字）：
 
 ```
-姓名判断Webアプリケーション（https://seimei.kanau-kiryu.com）において、ユーザーへのサービス告知とSEO対策を目的として、Twitter API v2を使用して姓名判断の分析結果を自動投稿する機能を実装します。
+姓名判断Webアプリケーション（https://seimei.app）において、ユーザーへのサービス告知とSEO対策を目的として、Twitter API v2を使用して姓名判断の分析結果を自動投稿する機能を実装します。
 
 投稿内容は、公に公開されている人名（ニュース記事、Wikipediaなどから取得）に対して実行した姓名判断の結果サマリーのみです。投稿形式はテキストベースで、総合評価点、天格・人格・総格の運勢、およびハッシュタグ（#姓名判断 #名前診断 #運勢 #占い）を含む280文字以内のツイートです。
 
@@ -25,7 +25,7 @@ Twitter Developer Account申請時に提出する「X のデータと API の使
 姓名判断アプリの自動SNSマーケティング機能
 
 【プロジェクトの概要】
-日本語の姓名判断Webアプリケーション（https://seimei.kanau-kiryu.com）において、
+日本語の姓名判断Webアプリケーション（https://seimei.app）において、
 ユーザーへのサービス告知とSEO対策を目的とした自動投稿機能を実装します。
 
 【使用例の詳細】
@@ -98,7 +98,7 @@ Automated Social Media Marketing Feature for Name Analysis App
 
 Project Overview:
 We are implementing an automated posting feature for a Japanese name analysis 
-web application (https://seimei.kanau-kiryu.com) for service announcements 
+web application (https://seimei.app) for service announcements 
 and SEO purposes.
 
 Detailed Use Cases:

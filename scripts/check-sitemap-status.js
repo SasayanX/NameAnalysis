@@ -1,7 +1,7 @@
 // サイトマップの状態を確認するスクリプト
 console.log("=== サイトマップ状態確認 ===")
 
-const siteUrl = "https://seimei.kanau-kiryu.com" // 実際のドメインに修正
+const siteUrl = "https://seimei.app" // 実際のドメインに修正
 
 async function checkSitemapStatus() {
   try {

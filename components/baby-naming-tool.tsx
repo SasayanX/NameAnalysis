@@ -489,7 +489,7 @@ export function BabyNamingTool() {
               <Alert className="bg-yellow-100 border-yellow-300">
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
                 <AlertDescription className="text-yellow-800">
-                  <strong>特別割引</strong>: 「AI名付けツールから来ました」とお伝えいただくと、 初回鑑定料が
+                  <strong>特別割引</strong>: 「まいにちAI姓名判断から来ました」とお伝えいただくと、 初回鑑定料が
                   <strong>20%OFF</strong>になります！
                 </AlertDescription>
               </Alert>

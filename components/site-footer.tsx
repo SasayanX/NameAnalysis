@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Mail, Home, Car } from "lucide-react"
+import { Mail, Home, Car, User } from "lucide-react"
 
 export function SiteFooter() {
   return (
@@ -49,6 +49,10 @@ export function SiteFooter() {
               <Link href="/privacy" className="text-sm text-muted-foreground hover:underline">
                 プライバシーポリシー
               </Link>
+              <Link href="/my-account" className="flex items-center gap-1 text-sm text-muted-foreground hover:underline">
+                <User className="h-3 w-3" />
+                マイアカウント
+              </Link>
             </div>
             <div className="flex items-center space-x-1">
               <Mail className="h-4 w-4 text-muted-foreground" />
@@ -62,7 +66,7 @@ export function SiteFooter() {
         {/* コピーライト（中央揃え・最下部） */}
         <div className="border-t pt-4">
           <p className="text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} まいにち姓名判断. All rights reserved.
+            &copy; {new Date().getFullYear()} まいにちAI姓名判断. All rights reserved.
           </p>
         </div>
       </div>

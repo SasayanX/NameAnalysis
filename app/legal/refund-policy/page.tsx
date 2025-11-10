@@ -97,9 +97,9 @@ export default function RefundPolicyPage() {
               <p className="text-blue-700">利用できなかった期間に応じて日割り計算で返金いたします。</p>
               <div className="bg-white p-3 rounded-lg border border-blue-200 mt-2">
                 <p className="text-sm text-blue-800">
-                  <strong>計算例：</strong> 月額440円のプランで15日間利用できなかった場合
+                  <strong>計算例：</strong> 月額550円のプランで15日間利用できなかった場合
                   <br />
-                  返金額 = 440円 × (15日 ÷ 30日) = 220円
+                  返金額 = 550円 × (15日 ÷ 30日) = 275円
                 </p>
               </div>
             </div>

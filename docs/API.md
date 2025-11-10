@@ -148,7 +148,7 @@
 
 ### CORS設定
 
-- **本番環境**: `https://seimei.kanau-kiryu.com` のみ許可
+- **本番環境**: `https://seimei.app` のみ許可
 - **開発環境**: すべてのオリジン許可
 
 ## 使用例

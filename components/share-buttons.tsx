@@ -164,7 +164,7 @@ export function generateNameAnalysisShareContent(result: any) {
   return {
     title: `${result.name}さんの姓名判断結果`,
     description: `総格${scoreText}！${fortuneText}の運勢です✨`,
-    url: 'https://seimei.kanau-kiryu.com',
+    url: 'https://seimei.app',
     hashtags: ['姓名判断', '運勢', 'まいにちAI姓名判断', '開運']
   }
 }
@@ -174,7 +174,7 @@ export function generateOmamoriShareContent(omamori: any) {
   return {
     title: `${omamori.name}を獲得しました！`,
     description: `${omamori.effect}の効果があります✨`,
-    url: 'https://seimei.kanau-kiryu.com',
+    url: 'https://seimei.app',
     hashtags: ['お守り', '開運', 'まいにちAI姓名判断', '運気向上']
   }
 }

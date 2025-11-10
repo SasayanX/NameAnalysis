@@ -40,12 +40,12 @@ export const metadata: Metadata = {
   creator: "まいにちAI姓名判断",
   publisher: "まいにちAI姓名判断",
   alternates: {
-    canonical: "https://seimei.kanau-kiryu.com",
+    canonical: "https://seimei.app",
   },
   openGraph: {
     type: "website",
     locale: "ja_JP",
-    url: "https://seimei.kanau-kiryu.com",
+    url: "https://seimei.app",
     siteName: "まいにちAI姓名判断",
     title: "まいにちAI姓名判断 - 旧字体による正確な画数計算で運命鑑定",
     description:
