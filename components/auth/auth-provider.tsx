@@ -173,7 +173,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       return { error: { message: "Supabase環境変数が設定されていません" } }
     }
-    const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined
+
+    const envBaseUrl = process.env.NEXT_PUBLIC_APP_URL
+    const fallbackOrigin = typeof window !== "undefined" ? window.location.origin : undefined
+    const redirectTo = envBaseUrl || fallbackOrigin
+
     return await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
   }
 

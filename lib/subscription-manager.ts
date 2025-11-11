@@ -104,6 +104,11 @@ export class SubscriptionManager {
 
   private constructor() {
     this.currentSubscription = this.loadSubscription()
+    if (typeof window !== "undefined") {
+      this.syncSubscriptionFromServer().catch((error) => {
+        console.warn("SubscriptionManager initial sync failed:", error)
+      })
+    }
   }
 
   static getInstance(): SubscriptionManager {
@@ -162,6 +167,96 @@ export class SubscriptionManager {
 
   private notifyListeners(): void {
     this.listeners.forEach((listener) => listener())
+  }
+
+  private getIdentityMetadata(): { userId?: string; customerEmail?: string } {
+    const metadata: { userId?: string; customerEmail?: string } = {}
+
+    if (typeof window === "undefined") {
+      return metadata
+    }
+
+    try {
+      const storedEmail = window.localStorage.getItem("customerEmail")
+      if (storedEmail) {
+        metadata.customerEmail = storedEmail.toLowerCase()
+      }
+    } catch (error) {
+      console.warn("Failed to read customerEmail from localStorage:", error)
+    }
+
+    try {
+      const sessionData = window.localStorage.getItem("userSession")
+      if (sessionData) {
+        const session = JSON.parse(sessionData)
+
+        const sessionEmail =
+          session?.email ??
+          session?.user?.email ??
+          session?.user?.user_email ??
+          session?.user?.primary_email
+
+        if (!metadata.customerEmail && typeof sessionEmail === "string") {
+          metadata.customerEmail = sessionEmail.toLowerCase()
+        }
+
+        const sessionUserId =
+          session?.user?.id ??
+          session?.user?.uuid ??
+          session?.user_id ??
+          session?.id
+
+        if (typeof sessionUserId === "string") {
+          metadata.userId = sessionUserId
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to parse userSession from localStorage:", error)
+    }
+
+    // Supabase Authセッションから取得（sb-<project>-auth-token）
+    try {
+      for (let i = 0; i < window.localStorage.length; i += 1) {
+        const key = window.localStorage.key(i)
+        if (!key || !key.startsWith("sb-") || !key.endsWith("-auth-token")) continue
+
+        const raw = window.localStorage.getItem(key)
+        if (!raw) continue
+
+        let parsed: any
+        try {
+          parsed = JSON.parse(raw)
+        } catch (error) {
+          continue
+        }
+
+        const supabaseSession = parsed?.currentSession
+        const supabaseUser = supabaseSession?.user
+        if (!supabaseUser) continue
+
+        if (!metadata.userId && typeof supabaseUser.id === "string") {
+          metadata.userId = supabaseUser.id
+        }
+
+        const supabaseEmail: string | undefined =
+          supabaseUser.email ||
+          supabaseUser.user_email ||
+          supabaseUser.primary_email ||
+          supabaseSession?.email
+
+        if (!metadata.customerEmail && typeof supabaseEmail === "string") {
+          metadata.customerEmail = supabaseEmail.toLowerCase()
+        }
+
+        if (metadata.userId && metadata.customerEmail) {
+          break
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to extract Supabase auth session:", error)
+    }
+
+    return metadata
   }
 
   addListener(listener: () => void): () => void {
@@ -296,16 +391,28 @@ export class SubscriptionManager {
         return { success: false, error: "Invalid Google Play subscription plan" }
       }
 
+      const identity = this.getIdentityMetadata()
+      const payload: Record<string, any> = {
+        planId,
+        purchaseToken,
+        productId: getGooglePlayProductId(productKey),
+      }
+
+      if (identity.customerEmail) {
+        payload.customerEmail = identity.customerEmail.toLowerCase()
+      }
+
+      if (identity.userId) {
+        payload.userId = identity.userId
+      }
+
       // 購入レシートを検証
       const verifyResponse = await fetch("/api/verify-google-play-purchase", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          purchaseToken,
-          productId: getGooglePlayProductId(productKey),
-        }),
+        body: JSON.stringify(payload),
       })
 
       const verifyResult = await verifyResponse.json()
@@ -326,15 +433,24 @@ export class SubscriptionManager {
         return date
       })()
 
+      const statusFromServer = verifyResult.subscription?.status
+      const expiresAtFromServer = verifyResult.subscription?.expiresAt
+
       this.currentSubscription = {
         plan: planId,
         expiresAt: finalExpiresAt,
         isActive: true,
         trialEndsAt: null,
-        status: purchaseData.isActive !== false ? "active" : "pending",
+        status:
+          statusFromServer ||
+          (purchaseData.isActive === false
+            ? "pending"
+            : expiryTimeMillis > 0 && finalExpiresAt <= new Date()
+              ? "expired"
+              : "active"),
         paymentMethod: "google_play",
         amount: plan.price,
-        nextBillingDate: finalExpiresAt,
+        nextBillingDate: expiresAtFromServer ? new Date(expiresAtFromServer) : finalExpiresAt,
         lastPaymentDate: new Date(),
       }
 
@@ -345,6 +461,65 @@ export class SubscriptionManager {
     } catch (error) {
       console.error("Error starting Google Play Billing subscription:", error)
       return { success: false, error: "Failed to start subscription" }
+    }
+  }
+
+  async syncSubscriptionFromServer(): Promise<void> {
+    try {
+      const identity = this.getIdentityMetadata()
+      if (!identity.userId && !identity.customerEmail) {
+        return
+      }
+
+      const payload = {
+        ...identity,
+        ...(identity.customerEmail ? { customerEmail: identity.customerEmail.toLowerCase() } : {}),
+      }
+
+      const response = await fetch("/api/subscriptions/status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        console.warn("Failed to sync subscription from server:", response.statusText)
+        return
+      }
+
+      const result = await response.json()
+      if (!result.success || !result.subscription) {
+        return
+      }
+
+      const serverSubscription = result.subscription
+
+      const expiresAt = serverSubscription.expiresAt ? new Date(serverSubscription.expiresAt) : null
+      const nextBillingDate = serverSubscription.nextBillingDate
+        ? new Date(serverSubscription.nextBillingDate)
+        : expiresAt
+      const planDetails = SUBSCRIPTION_PLANS.find((p) => p.id === serverSubscription.plan)
+      const amount = planDetails?.price ?? this.currentSubscription.amount ?? 0
+
+      this.currentSubscription = {
+        plan: serverSubscription.plan as PlanType,
+        expiresAt,
+        isActive:
+          serverSubscription.status === "active" &&
+          (!expiresAt || expiresAt.getTime() > Date.now()),
+        trialEndsAt: null,
+        status: serverSubscription.status,
+        paymentMethod: serverSubscription.paymentMethod ?? "google_play",
+        amount,
+        nextBillingDate: nextBillingDate ?? undefined,
+        lastPaymentDate: this.currentSubscription.lastPaymentDate,
+      }
+
+      this.saveSubscription()
+    } catch (error) {
+      console.warn("Failed to sync subscription from server:", error)
     }
   }
 
@@ -542,6 +717,7 @@ export function useSubscription() {
     [manager]
   )
   const cancelSubscription = useCallback(() => manager.cancelSubscription(), [manager])
+  const syncSubscriptionFromServer = useCallback(() => manager.syncSubscriptionFromServer(), [manager])
   const getSubscriptionInfo = useCallback(() => manager.getSubscriptionInfo(), [manager])
   const getNextBillingDate = useCallback(() => manager.getNextBillingDate(), [manager])
   const getCurrentAmount = useCallback(() => manager.getCurrentAmount(), [manager])
@@ -557,6 +733,7 @@ export function useSubscription() {
     startGMOSubscription,
     startGooglePlayBillingSubscription,
     cancelSubscription,
+    syncSubscriptionFromServer,
     getSubscriptionInfo,
     getNextBillingDate,
     getCurrentAmount,

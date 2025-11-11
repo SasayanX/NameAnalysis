@@ -10,6 +10,8 @@ import Link from "next/link"
 import { SubscriptionManager, SUBSCRIPTION_PLANS } from "@/lib/subscription-manager"
 import { useToast } from "@/hooks/use-toast"
 import { UsageTracker } from "@/lib/usage-tracker"
+import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
+import { getGooglePlayProductId } from "@/lib/google-play-product-ids"
 
 interface SubscriptionStatus {
   plan: "free" | "basic" | "premium"
@@ -27,6 +29,9 @@ export function SubscriptionStatusCard() {
     usageToday: 0,
     usageLimit: 1,
   })
+  const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(false)
+  const [isTWAContext, setIsTWAContext] = useState(false)
+  const [processingPlan, setProcessingPlan] = useState<"basic" | "premium" | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -56,6 +61,25 @@ export function SubscriptionStatusCard() {
       amount: (isActive && subscription.status !== "cancelled") ? (subscription.amount || planInfo.price) : 0,
     }
     setStatus(newStatus)
+
+    const checkPlatform = async () => {
+      try {
+        const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+        setIsTWAContext(isTWA)
+
+        if (isTWA) {
+          const available = await GooglePlayBillingDetector.initialize()
+          setIsGooglePlayAvailable(available)
+        } else {
+          setIsGooglePlayAvailable(false)
+        }
+      } catch (error) {
+        console.warn("[SubscriptionStatusCard] Failed to initialize Google Play Billing:", error)
+        setIsGooglePlayAvailable(false)
+      }
+    }
+
+    checkPlatform()
   }, [])
 
   const getPlanName = (plan: string) => {
@@ -92,6 +116,61 @@ export function SubscriptionStatusCard() {
   }
 
   const usagePercentage = (status.usageToday / status.usageLimit) * 100
+
+  const handleGooglePlayUpgrade = async (planId: "basic" | "premium") => {
+    try {
+      setProcessingPlan(planId)
+
+      if (!GooglePlayBillingDetector.isTWAEnvironment()) {
+        toast({
+          title: "Google Play アプリ内で実行してください",
+          description: "Google Play 決済はアプリ内ブラウザでのみご利用いただけます。",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const initialized = await GooglePlayBillingDetector.initialize()
+      if (!initialized) {
+        toast({
+          title: "初期化に失敗しました",
+          description: "Google Play Billing の初期化に失敗しました。時間をおいて再度お試しください。",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const productId = getGooglePlayProductId(planId)
+      const purchase = await GooglePlayBillingDetector.purchase(productId)
+
+      const manager = SubscriptionManager.getInstance()
+      const result = await manager.startGooglePlayBillingSubscription(planId, purchase.purchaseToken)
+      if (!result.success) {
+        toast({
+          title: "プラン変更に失敗しました",
+          description: result.error ?? "原因不明のエラーが発生しました。",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "プランが有効化されました",
+          description: `${planId === "basic" ? "ベーシック" : "プレミアム"}プランが有効になりました。`,
+        })
+      }
+    } catch (error: any) {
+      console.error("[SubscriptionStatusCard] Google Play upgrade error:", error)
+      const message = error?.message?.includes("User cancelled")
+        ? "購入がキャンセルされました。"
+        : `購入に失敗しました: ${error?.message ?? "原因不明のエラー"}`
+      toast({
+        title: "決済エラー",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setProcessingPlan(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -151,9 +230,20 @@ export function SubscriptionStatusCard() {
                 <span className="font-medium text-blue-800">プランをアップグレード</span>
               </div>
               <p className="text-sm text-blue-700 mb-3">より多くの機能と利用回数でお楽しみいただけます</p>
-              <Button asChild size="sm" className="w-full">
-                <Link href="/subscribe">プランを選択</Link>
-              </Button>
+              {(isGooglePlayAvailable || isTWAContext) ? (
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleGooglePlayUpgrade("premium")}
+                  disabled={processingPlan === "premium"}
+                >
+                  {processingPlan === "premium" ? "処理中..." : "Google Play でアップグレード"}
+                </Button>
+              ) : (
+                <Button asChild size="sm" className="w-full">
+                  <Link href="/subscribe">プランを選択</Link>
+                </Button>
+              )}
             </div>
           )}
 

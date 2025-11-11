@@ -13,6 +13,11 @@ export function GooglePlayBillingInitializer() {
   useEffect(() => {
     const initializeAndCheckPurchases = async () => {
       try {
+        const subscriptionManager = SubscriptionManager.getInstance()
+
+        // サーバー側のサブスクリプション状態を同期
+        await subscriptionManager.syncSubscriptionFromServer()
+
         // Digital Goods APIを初期化
         const available = await GooglePlayBillingDetector.initialize()
         
@@ -27,8 +32,6 @@ export function GooglePlayBillingInitializer() {
               console.log('[Google Play Billing] Found purchases:', purchases.length)
               
               // 有効な購入を確認し、SubscriptionManagerを更新
-              const subscriptionManager = SubscriptionManager.getInstance()
-              
               for (const purchase of purchases) {
                 // 商品IDからプランIDを判定
                 const planId = purchase.itemId === GOOGLE_PLAY_PRODUCT_IDS.basic ? 'basic' 
