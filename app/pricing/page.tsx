@@ -147,10 +147,10 @@ export default function PricingPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">料金プラン</h1>
           <p className="text-xl text-gray-600 mb-8">あなたに最適なプランをお選びください</p>
           
-          {/* 月額のみ表示 */}
+          {/* 定期購入のみ表示 */}
           <div className="text-center mb-8">
             <Badge variant="secondary" className="text-lg px-4 py-2">
-              月額プランのみ対応
+              定期購入プランのみ対応
             </Badge>
           </div>
 
@@ -418,17 +418,30 @@ export default function PricingPage() {
                 <Button variant="secondary" size="lg" asChild>
                   <Link href="/">無料で試してみる</Link>
                 </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-white text-white hover:bg-white hover:text-purple-600 bg-transparent"
-                  asChild
-                >
-                  <Link href="/subscribe?plan=premium&billing=monthly">
+                {(isGooglePlayAvailable || isTWAContext) ? (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white text-white hover:bg-white hover:text-purple-600 bg-transparent"
+                    onClick={() => handleGooglePlayPurchase("premium")}
+                    disabled={processingPlan === "premium"}
+                  >
                     <Trophy className="h-4 w-4 mr-2" />
-                    プレミアムで格付けランクを体験
-                  </Link>
-                </Button>
+                    {processingPlan === "premium" ? "処理中..." : "プレミアムで格付けランクを体験（Google Play）"}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white text-white hover:bg-white hover:text-purple-600 bg-transparent"
+                    asChild
+                  >
+                    <Link href="/subscribe?plan=premium&billing=monthly">
+                      <Trophy className="h-4 w-4 mr-2" />
+                      プレミアムで格付けランクを体験
+                    </Link>
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

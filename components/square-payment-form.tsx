@@ -208,10 +208,10 @@ export function SquarePaymentForm() {
           <CardTitle className="text-center">料金プラン</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* 月額のみ表示 */}
+          {/* 定期購入のみ表示 */}
           <div className="text-center mb-6">
             <Badge variant="secondary" className="text-sm px-4 py-2">
-              月額プランのみ対応
+              定期購入プランのみ対応
             </Badge>
           </div>
 
