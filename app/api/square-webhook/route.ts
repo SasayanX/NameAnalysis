@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 /**
  * Supabaseクライアントを取得（リクエストハンドラー内で初期化）
@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
       const amount = payment.amount_money?.amount || 0
       const currency = payment.amount_money?.currency || "JPY"
       const orderId = payment.order_id
-      const customerId = payment.buyer_email_address
+      const customerEmail = payment.buyer_email_address
+      const customerId = payment.customer_id
 
       if (process.env.NODE_ENV === "development") {
         console.log("決済完了 (payment.updated):", {
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
         .upsert({
           payment_id: payment.id,
           order_id: orderId,
-          customer_email: customerId,
+          customer_email: customerEmail?.toLowerCase() || null,
           plan: plan,
           amount: currency === "JPY" ? amount : amount / 100, // JPYは既に円単位、USD等はセント→円に変換
           currency: currency,
@@ -160,12 +161,27 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      await activateSubscription(customerId, plan, orderId)
+      await upsertUserSubscriptionRecord(supabase, {
+        userId: customerId,
+        customerEmail: customerEmail,
+        plan,
+        status: "active",
+        expiresAt,
+        paymentMethod: "square",
+        productId: orderId,
+        rawPayload: {
+          eventType: event.type,
+          paymentId: payment.id,
+          orderId,
+        },
+      })
+
+      await activateSubscription(customerEmail || customerId || "unknown-customer", plan, orderId)
 
       return NextResponse.json({
         success: true,
         message: `${plan}プランを有効化しました (payment.updated)`,
-        customerId,
+        customerEmail,
         plan,
         amount,
         paymentId: payment.id,
@@ -246,11 +262,16 @@ export async function POST(request: NextRequest) {
       const status = subscription.status
       const chargedThroughDate = subscription.charged_through_date // 次回請求日
       
+      const subscriptionCustomerId = subscription.customer_id
+      const subscriptionCustomerEmail = subscription.customer_email
+
       console.log("サブスクリプション更新:", {
         subscriptionId,
         planId,
         status,
         chargedThroughDate,
+        subscriptionCustomerId,
+        subscriptionCustomerEmail,
         isTest: isTestSignature,
       })
 
@@ -296,6 +317,21 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        await upsertUserSubscriptionRecord(supabase, {
+          userId: subscriptionCustomerId,
+          customerEmail: subscriptionCustomerEmail,
+          plan: appPlan,
+          status: "cancelled",
+          paymentMethod: "square",
+          expiresAt: new Date(),
+          productId: subscriptionId,
+          rawPayload: {
+            eventType: event.type,
+            subscriptionId,
+            status,
+          },
+        })
+
         return NextResponse.json({
           success: true,
           message: "サブスクリプション解約処理完了",
@@ -338,6 +374,23 @@ export async function POST(request: NextRequest) {
             expiresAt: expiresAt.toISOString(),
           })
         }
+
+        await upsertUserSubscriptionRecord(supabase, {
+          userId: subscriptionCustomerId,
+          customerEmail: subscriptionCustomerEmail,
+          plan: appPlan,
+          status: mapSquareStatus(status),
+          paymentMethod: "square",
+          expiresAt,
+          autoRenewing: status === "ACTIVE",
+          productId: subscriptionId,
+          rawPayload: {
+            eventType: event.type,
+            subscriptionId,
+            status,
+            chargedThroughDate,
+          },
+        })
       }
 
       return NextResponse.json({
@@ -417,4 +470,130 @@ async function activateSubscription(customerId: string, plan: "basic" | "premium
 // メール送信処理
 async function sendActivationEmail(email: string, plan: string) {
   console.log(`${email}に${plan}プラン有効化メールを送信`)
+}
+
+type SubscriptionStatus = "pending" | "active" | "cancelled" | "expired" | "failed"
+
+function mapSquareStatus(squareStatus?: string | null): SubscriptionStatus {
+  switch (squareStatus) {
+    case "ACTIVE":
+      return "active"
+    case "PENDING":
+    case "PAUSED":
+    case "SUSPENDED":
+      return "pending"
+    case "FAILED":
+      return "failed"
+    case "EXPIRED":
+      return "expired"
+    case "CANCELED":
+    case "CANCELLED":
+      return "cancelled"
+    default:
+      return "pending"
+  }
+}
+
+interface UpsertUserSubscriptionParams {
+  userId?: string | null
+  customerEmail?: string | null
+  plan: "basic" | "premium"
+  status: SubscriptionStatus
+  paymentMethod: "square" | "gmo" | "manual" | "google_play"
+  expiresAt?: Date | null
+  autoRenewing?: boolean
+  productId?: string | null
+  rawPayload?: any
+}
+
+async function upsertUserSubscriptionRecord(
+  supabase: SupabaseClient | null,
+  params: UpsertUserSubscriptionParams
+) {
+  if (!supabase) {
+    console.warn("Supabaseクライアントが利用できないため、user_subscriptionsの更新をスキップします")
+    return
+  }
+
+  const normalizedEmail = params.customerEmail?.toLowerCase() ?? null
+  const nowIso = new Date().toISOString()
+
+  let targetRowId: string | null = null
+
+  try {
+    if (params.userId) {
+      const { data: userMatch } = await supabase
+        .from("user_subscriptions")
+        .select("id")
+        .eq("user_id", params.userId)
+        .order("last_verified_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (userMatch?.id) {
+        targetRowId = userMatch.id
+      }
+    }
+
+    if (!targetRowId && normalizedEmail) {
+      const { data: emailMatch } = await supabase
+        .from("user_subscriptions")
+        .select("id")
+        .eq("customer_email", normalizedEmail)
+        .order("last_verified_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (emailMatch?.id) {
+        targetRowId = emailMatch.id
+      }
+    }
+
+    const payload = {
+      user_id: params.userId ?? null,
+      customer_email: normalizedEmail,
+      plan: params.plan,
+      status: params.status,
+      payment_method: params.paymentMethod,
+      product_id: params.productId ?? null,
+      last_verified_at: nowIso,
+      expires_at: params.expiresAt ? params.expiresAt.toISOString() : null,
+      auto_renewing: params.autoRenewing ?? false,
+      raw_response: params.rawPayload ?? null,
+      updated_at: nowIso,
+    }
+
+    if (targetRowId) {
+      const { error: updateError } = await supabase
+        .from("user_subscriptions")
+        .update(payload)
+        .eq("id", targetRowId)
+
+      if (updateError) {
+        console.error("user_subscriptionsの更新に失敗しました:", updateError)
+      } else {
+        console.log("user_subscriptionsを更新しました:", {
+          targetRowId,
+          plan: params.plan,
+          status: params.status,
+        })
+      }
+    } else {
+      const { error: insertError } = await supabase.from("user_subscriptions").insert({
+        ...payload,
+        created_at: nowIso,
+      })
+
+      if (insertError) {
+        console.error("user_subscriptionsへの挿入に失敗しました:", insertError)
+      } else {
+        console.log("user_subscriptionsに新規レコードを挿入しました:", {
+          plan: params.plan,
+          status: params.status,
+        })
+      }
+    }
+  } catch (error) {
+    console.error("user_subscriptionsの更新操作でエラー:", error)
+  }
 }
