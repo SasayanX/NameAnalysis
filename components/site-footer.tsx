@@ -19,7 +19,7 @@ export function SiteFooter() {
             <div className="flex flex-col items-center gap-2 md:flex-row md:gap-4">
               <div className="text-sm text-muted-foreground font-semibold">姉妹サイト:</div>
               <div className="flex flex-col items-center gap-2 md:flex-row md:gap-4">
-                <Link
+                <a
                   href="https://ie-unsei.jp/"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -27,8 +27,8 @@ export function SiteFooter() {
                 >
                   <Home className="h-3 w-3" />
                   <span>住まい運勢診断</span>
-                </Link>
-                <Link
+                </a>
+                <a
                   href="https://car-unsei.jp/"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -36,7 +36,7 @@ export function SiteFooter() {
                 >
                   <Car className="h-3 w-3" />
                   <span>愛車運勢診断</span>
-                </Link>
+                </a>
               </div>
             </div>
           </div>
