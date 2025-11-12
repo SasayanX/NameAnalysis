@@ -40,6 +40,7 @@ export const extendedKanjiData: Record<string, number> = {
 
   // ユーザー指定追加（2025年11月12日）
   史: 5, // 史の画数
+  脇: 12, // 脇の画数
 
   // その他の拡張漢字（必要に応じて追加）
   響: 20,
