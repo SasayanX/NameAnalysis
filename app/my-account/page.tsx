@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { KanauPointsDisplay } from "@/components/kanau-points-display"
 import { getOrCreatePointsSummary, type SupaPointsSummary } from "@/lib/kanau-points-supabase"
 import { useSubscription } from "@/lib/subscription-manager"
+import { useToast } from "@/hooks/use-toast"
 
 function formatDate(value?: string | Date | null, withTime = false) {
   if (!value) return "記録なし"
@@ -28,11 +29,14 @@ function formatDate(value?: string | Date | null, withTime = false) {
 export default function MyAccountPage() {
   const { user, signOut } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
   const [summary, setSummary] = useState<SupaPointsSummary | null>(null)
   const [isLoadingSummary, setIsLoadingSummary] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [isResyncing, setIsResyncing] = useState(false)
 
-  const { getCurrentPlan, isActive, getNextBillingDate, getCurrentAmount } = useSubscription()
+  const { getCurrentPlan, isActive, getNextBillingDate, getCurrentAmount, syncSubscriptionFromServer } =
+    useSubscription()
   const plan = useMemo(() => getCurrentPlan(), [getCurrentPlan])
   const active = useMemo(() => isActive(), [isActive])
   const nextBillingDate = useMemo(() => getNextBillingDate(), [getNextBillingDate])
@@ -69,6 +73,53 @@ export default function MyAccountPage() {
       cancelled = true
     }
   }, [user?.id])
+
+  const handleResyncSubscription = async () => {
+    if (!user) {
+      toast({
+        title: "エラー",
+        description: "ログインが必要です",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsResyncing(true)
+    try {
+      const response = await fetch("/api/subscriptions/resync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          customerEmail: user.email,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "サブスクリプションの再同期に失敗しました")
+      }
+
+      await syncSubscriptionFromServer()
+
+      toast({
+        title: "サブスクリプションを再同期しました",
+        description: "最新の決済情報を反映しました。",
+      })
+    } catch (error: any) {
+      console.error("サブスクリプション再同期エラー:", error)
+      toast({
+        title: "再同期エラー",
+        description: error.message || "サブスクリプションの再同期に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setIsResyncing(false)
+    }
+  }
 
   if (!user) {
     return (
@@ -219,6 +270,13 @@ export default function MyAccountPage() {
               </Button>
               <Button asChild>
                 <Link href="/my-subscription">契約状況の詳細</Link>
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleResyncSubscription}
+                disabled={isResyncing}
+              >
+                {isResyncing ? "再確認中..." : "購入状況を再確認する"}
               </Button>
             </div>
           </CardContent>
