@@ -1,3 +1,4 @@
+import type React from "react"
 import Link from "next/link"
 import { Mail, Home, Car, User } from "lucide-react"
 
