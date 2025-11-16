@@ -8,6 +8,7 @@ import { commonKanjiData } from "./stroke-data/common-kanji"
 import { hiraganaData, katakanaData } from "./stroke-data/kana"
 import { extendedKanjiData } from "./stroke-data/extended-kanji"
 import { csvImportedData } from "./stroke-data/csv-imported-data"
+import { csvImportedManusData } from "./stroke-data/csv-imported-manus"
 
 const REGEX_PATTERNS = {
   english: /[a-zA-Z]/,
@@ -26,6 +27,7 @@ export const strokeCountData: Record<string, number> = {
   ...katakanaData,
   ...extendedKanjiData,
   ...csvImportedData,
+  ...csvImportedManusData,
   // 直接追加
   寛: 15,
   住: 7,

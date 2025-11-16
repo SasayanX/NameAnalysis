@@ -46,3 +46,4 @@ build/
 
 # Generated files
 /public/generated/
+secret/
