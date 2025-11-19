@@ -4,11 +4,12 @@ import React, { useRef, useEffect, useMemo, useCallback, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { PdfExportButton } from "@/components/pdf-export-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { LockIcon, Settings, Baby, Sparkles } from "lucide-react"
+import { LockIcon, Settings, Baby, Sparkles, Brain, Lightbulb, Target, Star, BookOpen, RefreshCw } from "lucide-react"
 import Link from "next/link"
 
 // コンポーネントの遅延読み込み
@@ -64,6 +65,8 @@ export default function ClientPage() {
   const [results, setResults] = useState<any>(null)
   const [sixStar, setSixStar] = useState<any>(null)
   const [advancedResults, setAdvancedResults] = useState<any>(null)
+  const [aiFortune, setAiFortune] = useState<any>(null)
+  const [isLoadingAiFortune, setIsLoadingAiFortune] = useState(false)
 
   const [companyName, setCompanyName] = useState("")
   const [companyResults, setCompanyResults] = useState<any>(null)
@@ -404,7 +407,7 @@ export default function ClientPage() {
     setGender(value as "male" | "female")
   }, [])
 
-  const handlePersonalAnalysis = useCallback(() => {
+  const handlePersonalAnalysis = useCallback(async () => {
     console.log("🔍 ClientPage: handlePersonalAnalysis関数が呼び出されました")
     try {
       // 実際の姓名判断分析を実行
@@ -422,7 +425,14 @@ export default function ClientPage() {
       const analysisResult = analyzeNameFortune(lastName, firstName, gender, customFortuneData)
       console.log("🔍 ClientPage: analyzeNameFortune関数呼び出し完了")
       console.log("分析結果:", analysisResult)
-      setResults(analysisResult)
+      
+      // nameプロパティを追加（AI鑑定で使用）
+      const fullName = `${lastName}${firstName}`
+      const analysisResultWithName = {
+        ...analysisResult,
+        name: fullName,
+      }
+      setResults(analysisResultWithName)
 
       // 推測マーク（isDefault: true）の文字を検出してメール通知
       if (analysisResult.characterDetails && Array.isArray(analysisResult.characterDetails)) {
@@ -480,6 +490,9 @@ export default function ClientPage() {
           gogyoResult: gogyoResult,
         }
         setAdvancedResults(advancedData)
+
+        // AI鑑定を生成（既存の姓名判断結果と五行分析結果を使用）
+        await generateAiFortune(analysisResultWithName, gogyoResult, birthdate)
       } else {
         // 生年月日なしの場合
         // 実際の五行分析を実行（生年月日なし）
@@ -493,6 +506,9 @@ export default function ClientPage() {
           gogyoResult: gogyoResult,
         }
         setAdvancedResults(advancedData)
+
+        // AI鑑定を生成（既存の姓名判断結果と五行分析結果を使用）
+        await generateAiFortune(analysisResultWithName, gogyoResult, undefined)
       }
 
       if (usageTracker.incrementUsage("personalAnalysis")) {
@@ -502,6 +518,51 @@ export default function ClientPage() {
       console.error("Error in personal analysis:", error)
     }
   }, [lastName, firstName, gender, birthdate, usageTracker])
+
+  // AI鑑定を生成する関数
+  const generateAiFortune = useCallback(async (
+    nameAnalysisResult: any,
+    gogyoResult?: any,
+    birthdate?: string
+  ) => {
+    setIsLoadingAiFortune(true)
+    setAiFortune(null)
+
+    try {
+      console.log("🤖 AI鑑定生成開始:", { 
+        name: nameAnalysisResult?.name,
+        categories: nameAnalysisResult?.categories?.length,
+        gogyoResult: !!gogyoResult,
+        birthdate 
+      })
+      
+      const response = await fetch('/api/ai/generate-fortune', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nameAnalysisResult,
+          gogyoResult,
+          birthdate,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ AI鑑定生成エラー:', errorData)
+        throw new Error(errorData.error || 'AI鑑定の生成に失敗しました')
+      }
+
+      const data = await response.json()
+      console.log("✅ AI鑑定生成成功:", data)
+      setAiFortune(data)
+    } catch (error: any) {
+      console.error('❌ AI鑑定生成エラー:', error)
+      // エラーが発生しても既存の鑑定結果は表示する
+      setAiFortune(null)
+    } finally {
+      setIsLoadingAiFortune(false)
+    }
+  }, [])
 
   const handleCompanyAnalysis = useCallback(() => {
     try {
@@ -952,6 +1013,8 @@ export default function ClientPage() {
                             gender={gender} 
                             currentPlan={currentPlan}
                             advancedResults={advancedResults}
+                            aiFortune={aiFortune}
+                            isLoadingAiFortune={isLoadingAiFortune}
                           />
                           {/* 無料プランでのアップグレード誘導 */}
                           {currentPlan === "free" && (
@@ -1032,17 +1095,18 @@ export default function ClientPage() {
                                   </CardContent>
                                 </Card>
 
-                                {/* 数秘術 */}
-                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("numerology")}>
+                                {/* AI心理分析 */}
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ai-personality")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <h3 className="font-semibold">数秘術</h3>
-                                        <p className="text-sm text-muted-foreground">数字による運命分析</p>
+                                        <h3 className="font-semibold">AI心理分析</h3>
+                                        <p className="text-sm text-muted-foreground">AIによる深層心理鑑定</p>
                                       </div>
                                       <div className="flex items-center gap-1">
-                                        {currentPlan === "free" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
-                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">ベーシック</span>
+                                        {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <Sparkles className="h-4 w-4 text-purple-600" />
+                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">プレミアム</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1064,18 +1128,17 @@ export default function ClientPage() {
                                   </CardContent>
                                 </Card>
 
-                                {/* AI心理分析 */}
-                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ai-personality")}>
+                                {/* 数秘術 */}
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("numerology")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <h3 className="font-semibold">AI心理分析</h3>
-                                        <p className="text-sm text-muted-foreground">AIによる深層心理鑑定</p>
+                                        <h3 className="font-semibold">数秘術</h3>
+                                        <p className="text-sm text-muted-foreground">数字による運命分析</p>
                                       </div>
                                       <div className="flex items-center gap-1">
-                                        {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
-                                        <Sparkles className="h-4 w-4 text-purple-600" />
-                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">プレミアム</span>
+                                        {currentPlan === "free" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">ベーシック</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1163,47 +1226,212 @@ export default function ClientPage() {
 
                         {/* AI機能のTabsContent */}
                         <TabsContent value="ai-personality" style={{ display: activeTab === "ai-personality" ? "block" : "none" }}>
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="flex items-center gap-2">
+                          <Card className="border-purple-200 shadow-lg">
+                            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+                              <CardTitle className="flex items-center gap-2 text-purple-800">
                                 <Sparkles className="h-5 w-5 text-purple-600" />
                                 AI深層心理鑑定
                               </CardTitle>
-                              <CardDescription>
-                                AIがあなたの名前から深層心理を分析します
+                              <CardDescription className="text-purple-600">
+                                Gemini AIが既存の姓名判断結果を解釈し、深層心理を分析します
                               </CardDescription>
                             </CardHeader>
-                            <CardContent>
-                              <div className="text-center py-8">
-                                <div className="text-6xl mb-4">🤖</div>
-                                <h3 className="text-xl font-semibold mb-2">AI深層心理鑑定</h3>
-                                <p className="text-muted-foreground mb-6">
-                                  OpenAI GPT-4を使用した高度な心理分析機能です
-                                </p>
-                                {currentPlan !== "premium" ? (
-                                  <div className="space-y-4">
-                                    <div className="p-4 bg-purple-50 rounded-lg">
-                                      <p className="text-purple-800">プレミアムプランでご利用いただけます</p>
-                                    </div>
+                            <CardContent className="pt-6">
+                              {currentPlan !== "premium" ? (
+                                <div className="text-center py-8">
+                                  <div className="p-4 bg-purple-50 rounded-lg mb-4">
+                                    <p className="text-purple-800">プレミアムプランでご利用いただけます</p>
+                                  </div>
+                                  <Button 
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                    onClick={() => handleStartTrial()}
+                                  >
+                                    3日間無料で始める
+                                  </Button>
+                                </div>
+                              ) : !results ? (
+                                <div className="text-center py-8">
+                                  <p className="text-muted-foreground mb-4">
+                                    まず姓名判断を実行してください
+                                  </p>
+                                </div>
+                              ) : isLoadingAiFortune ? (
+                                <div className="flex items-center justify-center py-8">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                                  <span className="ml-3 text-purple-600">AI深層心理分析を生成中...</span>
+                                </div>
+                              ) : aiFortune?.success && aiFortune?.aiFortune ? (
+                                <div className="space-y-6">
+                                  {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
+                                  {aiFortune.aiFortune.fortune && (
+                                    <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50">
+                                      <CardHeader className="pb-3">
+                                        <CardTitle className="flex items-center gap-2 text-purple-800 text-lg">
+                                          <Sparkles className="h-5 w-5 text-purple-600" />
+                                          AI深層心理鑑定
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <p className="text-purple-900 whitespace-pre-wrap leading-relaxed text-base">
+                                          {aiFortune.aiFortune.fortune}
+                                        </p>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+
+                                  {/* グリッドレイアウトでカードを表示 */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* 深層心理的特徴 */}
+                                    <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                                      <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100">
+                                        <CardTitle className="flex items-center gap-2 text-purple-800 text-base">
+                                          <Brain className="h-4 w-4 text-purple-600" />
+                                          深層心理的特徴
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent className="pt-4">
+                                        <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                          {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
+                                        </p>
+                                      </CardContent>
+                                    </Card>
+
+                                    {/* 潜在的な才能・適性 */}
+                                    {aiFortune.aiFortune.talents && (
+                                      <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
+                                        <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100">
+                                          <CardTitle className="flex items-center gap-2 text-yellow-800 text-base">
+                                            <Sparkles className="h-4 w-4 text-yellow-600" />
+                                            潜在的な才能・適性
+                                          </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-4">
+                                          <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                            {aiFortune.aiFortune.talents}
+                                          </p>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {/* 人生における課題と解決策 */}
+                                    {aiFortune.aiFortune.challenges && (
+                                      <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+                                        <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100">
+                                          <CardTitle className="flex items-center gap-2 text-orange-800 text-base">
+                                            <Lightbulb className="h-4 w-4 text-orange-600" />
+                                            人生における課題と解決策
+                                          </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-4">
+                                          <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                            {aiFortune.aiFortune.challenges}
+                                          </p>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {/* 具体的なアドバイス */}
+                                    {aiFortune.aiFortune.advice && (
+                                      <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                                        <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100">
+                                          <CardTitle className="flex items-center gap-2 text-green-800 text-base">
+                                            <Target className="h-4 w-4 text-green-600" />
+                                            今日の開運アドバイス
+                                          </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-4">
+                                          <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                            {aiFortune.aiFortune.advice}
+                                          </p>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+                                  </div>
+
+                                  {/* ラッキー要素（フル幅） */}
+                                  {aiFortune.aiFortune.luckyElement && (
+                                    <Card className="border-blue-200 shadow-sm bg-gradient-to-r from-blue-50 to-cyan-50">
+                                      <CardHeader className="pb-3">
+                                        <CardTitle className="flex items-center gap-2 text-blue-800 text-base">
+                                          <Star className="h-4 w-4 text-blue-600" />
+                                          ラッキー要素
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <p className="text-blue-700 font-medium text-base">
+                                          {aiFortune.aiFortune.luckyElement}
+                                        </p>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+
+                                  {/* 使用された言霊（フル幅） */}
+                                  {aiFortune.kotodama && aiFortune.kotodama.length > 0 && (
+                                    <Card className="border-indigo-200 shadow-sm bg-gradient-to-r from-indigo-50 to-purple-50">
+                                      <CardHeader className="pb-3">
+                                        <CardTitle className="flex items-center gap-2 text-indigo-800 text-base">
+                                          <BookOpen className="h-4 w-4 text-indigo-600" />
+                                          参考にした言霊
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <div className="space-y-3">
+                                          {aiFortune.kotodama.map((k: any, index: number) => (
+                                            <div key={index} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-indigo-100">
+                                              <span className="font-semibold text-indigo-700 text-sm">「{k.phrase_jp}」</span>
+                                              {k.advice_text && (
+                                                <span className="text-indigo-600 text-sm flex-1">- {k.advice_text}</span>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+
+                                  {/* 再分析ボタン */}
+                                  <div className="text-center pt-2">
                                     <Button 
-                                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                                      onClick={() => handleStartTrial()}
+                                      variant="outline"
+                                      className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                                      onClick={async () => {
+                                        if (results && advancedResults?.gogyoResult) {
+                                          await generateAiFortune(
+                                            results,
+                                            advancedResults.gogyoResult,
+                                            birthdate || undefined
+                                          )
+                                        }
+                                      }}
                                     >
-                                      3日間無料で始める
+                                      <RefreshCw className="h-4 w-4 mr-2" />
+                                      再分析
                                     </Button>
                                   </div>
-                                ) : (
-                                  <Button 
-                                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                                    onClick={() => {
-                                      // AI分析の実行処理（後で実装）
-                                      alert("AI深層心理鑑定機能は準備中です")
-                                    }}
-                                  >
-                                    AI分析を実行
-                                  </Button>
-                                )}
-                              </div>
+
+                                  {/* 希味のイラスト画像 */}
+                                  <div className="flex justify-center pt-6 pb-4">
+                                    <img
+                                      src="/images/Nozomi512x512.png"
+                                      alt="金雨希味"
+                                      className="w-[200px] md:w-[300px] h-auto opacity-80 hover:opacity-100 transition-opacity rounded-lg"
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center py-8">
+                                  <p className="text-muted-foreground mb-4">
+                                    AI深層心理分析を生成するには、姓名判断を実行してください
+                                  </p>
+                                  {aiFortune && !aiFortune.success && (
+                                    <Alert className="mt-4">
+                                      <AlertDescription className="text-red-600">
+                                        エラー: {aiFortune.error || '不明なエラー'}
+                                      </AlertDescription>
+                                    </Alert>
+                                  )}
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         </TabsContent>
