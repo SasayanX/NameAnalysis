@@ -506,6 +506,9 @@ export class SubscriptionManager {
       this.saveSubscription()
       this.notifyListeners()
 
+      // Supabaseから最新の状態を同期（サーバー側で保存されたデータを取得）
+      await this.syncSubscriptionFromServer()
+
       return { success: true }
     } catch (error) {
       console.error("Error starting Google Play Billing subscription:", error)

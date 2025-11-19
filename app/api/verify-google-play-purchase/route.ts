@@ -33,35 +33,136 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 開発環境では、検証をスキップして成功を返す
-    if (process.env.NODE_ENV === "development") {
-      console.log("[Google Play Billing] Development mode: Skipping purchase verification")
+    // 開発環境（localhost）では、検証をスキップするが、Supabaseへの書き込みは行う
+    // 注意: Googleテスターアカウントでの購入は本番環境でも動作し、Google Play Developer APIで検証できる
+    const isDevelopment = process.env.NODE_ENV === "development"
+    if (isDevelopment) {
+      console.log("[Google Play Billing] Development mode (localhost): Skipping purchase verification, but saving to Supabase")
+      
+      // 開発環境でもSupabaseに保存
+      const resolvedPlanId = resolvePlanId(productId, body.planId)
+      if (resolvedPlanId) {
+        const supabase = getSupabaseServerClient()
+        if (supabase) {
+          const expiresAt = new Date()
+          expiresAt.setMonth(expiresAt.getMonth() + 1) // 1ヶ月後に有効期限
+          
+          const { data, error } = await supabase
+            .from("user_subscriptions")
+            .upsert(
+              {
+                user_id: body.userId || null,
+                customer_email: body.customerEmail ? body.customerEmail.toLowerCase() : null,
+                plan: resolvedPlanId,
+                status: "active",
+                payment_method: "google_play",
+                product_id: productId,
+                purchase_token: purchaseToken,
+                last_verified_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString(),
+                auto_renewing: true,
+                raw_response: { development_mode: true, productId, purchaseToken },
+              },
+              { onConflict: "purchase_token" }
+            )
+            .select()
+            .maybeSingle()
+
+          if (error) {
+            console.error("[Google Play Billing] Failed to save to Supabase in development mode:", error)
+          } else {
+            console.log("[Google Play Billing] Saved to Supabase in development mode:", data)
+          }
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         verified: true,
         productId,
         purchaseToken,
-        message: "Development mode: Purchase verified (skipped)",
+        message: "Development mode: Purchase verified (skipped), saved to Supabase",
+        subscription: {
+          plan: resolvedPlanId,
+          status: "active",
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 1ヶ月後
+          autoRenewing: true,
+          source: "supabase",
+        },
       })
     }
 
     // 本番環境では、Google Play Developer APIで検証
+    // Googleテスターアカウントでの購入も、Google Play Developer APIで検証できる
+    // ただし、サービスアカウントキーが設定されていない場合は検証をスキップし、Supabaseに保存
     const auth = await getGoogleAuth()
     if (!auth) {
       console.warn("[Google Play Billing] Google Auth not configured, skipping verification")
-      // 認証が設定されていない場合は、開発モードと同様に成功を返す
-      // （実際の本番環境では、必ず設定してください）
+      console.warn("[Google Play Billing] Note: For production, please configure GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH or GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_JSON")
+      console.warn("[Google Play Billing] Saving to Supabase without verification (for testing)")
+      
+      // 認証が設定されていない場合でも、Supabaseに保存（テスト環境用）
+      const resolvedPlanId = resolvePlanId(productId, body.planId)
+      if (resolvedPlanId) {
+        const supabase = getSupabaseServerClient()
+        if (supabase) {
+          const expiresAt = new Date()
+          expiresAt.setMonth(expiresAt.getMonth() + 1) // 1ヶ月後に有効期限
+          
+          const { data, error } = await supabase
+            .from("user_subscriptions")
+            .upsert(
+              {
+                user_id: body.userId || null,
+                customer_email: body.customerEmail ? body.customerEmail.toLowerCase() : null,
+                plan: resolvedPlanId,
+                status: "active",
+                payment_method: "google_play",
+                product_id: productId,
+                purchase_token: purchaseToken,
+                last_verified_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString(),
+                auto_renewing: true,
+                raw_response: { verification_skipped: true, productId, purchaseToken },
+              },
+              { onConflict: "purchase_token" }
+            )
+            .select()
+            .maybeSingle()
+
+          if (error) {
+            console.error("[Google Play Billing] Failed to save to Supabase (auth not configured):", error)
+          } else {
+            console.log("[Google Play Billing] Saved to Supabase (auth not configured):", data)
+          }
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         verified: true,
         productId,
         purchaseToken,
-        message: "Google Auth not configured, verification skipped",
+        message: "Google Auth not configured, verification skipped, saved to Supabase",
+        warning: "Purchase verification was skipped. Please configure service account key for production.",
+        subscription: {
+          plan: resolvedPlanId,
+          status: "active",
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 1ヶ月後
+          autoRenewing: true,
+          source: "supabase",
+        },
       })
     }
 
     const androidpublisher = google.androidpublisher({ version: "v3", auth })
-    const appPackageName = packageName || process.env.NEXT_PUBLIC_GOOGLE_PLAY_PACKAGE_NAME || "com.kanau.nameanalysis"
+    const appPackageName = packageName || process.env.NEXT_PUBLIC_GOOGLE_PLAY_PACKAGE_NAME || "com.nameanalysis.ai"
+
+    console.log("[Google Play Billing] Verifying purchase:", {
+      packageName: appPackageName,
+      subscriptionId: productId,
+      token: purchaseToken.substring(0, 20) + "...",
+    })
 
     // サブスクリプション購入を検証
     const purchase = await androidpublisher.purchases.subscriptions.get({
@@ -142,13 +243,48 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("[Google Play Billing] Purchase verification error:", error)
     
-    // エラーの詳細を返す（開発環境のみ）
-    const errorMessage = process.env.NODE_ENV === "development" 
+    // エラーの詳細をログに記録
+    const errorDetails = {
+      message: error.message || "Unknown error",
+      code: error.code,
+      status: error.status,
+      response: error.response?.data,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    }
+    console.error("[Google Play Billing] Error details:", JSON.stringify(errorDetails, null, 2))
+    
+    // エラーの詳細を返す（開発環境またはテスト環境では詳細を返す）
+    const isDevelopment = process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test"
+    const errorMessage = isDevelopment
       ? error.message || "Unknown error"
       : "Purchase verification failed"
 
+    // Google Play APIのエラーの場合、より詳細な情報を返す
+    if (error.response?.data) {
+      const googleError = error.response.data
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: errorMessage,
+          details: isDevelopment ? {
+            googleError: googleError,
+            code: error.code,
+            status: error.status,
+          } : undefined,
+        },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { 
+        success: false, 
+        error: errorMessage,
+        details: isDevelopment ? {
+          message: error.message,
+          code: error.code,
+        } : undefined,
+      },
       { status: 500 }
     )
   }

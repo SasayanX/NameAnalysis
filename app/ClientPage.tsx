@@ -123,6 +123,23 @@ export default function ClientPage() {
   // クライアントサイドでマウントされたかどうか（ハイドレーションエラー回避用）
   const [mounted, setMounted] = useState(false)
 
+  // ページ読み込み時にサブスクリプション状態を同期
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    
+    const syncSubscription = async () => {
+      try {
+        const subscriptionManager = SubscriptionManager.getInstance()
+        await subscriptionManager.syncSubscriptionFromServer()
+        console.log("✅ ページ読み込み時: サブスクリプション状態を同期しました")
+      } catch (error) {
+        console.error("❌ ページ読み込み時: サブスクリプション状態の同期エラー:", error)
+      }
+    }
+    
+    syncSubscription()
+  }, [])
+
   // URLパラメータでプレミアムモードを強制（開発環境・スクリーンショット用）
   // 本番環境では無効化（セキュリティのため）
   useEffect(() => {
