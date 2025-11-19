@@ -33,40 +33,50 @@
    useEffect(() => {
      let cancelled = false
  
-     const prepareLoginBonus = async () => {
-       if (!user) return
- 
-       try {
-         const summary = await getOrCreatePointsSummary(user.id)
-         const today = new Date().toISOString().split("T")[0]
-         const lastBonus = summary.last_login_bonus_date || ""
- 
-         if (lastBonus === today) {
-           // 既に受け取り済み
-           return
-         }
- 
-         const manager = SubscriptionManager.getInstance()
-         const currentPlan = manager.getCurrentPlan()
-         const plan = currentPlan.id as "free" | "basic" | "premium"
-         const basePoints = plan === "free" ? 1 : plan === "basic" ? 2 : 3
- 
-         if (cancelled) return
- 
-         setBonusData({
-           basePoints,
-           consecutiveBonus: 0,
-           totalPoints: basePoints,
-           consecutiveDays: summary.consecutive_login_days || 0,
-           message: "本日のログインボーナスを受け取りましょう！",
-         })
-         setErrorMessage(null)
-         setHasClaimed(false)
-         setShowNotification(true)
-       } catch (error) {
-         console.error("ログインボーナス状態取得エラー:", error)
-       }
-     }
+    const prepareLoginBonus = async () => {
+      if (!user) {
+        console.log("[LoginBonus] No user, skipping login bonus check")
+        return
+      }
+
+      try {
+        console.log("[LoginBonus] Checking login bonus for user:", user.id)
+        const summary = await getOrCreatePointsSummary(user.id)
+        const today = new Date().toISOString().split("T")[0]
+        const lastBonus = summary.last_login_bonus_date ? summary.last_login_bonus_date.split("T")[0] : ""
+
+        console.log("[LoginBonus] Today:", today, "Last bonus:", lastBonus)
+
+        if (lastBonus === today) {
+          // 既に受け取り済み
+          console.log("[LoginBonus] Already claimed today, skipping")
+          return
+        }
+
+        const manager = SubscriptionManager.getInstance()
+        const currentPlan = manager.getCurrentPlan()
+        const plan = currentPlan.id as "free" | "basic" | "premium"
+        const basePoints = plan === "free" ? 1 : plan === "basic" ? 2 : 3
+
+        if (cancelled) return
+
+        console.log("[LoginBonus] Showing notification for plan:", plan, "basePoints:", basePoints)
+
+        setBonusData({
+          basePoints,
+          consecutiveBonus: 0,
+          totalPoints: basePoints,
+          consecutiveDays: summary.consecutive_login_days || 0,
+          message: "本日のログインボーナスを受け取りましょう！",
+        })
+        setErrorMessage(null)
+        setHasClaimed(false)
+        setShowNotification(true)
+      } catch (error) {
+        console.error("ログインボーナス状態取得エラー:", error)
+        // エラーが発生しても通知を表示しない（ユーザーに混乱を与えない）
+      }
+    }
  
      setShowNotification(false)
      setBonusData(null)
@@ -82,18 +92,24 @@
      }
    }, [user?.id])
  
-   const handleClaim = async () => {
-     if (!user || isProcessing) return
- 
-     setIsProcessing(true)
-     setErrorMessage(null)
- 
-     try {
-       const manager = SubscriptionManager.getInstance()
-       const currentPlan = manager.getCurrentPlan()
-       const plan = currentPlan.id as "free" | "basic" | "premium"
- 
-       const result = await processLoginBonusSupa(user.id, plan)
+  const handleClaim = async () => {
+    if (!user || isProcessing) {
+      console.warn("[LoginBonus] Cannot claim: user=", !!user, "isProcessing=", isProcessing)
+      return
+    }
+
+    setIsProcessing(true)
+    setErrorMessage(null)
+
+    try {
+      console.log("[LoginBonus] Claiming bonus for user:", user.id)
+      const manager = SubscriptionManager.getInstance()
+      const currentPlan = manager.getCurrentPlan()
+      const plan = currentPlan.id as "free" | "basic" | "premium"
+      console.log("[LoginBonus] User plan:", plan)
+
+      const result = await processLoginBonusSupa(user.id, plan)
+      console.log("[LoginBonus] Bonus result:", result)
  
        if (result.bonus.totalPoints === 0) {
          // 既に受け取り済みの場合はそのまま閉じる

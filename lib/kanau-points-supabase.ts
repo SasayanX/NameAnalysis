@@ -295,9 +295,14 @@ export async function processLoginBonusSupa(userId: string, plan?: "free" | "bas
   const summary = await getOrCreatePointsSummary(userId)
 
   const today = new Date().toISOString().split("T")[0]
-  const lastLoginDate = summary.last_login_date || ""
+  // last_login_bonus_dateを確認（last_login_dateではなく）
+  const lastBonusDate = summary.last_login_bonus_date ? summary.last_login_bonus_date.split("T")[0] : ""
+  const lastLoginDate = summary.last_login_date ? summary.last_login_date.split("T")[0] : ""
 
-  if (lastLoginDate === today) {
+  console.log("[processLoginBonusSupa] Today:", today, "Last bonus date:", lastBonusDate, "Last login date:", lastLoginDate)
+
+  if (lastBonusDate === today) {
+    console.log("[processLoginBonusSupa] Already claimed today")
     return {
       user: summary,
       bonus: { basePoints: 0, consecutiveBonus: 0, totalPoints: 0, message: "本日は既にログインボーナスを受け取り済みです" },
@@ -308,14 +313,20 @@ export async function processLoginBonusSupa(userId: string, plan?: "free" | "bas
   yesterday.setDate(yesterday.getDate() - 1)
   const yesterdayStr = yesterday.toISOString().split("T")[0]
 
-  // 連続ログイン日数の計算
+  // 連続ログイン日数の計算（last_login_bonus_dateを使用）
   let consecutiveDays: number
-  if (lastLoginDate === yesterdayStr) {
-    // 昨日ログインしていた場合は連続日数を継続
+  if (lastBonusDate === yesterdayStr) {
+    // 昨日ログインボーナスを受け取っていた場合は連続日数を継続
     consecutiveDays = (summary.consecutive_login_days || 0) + 1
-  } else {
-    // ログインが途切れた場合は1日目にリセット（倍率も1に戻る）
+    console.log("[processLoginBonusSupa] Consecutive login continued:", consecutiveDays)
+  } else if (lastBonusDate && lastBonusDate < yesterdayStr) {
+    // ログインが途切れた場合は1日目にリセット
     consecutiveDays = 1
+    console.log("[processLoginBonusSupa] Login streak broken, reset to 1")
+  } else {
+    // 初回ログインボーナス
+    consecutiveDays = 1
+    console.log("[processLoginBonusSupa] First login bonus")
   }
 
   // プラン情報が渡されていない場合はSubscriptionManagerから取得を試みる

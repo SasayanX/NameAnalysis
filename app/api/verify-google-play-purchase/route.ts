@@ -33,6 +33,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // ログインチェック: customerEmailまたはuserIdが必要
+    if (!body.customerEmail && !body.userId) {
+      console.error("[Google Play Billing] No customerEmail or userId provided. User must be logged in.")
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "ログインが必要です。購入するにはログインしてください。",
+          requiresLogin: true,
+        },
+        { status: 400 }
+      )
+    }
+
     // 開発環境（localhost）では、検証をスキップするが、Supabaseへの書き込みは行う
     // 注意: Googleテスターアカウントでの購入は本番環境でも動作し、Google Play Developer APIで検証できる
     const isDevelopment = process.env.NODE_ENV === "development"

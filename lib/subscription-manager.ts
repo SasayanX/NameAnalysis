@@ -391,7 +391,16 @@ export class SubscriptionManager {
         return { success: false, error: "Invalid Google Play subscription plan" }
       }
 
+      // ログインチェック
       const identity = this.getIdentityMetadata()
+      if (!identity.customerEmail && !identity.userId) {
+        console.error("[Google Play Billing] No customerEmail or userId found. User must be logged in.")
+        return { 
+          success: false, 
+          error: "ログインが必要です。購入するにはログインしてください。" 
+        }
+      }
+
       const payload: Record<string, any> = {
         planId,
         purchaseToken,
@@ -405,6 +414,12 @@ export class SubscriptionManager {
       if (identity.userId) {
         payload.userId = identity.userId
       }
+
+      console.log("[Google Play Billing] Starting subscription with identity:", {
+        hasEmail: !!identity.customerEmail,
+        hasUserId: !!identity.userId,
+        planId,
+      })
 
       // 購入レシートを検証
       const verifyResponse = await fetch("/api/verify-google-play-purchase", {
@@ -449,9 +464,19 @@ export class SubscriptionManager {
           details: verifyResult.details,
           fullResponse: verifyResult,
         })
+        
+        // ログインが必要な場合のエラーメッセージ
+        if (verifyResult.requiresLogin) {
+          return { 
+            success: false, 
+            error: "ログインが必要です。購入するにはログインしてください。",
+            requiresLogin: true,
+          }
+        }
+        
         return { 
           success: false, 
-          error: verifyResult.error || `Purchase verification failed (${verifyResponse.status})`,
+          error: verifyResult.error || `購入の検証に失敗しました (${verifyResponse.status})`,
           details: verifyResult.details,
         }
       }
@@ -463,9 +488,19 @@ export class SubscriptionManager {
           error: verifyResult.error,
           details: verifyResult.details,
         })
+        
+        // ログインが必要な場合のエラーメッセージ
+        if (verifyResult.requiresLogin) {
+          return { 
+            success: false, 
+            error: "ログインが必要です。購入するにはログインしてください。",
+            requiresLogin: true,
+          }
+        }
+        
         return { 
           success: false, 
-          error: verifyResult.error || "Purchase verification failed",
+          error: verifyResult.error || "購入の検証に失敗しました",
           details: verifyResult.details,
         }
       }

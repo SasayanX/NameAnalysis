@@ -89,16 +89,37 @@ export default function PricingPage() {
       try {
         const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
         setIsTWAContext(isTWA)
+        
+        console.log("[Pricing] TWA環境判定:", isTWA)
+        console.log("[Pricing] User Agent:", typeof navigator !== "undefined" ? navigator.userAgent : "N/A")
+        console.log("[Pricing] Display Mode:", typeof window !== "undefined" && "matchMedia" in window 
+          ? window.matchMedia("(display-mode: standalone)").matches : "N/A")
 
         if (isTWA) {
-          const available = await GooglePlayBillingDetector.initialize()
-          setIsGooglePlayAvailable(available)
+          // TWA環境の場合は、初期化を試みるが、失敗してもTWA環境として扱う
+          try {
+            const available = await GooglePlayBillingDetector.initialize()
+            setIsGooglePlayAvailable(available)
+            console.log("[Pricing] Google Play Billing初期化結果:", available)
+          } catch (initError) {
+            console.warn("[Pricing] Google Play Billing初期化エラー:", initError)
+            // TWA環境であれば、初期化が失敗してもGoogle Play Billingを使用可能とする
+            // （Digital Goods APIがまだ利用できない場合でも、TWA環境では使用可能）
+            setIsGooglePlayAvailable(true)
+          }
         } else {
           setIsGooglePlayAvailable(false)
         }
       } catch (error) {
-        console.warn("[Pricing] Failed to initialize Google Play Billing:", error)
-        setIsGooglePlayAvailable(false)
+        console.warn("[Pricing] Failed to check platform:", error)
+        // エラーが発生しても、TWA環境の可能性がある場合はGoogle Play Billingを有効にする
+        const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+        if (isTWA) {
+          setIsGooglePlayAvailable(true)
+          setIsTWAContext(true)
+        } else {
+          setIsGooglePlayAvailable(false)
+        }
       }
     }
 
@@ -108,6 +129,17 @@ export default function PricingPage() {
   const handleGooglePlayPurchase = async (planId: "basic" | "premium") => {
     try {
       setProcessingPlan(planId)
+
+      // ログインチェック
+      const customerEmail = localStorage.getItem("customerEmail")
+      if (!customerEmail) {
+        alert("購入するにはログインが必要です。\nログインページに移動しますか？")
+        const shouldLogin = confirm("ログインページに移動しますか？")
+        if (shouldLogin) {
+          window.location.href = "/login"
+        }
+        return
+      }
 
       if (!GooglePlayBillingDetector.isTWAEnvironment()) {
         alert("Google Playアプリ内でのみ購入できます。")
@@ -125,7 +157,11 @@ export default function PricingPage() {
 
       const result = await subscription.startGooglePlayBillingSubscription(planId, purchase.purchaseToken)
       if (!result.success) {
-        alert(`プラン変更に失敗しました: ${result.error ?? "原因不明のエラー"}`)
+        const errorMsg = result.error || "原因不明のエラー"
+        console.error("[Pricing] Google Play purchase verification failed:", errorMsg)
+        alert(`プラン変更に失敗しました: ${errorMsg}\n\nログイン状態を確認して、再度お試しください。`)
+      } else {
+        alert("プランの変更が完了しました！")
       }
     } catch (error: any) {
       console.error("[Pricing] Google Play purchase error:", error)
