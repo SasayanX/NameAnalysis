@@ -154,12 +154,24 @@ export default function MySubscriptionPage() {
 
       // APIから決済情報を取得
       const response = await fetch(`/api/square-payments/check?email=${encodeURIComponent(customerEmail)}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        toast({
+          title: "エラー",
+          description: errorData.error || `決済履歴の確認に失敗しました（${response.status}）`,
+          variant: "destructive",
+        })
+        setIsCheckingPayment(false)
+        return
+      }
+
       const result = await response.json()
 
       if (!result.success || !result.payment) {
         toast({
           title: "決済情報が見つかりません",
-          description: "最近の決済情報が見つかりませんでした。決済が完了していないか、Webhookが受信されていない可能性があります。",
+          description: result.message || "最近の決済情報が見つかりませんでした。決済が完了していないか、Webhookが受信されていない可能性があります。",
           variant: "destructive",
         })
         setIsCheckingPayment(false)
@@ -237,9 +249,10 @@ export default function MySubscriptionPage() {
       }, 1000)
     } catch (error) {
       console.error("Payment check error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
       toast({
         title: "エラー",
-        description: "決済状況の確認に失敗しました",
+        description: `決済履歴の確認に失敗しました：${errorMessage}`,
         variant: "destructive",
       })
     } finally {

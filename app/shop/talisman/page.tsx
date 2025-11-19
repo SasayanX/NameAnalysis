@@ -353,7 +353,7 @@ export default function TalismanShopPage() {
             {currentTalisman?.category || "開運上昇"}
           </p>
           <p className="text-lg text-yellow-50 italic">
-            巫女 金雨希実が筆で描く運命の守り
+            巫女 金雨希味が筆で描く運命の守り
           </p>
         </div>
       </div>

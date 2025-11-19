@@ -114,7 +114,7 @@ function generatePreDaiKichiAdvice(categories: any[], gender: "male" | "female")
   
   // 全部大吉の特別処理
   if (daiKichiCategories.length === 5) {
-    return `\n\n🌟 全部大吉の究極運気について：天格・人格・地格・外格・総格の全てで大吉を獲得している${gender === "male" ? "男性" : "女性"}は、数百年に一人の究極の運気の持ち主です！この運気は、あらゆる面で最高レベルの成功と幸せを約束する特別な運気です。人生のあらゆる分野で輝き、後世に名を残す偉大な人物になる可能性を秘めています。`
+    return `\n\n🌟 全部大吉の究極運気について：天格・人格・地格・外格・総格の全てで大吉を獲得している${gender === "male" ? "男性" : "女性"}は、数百年に一人の究極の運気の持ち主です！この運気は、あらゆる面で最高レベルの成功と幸せを約束する特別な運気です。人生のあらゆる分野で輝き、後世に名を残す偉大な人物になる可能性を秘めています。しかし、究極の運勢であっても、その光を維持するためには日々の小さな導きが必要です。この究極の運勢を最大限に活かす方法を、まいにちAI姓名判断でお確かめください。`
   }
   
   // 複数大吉の組み合わせパターン
@@ -291,7 +291,9 @@ function generatePersonalizedAdvice(
   advice += `\n${dominantElement}の要素が強いため、${getElementAdvice(dominantElement)}`
   
   if (weakElement !== dominantElement) {
-    advice += `一方、${weakElement}の要素を補うことで、よりバランスの取れた運勢になります。`
+    const weakElementName = getElementName(weakElement)
+    const weakElementColor = getElementColorForKotodama(weakElement)
+    advice += `一方、${weakElement}の要素を補うことで、よりバランスの取れた運勢になります。この「${weakElementName}」を象徴する言霊は、今日の「言霊あつめ」で獲得できます。ラッキーカラーの${weakElementColor}を意識して、言霊を探してみましょう。`
   }
 
   return advice
@@ -562,6 +564,18 @@ function getElementName(element: string): string {
     水: "水の要素"
   }
   return nameMap[element] || "土の要素"
+}
+
+// 言霊あつめ用のラッキーカラー取得
+function getElementColorForKotodama(element: string): string {
+  const colorMap: Record<string, string> = {
+    木: "緑や青緑",
+    火: "赤やオレンジ",
+    土: "黄やベージュ",
+    金: "白やシルバー",
+    水: "青やネイビー"
+  }
+  return colorMap[element] || "緑や青緑"
 }
 
 function getElementAdvice(element: string): string {

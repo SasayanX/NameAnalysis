@@ -924,7 +924,13 @@ export default function ClientPage() {
                             詳細鑑定
                           </TabsTrigger>
                           <TabsTrigger value="advanced">総合分析</TabsTrigger>
-                          <TabsTrigger value="others">その他</TabsTrigger>
+                          <TabsTrigger 
+                            value="others" 
+                            className="relative font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+                          >
+                            <Sparkles className="h-4 w-4 mr-1.5 animate-pulse" />
+                            AI・格付け
+                          </TabsTrigger>
                         </TabsList>
                       </div>
 
@@ -997,10 +1003,15 @@ export default function ClientPage() {
                         </TabsContent>
 
                         <TabsContent value="others">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>その他の機能</CardTitle>
-                              <CardDescription>プレミアム機能をご利用いただけます</CardDescription>
+                          <Card className="border-purple-200 shadow-lg">
+                            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+                              <CardTitle className="flex items-center gap-2 text-purple-800">
+                                <Sparkles className="h-5 w-5 text-purple-600" />
+                                AI・格付け機能
+                              </CardTitle>
+                              <CardDescription className="text-purple-600">
+                                プレミアム機能をご利用いただけます
+                              </CardDescription>
                             </CardHeader>
                             <CardContent>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

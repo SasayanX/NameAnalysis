@@ -415,10 +415,59 @@ export class SubscriptionManager {
         body: JSON.stringify(payload),
       })
 
-      const verifyResult = await verifyResponse.json()
+      let verifyResult: any
+      try {
+        const responseText = await verifyResponse.text()
+        try {
+          verifyResult = JSON.parse(responseText)
+        } catch (parseError) {
+          console.error("[Google Play Billing] Failed to parse response:", {
+            status: verifyResponse.status,
+            statusText: verifyResponse.statusText,
+            responseText: responseText.substring(0, 500),
+          })
+          return { 
+            success: false, 
+            error: `Purchase verification failed: Invalid response (${verifyResponse.status})`,
+            details: { responseText: responseText.substring(0, 500) },
+          }
+        }
+      } catch (error) {
+        console.error("[Google Play Billing] Failed to read response:", error)
+        return { 
+          success: false, 
+          error: "Purchase verification failed: Network error",
+          details: { error: error instanceof Error ? error.message : String(error) },
+        }
+      }
+
+      if (!verifyResponse.ok) {
+        console.error("[Google Play Billing] Verification API error:", {
+          status: verifyResponse.status,
+          statusText: verifyResponse.statusText,
+          error: verifyResult.error,
+          details: verifyResult.details,
+          fullResponse: verifyResult,
+        })
+        return { 
+          success: false, 
+          error: verifyResult.error || `Purchase verification failed (${verifyResponse.status})`,
+          details: verifyResult.details,
+        }
+      }
 
       if (!verifyResult.success || !verifyResult.verified) {
-        return { success: false, error: verifyResult.error || "Purchase verification failed" }
+        console.error("[Google Play Billing] Verification failed:", {
+          success: verifyResult.success,
+          verified: verifyResult.verified,
+          error: verifyResult.error,
+          details: verifyResult.details,
+        })
+        return { 
+          success: false, 
+          error: verifyResult.error || "Purchase verification failed",
+          details: verifyResult.details,
+        }
       }
 
       // 検証成功：プランを有効化
@@ -467,7 +516,10 @@ export class SubscriptionManager {
   async syncSubscriptionFromServer(): Promise<void> {
     try {
       const identity = this.getIdentityMetadata()
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - identity:", identity)
+      
       if (!identity.userId && !identity.customerEmail) {
+        console.warn("[SubscriptionManager] syncSubscriptionFromServer - No userId or customerEmail found, skipping sync")
         return
       }
 
@@ -475,6 +527,8 @@ export class SubscriptionManager {
         ...identity,
         ...(identity.customerEmail ? { customerEmail: identity.customerEmail.toLowerCase() } : {}),
       }
+      
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - payload:", payload)
 
       const response = await fetch("/api/subscriptions/status", {
         method: "POST",
@@ -485,16 +539,20 @@ export class SubscriptionManager {
       })
 
       if (!response.ok) {
-        console.warn("Failed to sync subscription from server:", response.statusText)
+        console.warn("[SubscriptionManager] Failed to sync subscription from server:", response.status, response.statusText)
         return
       }
 
       const result = await response.json()
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - result:", result)
+      
       if (!result.success || !result.subscription) {
+        console.log("[SubscriptionManager] syncSubscriptionFromServer - No subscription found in result")
         return
       }
 
       const serverSubscription = result.subscription
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - serverSubscription:", serverSubscription)
 
       const expiresAt = serverSubscription.expiresAt ? new Date(serverSubscription.expiresAt) : null
       const nextBillingDate = serverSubscription.nextBillingDate
@@ -518,6 +576,7 @@ export class SubscriptionManager {
       }
 
       this.saveSubscription()
+      this.notifyListeners() // UIを更新
     } catch (error) {
       console.warn("Failed to sync subscription from server:", error)
     }

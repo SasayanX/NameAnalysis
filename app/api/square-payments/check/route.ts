@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabase()
     if (!supabase) {
       return NextResponse.json(
-        { error: "Supabase環境が設定されていません" },
+        { 
+          success: false,
+          error: "Supabase環境が設定されていません",
+          message: "環境変数 NEXT_PUBLIC_SUPABASE_URL または SUPABASE_SERVICE_ROLE_KEY が設定されていません"
+        },
         { status: 500 }
       )
     }
@@ -62,7 +66,12 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Square決済情報取得エラー:", error)
       return NextResponse.json(
-        { error: "決済情報の取得に失敗しました", details: error.message },
+        { 
+          success: false,
+          error: "決済情報の取得に失敗しました", 
+          details: error.message,
+          message: "データベースへの接続に失敗しました。環境変数の設定を確認してください。"
+        },
         { status: 500 }
       )
     }
@@ -116,7 +125,11 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase()
     if (!supabase) {
       return NextResponse.json(
-        { error: "Supabase環境が設定されていません" },
+        { 
+          success: false,
+          error: "Supabase環境が設定されていません",
+          message: "環境変数 NEXT_PUBLIC_SUPABASE_URL または SUPABASE_SERVICE_ROLE_KEY が設定されていません"
+        },
         { status: 500 }
       )
     }

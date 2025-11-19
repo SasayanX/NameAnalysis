@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
         console.error("❌ セッション取得エラー:", error)
         if (error.message?.includes("404") || error.status === 404) {
@@ -78,6 +78,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // 既存セッションがある場合、メールアドレスを保存し、サブスクリプション状態を同期
+      if (session?.user?.email && typeof window !== "undefined") {
+        localStorage.setItem("customerEmail", session.user.email.toLowerCase())
+        console.log("✅ 既存セッション: メールアドレスをlocalStorageに保存:", session.user.email)
+        
+        // サブスクリプション状態を同期
+        try {
+          const { SubscriptionManager } = await import("@/lib/subscription-manager")
+          const subscriptionManager = SubscriptionManager.getInstance()
+          await subscriptionManager.syncSubscriptionFromServer()
+          console.log("✅ 既存セッション: サブスクリプション状態を同期しました")
+        } catch (error) {
+          console.error("❌ 既存セッション: サブスクリプション状態の同期エラー:", error)
+        }
+      }
     }).catch((error) => {
       console.error("❌ セッション取得例外:", error)
       setLoading(false)
@@ -88,8 +104,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
       
-      // ログイン時にゲストKPを移行
+      // ログイン時にメールアドレスをlocalStorageに保存し、サブスクリプション状態を同期
       if (session?.user && _event === "SIGNED_IN") {
+        const userEmail = session.user.email
+        if (userEmail && typeof window !== "undefined") {
+          // メールアドレスをlocalStorageに保存（SubscriptionManagerが使用）
+          localStorage.setItem("customerEmail", userEmail.toLowerCase())
+          console.log("✅ メールアドレスをlocalStorageに保存:", userEmail)
+          
+          // サブスクリプション状態を同期
+          try {
+            const { SubscriptionManager } = await import("@/lib/subscription-manager")
+            const subscriptionManager = SubscriptionManager.getInstance()
+            await subscriptionManager.syncSubscriptionFromServer()
+            console.log("✅ サブスクリプション状態を同期しました")
+          } catch (error) {
+            console.error("❌ サブスクリプション状態の同期エラー:", error)
+          }
+        }
+        
         // 非同期で実行（ログインをブロックしない）
         setTimeout(async () => {
           try {
@@ -110,6 +143,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // エラーが発生してもログインは継続
           }
         }, 1000) // 1秒後に実行（ログイン処理を優先）
+      }
+      
+      // ログアウト時にlocalStorageからメールアドレスを削除
+      if (_event === "SIGNED_OUT" && typeof window !== "undefined") {
+        localStorage.removeItem("customerEmail")
+        console.log("✅ ログアウト: メールアドレスをlocalStorageから削除しました")
       }
     })
 
