@@ -63,9 +63,16 @@ export function SquarePaymentForm() {
           return
         }
 
+        // 環境に応じたSDK URLを取得（クライアント側では環境変数を直接読めないため、サーバー側から取得するか、デフォルトを使用）
+        const isSandbox = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT === "sandbox" || 
+                         !process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID?.startsWith("sq0idp-")
+        const sdkUrl = isSandbox
+          ? "https://sandbox.web.squarecdn.com/v1/square.js"
+          : "https://web.squarecdn.com/v1/square.js"
+
         // Square SDKを動的に読み込み
         const script = document.createElement("script")
-        script.src = "https://web.squarecdn.com/v1/square.js"
+        script.src = sdkUrl
         script.async = true
         script.defer = true
         
@@ -99,11 +106,23 @@ export function SquarePaymentForm() {
           throw new Error('Card container element not found')
         }
 
-        // Square Payments初期化（最新API）
-        const payments = window.Square.payments(
-          process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID || "sq0idp-CbbdF82IxFWDSqf8D2S0Pw",
-          process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "L0YH3ASTVNNMA",
-        )
+        // Square Payments初期化（環境に応じた認証情報を使用）
+        // 環境変数が設定されている場合はそれを使用、なければ環境に応じて自動判定
+        const envAppId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID
+        const envLocationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID
+        
+        // Sandbox環境の判定（Application IDの形式で判定）
+        const isSandbox = envAppId?.startsWith("sandbox-sq0idb-") || 
+                         (!envAppId && process.env.NODE_ENV !== "production")
+        
+        const applicationId = envAppId || (isSandbox 
+          ? "sandbox-sq0idb--5njRFbXokY3Fyr9vp9Wxw" 
+          : "sq0idp-CbbdF82IxFWDSqf8D2S0Pw")
+        const locationId = envLocationId || (isSandbox 
+          ? "LYGVDVHKBNYZC"  // ✅ Sandbox Location ID
+          : "L0YH3ASTVNNMA8999")
+        
+        const payments = window.Square.payments(applicationId, locationId)
 
         // カード要素の初期化
         const cardElement = await payments.card()
@@ -152,41 +171,77 @@ export function SquarePaymentForm() {
     setIsLoading(true)
 
     try {
-      const result = await card.tokenize()
-      if (result.status === "OK") {
+      // Step 1: カードをトークン化
+      const tokenResult = await card.tokenize()
+      if (tokenResult.status !== "OK") {
+        throw new Error("カード情報の処理に失敗しました")
+      }
+
+      // Step 2: メールアドレスを取得（既存のロジックまたは入力フォームから）
+      const customerEmail = localStorage.getItem("customerEmail") || prompt("メールアドレスを入力してください:")
+      if (!customerEmail || !customerEmail.includes("@")) {
+        throw new Error("有効なメールアドレスを入力してください")
+      }
+
+      // Step 3: 顧客を作成または取得
+      const customerResponse = await fetch("/api/square-customers/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: customerEmail,
+        }),
+      })
+
+      const customerData = await customerResponse.json()
+      if (!customerData.success) {
+        throw new Error(customerData.error || "顧客作成に失敗しました")
+      }
+
+      // Step 4: カードを登録
+      const cardResponse = await fetch("/api/square-cards/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cardNonce: tokenResult.token,
+          customerId: customerData.customerId,
+        }),
+      })
+
+      const cardData = await cardResponse.json()
+      if (!cardData.success) {
+        throw new Error(cardData.error || "カード登録に失敗しました")
+      }
+
+      // Step 5: サブスクリプションを作成
+      const subscriptionResponse = await fetch("/api/square-subscription/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          planId: selectedPlan,
+          cardId: cardData.cardId,
+          customerId: customerData.customerId,
+        }),
+      })
+
+      const subscriptionData = await subscriptionResponse.json()
+
+      if (subscriptionResponse.ok && subscriptionData.success) {
+        toast({
+          title: "決済完了",
+          description: "サブスクリプションが正常に作成されました",
+        })
+        const subscriptionId = subscriptionData.subscription?.squareSubscriptionId || ""
         const selectedPlanData = plans.find((p) => p.id === selectedPlan)
         const amount = selectedPlanData?.price
-
-        const response = await fetch("/api/create-subscription", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            sourceId: result.token,
-            planId: selectedPlan,
-            billingCycle,
-            amount: amount! * 100, // Convert to cents
-          }),
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          toast({
-            title: "決済完了",
-            description: "サブスクリプションが正常に作成されました",
-          })
-          // URLパラメータにプラン情報を含めてリダイレクト
-          // amountはセント単位なので、円単位に変換して渡す（または、直接プラン価格を使用）
-          const subscriptionId = data.subscription?.id || ""
-          const amountInYen = amount! / 100 // セントから円に変換
-          window.location.href = `/subscription-success?plan=${selectedPlan}&amount=${amountInYen}&subscriptionId=${subscriptionId}`
-        } else {
-          throw new Error(data.error || "決済に失敗しました")
-        }
+        window.location.href = `/subscription-success?plan=${selectedPlan}&amount=${amount}&subscriptionId=${subscriptionId}`
       } else {
-        throw new Error("カード情報の処理に失敗しました")
+        throw new Error(subscriptionData.error || "サブスクリプション作成に失敗しました")
       }
     } catch (error) {
       console.error("Payment error:", error)

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { getSquareApiEndpoint } from "@/lib/square-config"
 
 /**
  * Squareでサブスクリプションプランを作成するAPI
@@ -30,12 +31,12 @@ export async function POST(request: NextRequest) {
     const planConfig = {
       basic: {
         name: "ベーシックプラン",
-        price: 330, // 円
+        price: 330, // 円（Square APIでは最小単位で指定）
         cadence: "MONTHLY", // 1ヶ月ごと
       },
       premium: {
         name: "プレミアムプラン",
-        price: 550, // 円
+        price: 550, // 円（Square APIでは最小単位で指定）
         cadence: "MONTHLY", // 1ヶ月ごと
       },
     }
@@ -44,16 +45,37 @@ export async function POST(request: NextRequest) {
 
     // Square Catalog APIを使用してサブスクリプションプランを作成
     // まず、カタログオブジェクトを作成
+    // 注意: Square APIでは、金額は最小単位（日本円の場合は「円」）で指定
+    // 注意: object.idは必須（一意のIDを指定する必要がある）
+    const planIdPrefix = planId === "basic" ? "BASIC" : "PREMIUM"
+    const timestamp = Date.now()
+    const planObjectId = `#${planIdPrefix}_MONTHLY_${timestamp}`
+    const variationObjectId = `#${planIdPrefix}_VAR_${timestamp}`
+    
     const catalogObject = {
+      id: planObjectId, // 一意のID（#で始まる形式）
       type: "SUBSCRIPTION_PLAN",
       subscription_plan_data: {
         name: config.name,
-        phases: [
+        subscription_plan_variations: [
           {
-            cadence: config.cadence,
-            recurring_price_money: {
-              amount: config.price, // 円単位（日本円の場合）
-              currency: "JPY",
+            type: "SUBSCRIPTION_PLAN_VARIATION",
+            id: variationObjectId,
+            subscription_plan_variation_data: {
+              name: `${config.name} - 月額`,
+              phases: [
+                {
+                  cadence: config.cadence,
+                  ordinal: 0,
+                  pricing: {
+                    type: "STATIC",
+                    price_money: {
+                      amount: config.price, // 円単位（日本円の場合、330円 = 330）
+                      currency: "JPY",
+                    },
+                  },
+                },
+              ],
             },
           },
         ],
@@ -61,7 +83,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Square Catalog APIでオブジェクトを作成
-    const catalogResponse = await fetch("https://connect.squareup.com/v2/catalog/object", {
+    const apiEndpoint = getSquareApiEndpoint()
+    const catalogResponse = await fetch(`${apiEndpoint}/catalog/object`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${squareAccessToken}`,
@@ -74,15 +97,58 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    const catalogResult = await catalogResponse.json()
+    const responseText = await catalogResponse.text()
+    let catalogResult: any
+    try {
+      catalogResult = JSON.parse(responseText)
+    } catch (e) {
+      console.error("Square Catalog API JSON解析失敗:", responseText)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Square APIからのレスポンスの解析に失敗しました",
+          responseText: responseText.substring(0, 500),
+        },
+        { status: catalogResponse.status }
+      )
+    }
+
+    // デバッグログ（開発環境のみ）
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Square Catalog API] Request URL:", `${apiEndpoint}/catalog/object`)
+      console.log("[Square Catalog API] Request body:", JSON.stringify(catalogObject, null, 2))
+      console.log("[Square Catalog API] Response status:", catalogResponse.status)
+      console.log("[Square Catalog API] Response body:", JSON.stringify(catalogResult, null, 2))
+      if (!catalogResponse.ok) {
+        console.error("[Square Catalog API] Error details:")
+        console.error("  - Status:", catalogResponse.status)
+        console.error("  - Errors:", catalogResult.errors)
+        if (catalogResult.errors && catalogResult.errors.length > 0) {
+          catalogResult.errors.forEach((error: any, index: number) => {
+            console.error(`  - Error ${index + 1}:`, error.code, error.detail, error.field)
+          })
+        }
+      }
+    }
 
     if (!catalogResponse.ok) {
       console.error("Square Catalog API エラー:", catalogResult)
+      
+      // エラーの詳細を取得
+      const errorDetails = catalogResult.errors || []
+      const errorMessages = errorDetails.map((err: any) => ({
+        code: err.code,
+        detail: err.detail,
+        field: err.field,
+      }))
+      
       return NextResponse.json(
         {
           success: false,
           error: "サブスクリプションプランの作成に失敗しました",
-          details: catalogResult.errors || catalogResult,
+          details: errorMessages,
+          fullResponse: catalogResult,
+          requestBody: catalogObject, // デバッグ用にリクエストボディも返す
         },
         { status: catalogResponse.status }
       )
@@ -141,7 +207,8 @@ export async function GET() {
     }
 
     // Square Catalog APIでサブスクリプションプランを検索
-    const response = await fetch("https://connect.squareup.com/v2/catalog/search", {
+    const apiEndpoint = getSquareApiEndpoint()
+    const response = await fetch(`${apiEndpoint}/catalog/search`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${squareAccessToken}`,

@@ -242,6 +242,22 @@ export class GooglePlayBillingDetector {
       return false
     }
 
+    // デバッグ情報を出力
+    const isTWA = this.isTWAEnvironment()
+    const hasDigitalGoodsAPI = "getDigitalGoodsService" in window
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "N/A"
+    const displayMode = typeof window !== "undefined" && "matchMedia" in window 
+      ? window.matchMedia("(display-mode: standalone)").matches 
+      : false
+
+    console.log("[Google Play Billing] Initialization attempt:", {
+      isTWA,
+      hasDigitalGoodsAPI,
+      userAgent: userAgent.substring(0, 100),
+      displayMode,
+      retryAttempts: RETRY_ATTEMPTS,
+    })
+
     for (let attempt = 0; attempt <= RETRY_ATTEMPTS; attempt++) {
       if ("getDigitalGoodsService" in window) {
         try {
@@ -249,11 +265,22 @@ export class GooglePlayBillingDetector {
           this.service = service
           console.log("[Google Play Billing] Digital Goods API initialized successfully")
           return true
-        } catch (error) {
-          console.warn("[Google Play Billing] Failed to initialize:", error)
+        } catch (error: any) {
+          console.warn(`[Google Play Billing] Failed to initialize (attempt ${attempt + 1}/${RETRY_ATTEMPTS + 1}):`, {
+            error: error.message || error,
+            code: error.code,
+            name: error.name,
+          })
         }
-      } else if (attempt === 0 && this.isTWAEnvironment()) {
-        console.log("[Google Play Billing] Digital Goods API not yet available, will retry")
+      } else if (attempt === 0 && isTWA) {
+        console.log(`[Google Play Billing] Digital Goods API not yet available, will retry (attempt ${attempt + 1}/${RETRY_ATTEMPTS + 1})`)
+      } else if (attempt === 0 && !isTWA) {
+        console.warn("[Google Play Billing] Not in TWA environment - Digital Goods API requires TWA")
+        console.warn("[Google Play Billing] Debug info:", {
+          userAgent: userAgent.substring(0, 100),
+          displayMode,
+          hasDigitalGoodsAPI,
+        })
       }
 
       if (attempt < RETRY_ATTEMPTS) {
@@ -263,6 +290,13 @@ export class GooglePlayBillingDetector {
     }
 
     console.warn("[Google Play Billing] Digital Goods API not available after retries")
+    console.warn("[Google Play Billing] Final debug info:", {
+      isTWA,
+      hasDigitalGoodsAPI,
+      userAgent: userAgent.substring(0, 100),
+      displayMode,
+      totalAttempts: RETRY_ATTEMPTS + 1,
+    })
     return false
   }
 }

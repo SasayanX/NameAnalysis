@@ -34,6 +34,7 @@ export const strokeCountData: Record<string, number> = {
   佐: 7,
   靖: 13,
   隆: 17,
+  曽: 12, // 曽: 12画（曾の新字体）
   慎: 14,
   帆: 6,
   不: 4,
@@ -87,6 +88,11 @@ export function getCharStrokeWithContext(
   // 「寛」の場合は15画を返す
   if (char === "寛") {
     return { stroke: 15, isDefault: false }
+  }
+  
+  // 「曽」の場合は12画を返す
+  if (char === "曽") {
+    return { stroke: 12, isDefault: false }
   }
   
   // アルファベット文字の画数を取得（大文字・小文字別）

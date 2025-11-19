@@ -144,7 +144,7 @@ export const oldKanjiStrokeData: Record<string, number> = {
   櫻: 19,
   龍: 16,
   壽: 14,
-  曾: 11,
+  曾: 12,
   萬: 12,
   黑: 14,
   寶: 20,

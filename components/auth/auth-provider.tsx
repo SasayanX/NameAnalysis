@@ -79,10 +79,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
       
-      // 既存セッションがある場合、メールアドレスを保存し、サブスクリプション状態を同期
-      if (session?.user?.email && typeof window !== "undefined") {
-        localStorage.setItem("customerEmail", session.user.email.toLowerCase())
-        console.log("✅ 既存セッション: メールアドレスをlocalStorageに保存:", session.user.email)
+      // 既存セッションがある場合、メールアドレスとuserIdを保存し、サブスクリプション状態を同期
+      if (session?.user && typeof window !== "undefined") {
+        if (session.user.email) {
+          localStorage.setItem("customerEmail", session.user.email.toLowerCase())
+          console.log("✅ 既存セッション: メールアドレスをlocalStorageに保存:", session.user.email)
+        }
+        
+        if (session.user.id) {
+          localStorage.setItem("userId", session.user.id)
+          console.log("✅ 既存セッション: userIdをlocalStorageに保存:", session.user.id)
+        }
         
         // サブスクリプション状態を同期
         try {
@@ -104,13 +111,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
       
-      // ログイン時にメールアドレスをlocalStorageに保存し、サブスクリプション状態を同期
+      // ログイン時にメールアドレスとuserIdをlocalStorageに保存し、サブスクリプション状態を同期
       if (session?.user && _event === "SIGNED_IN") {
         const userEmail = session.user.email
-        if (userEmail && typeof window !== "undefined") {
+        const userId = session.user.id
+        if (typeof window !== "undefined") {
           // メールアドレスをlocalStorageに保存（SubscriptionManagerが使用）
-          localStorage.setItem("customerEmail", userEmail.toLowerCase())
-          console.log("✅ メールアドレスをlocalStorageに保存:", userEmail)
+          if (userEmail) {
+            localStorage.setItem("customerEmail", userEmail.toLowerCase())
+            console.log("✅ メールアドレスをlocalStorageに保存:", userEmail)
+          }
+          
+          // userIdをlocalStorageに保存（SubscriptionManagerが使用）
+          if (userId) {
+            localStorage.setItem("userId", userId)
+            console.log("✅ userIdをlocalStorageに保存:", userId)
+          }
           
           // サブスクリプション状態を同期
           try {
@@ -145,10 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, 1000) // 1秒後に実行（ログイン処理を優先）
       }
       
-      // ログアウト時にlocalStorageからメールアドレスを削除
+      // ログアウト時にlocalStorageからメールアドレスとuserIdを削除
       if (_event === "SIGNED_OUT" && typeof window !== "undefined") {
         localStorage.removeItem("customerEmail")
-        console.log("✅ ログアウト: メールアドレスをlocalStorageから削除しました")
+        localStorage.removeItem("userId")
+        console.log("✅ ログアウト: メールアドレスとuserIdをlocalStorageから削除しました")
       }
     })
 

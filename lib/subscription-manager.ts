@@ -177,12 +177,20 @@ export class SubscriptionManager {
     }
 
     try {
+      // localStorageから直接取得
       const storedEmail = window.localStorage.getItem("customerEmail")
       if (storedEmail) {
         metadata.customerEmail = storedEmail.toLowerCase()
+        console.log("[SubscriptionManager] customerEmail from localStorage:", metadata.customerEmail)
+      }
+      
+      const storedUserId = window.localStorage.getItem("userId")
+      if (storedUserId) {
+        metadata.userId = storedUserId
+        console.log("[SubscriptionManager] userId from localStorage:", metadata.userId)
       }
     } catch (error) {
-      console.warn("Failed to read customerEmail from localStorage:", error)
+      console.warn("Failed to read identity from localStorage:", error)
     }
 
     try {
@@ -282,21 +290,44 @@ export class SubscriptionManager {
     try {
       // 無料プランの場合は常にfalse（有効なサブスクリプションではない）
       if (this.currentSubscription.plan === "free") {
+        console.log("[SubscriptionManager] isSubscriptionActive - Free plan, returning false")
         return false
       }
 
+      // statusが"cancelled"または"failed"の場合は無効
       if (this.currentSubscription.status === "cancelled" || this.currentSubscription.status === "failed") {
+        console.log("[SubscriptionManager] isSubscriptionActive - Status is cancelled/failed, returning false")
         return false
       }
 
+      // statusが"active"でない場合は無効（pendingやexpiredも含む）
+      if (this.currentSubscription.status !== "active") {
+        console.log("[SubscriptionManager] isSubscriptionActive - Status is not active:", this.currentSubscription.status, "returning false")
+        return false
+      }
+
+      // expiresAtがない場合は無効（無料プラン以外で有効なサブスクリプションにはexpiresAtが必要）
       if (!this.currentSubscription.expiresAt) {
-        // expiresAtがない場合は無効（無料プラン以外で有効なサブスクリプションにはexpiresAtが必要）
+        console.log("[SubscriptionManager] isSubscriptionActive - No expiresAt, returning false")
         return false
       }
 
-      return new Date() < this.currentSubscription.expiresAt
+      // 有効期限をチェック
+      const now = new Date()
+      const expiresAt = new Date(this.currentSubscription.expiresAt)
+      const isNotExpired = now < expiresAt
+      
+      console.log("[SubscriptionManager] isSubscriptionActive - Check:", {
+        plan: this.currentSubscription.plan,
+        status: this.currentSubscription.status,
+        expiresAt: expiresAt.toISOString(),
+        now: now.toISOString(),
+        isNotExpired,
+      })
+
+      return isNotExpired
     } catch (error) {
-      console.error("Error checking subscription active:", error)
+      console.error("[SubscriptionManager] isSubscriptionActive - Error:", error)
       return false
     }
   }
@@ -584,8 +615,23 @@ export class SubscriptionManager {
       const result = await response.json()
       console.log("[SubscriptionManager] syncSubscriptionFromServer - result:", result)
       
-      if (!result.success || !result.subscription) {
-        console.log("[SubscriptionManager] syncSubscriptionFromServer - No subscription found in result")
+      if (!result.success) {
+        console.warn("[SubscriptionManager] syncSubscriptionFromServer - API returned success: false", result.error)
+        return
+      }
+      
+      if (!result.subscription) {
+        console.log("[SubscriptionManager] syncSubscriptionFromServer - No subscription found in result (user may not have active subscription)")
+        // サブスクリプションがない場合は、freeプランにリセット
+        this.currentSubscription = {
+          plan: "free",
+          expiresAt: null,
+          isActive: false,
+          trialEndsAt: null,
+          status: "cancelled",
+        }
+        this.saveSubscription()
+        this.notifyListeners()
         return
       }
 
@@ -599,12 +645,22 @@ export class SubscriptionManager {
       const planDetails = SUBSCRIPTION_PLANS.find((p) => p.id === serverSubscription.plan)
       const amount = planDetails?.price ?? this.currentSubscription.amount ?? 0
 
+      // isActiveの計算を改善
+      const isExpired = expiresAt && expiresAt.getTime() <= Date.now()
+      const isActive = serverSubscription.status === "active" && !isExpired
+
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - isActive calculation:", {
+        status: serverSubscription.status,
+        expiresAt: expiresAt?.toISOString(),
+        isExpired,
+        isActive,
+        now: new Date().toISOString(),
+      })
+
       this.currentSubscription = {
         plan: serverSubscription.plan as PlanType,
         expiresAt,
-        isActive:
-          serverSubscription.status === "active" &&
-          (!expiresAt || expiresAt.getTime() > Date.now()),
+        isActive,
         trialEndsAt: null,
         status: serverSubscription.status,
         paymentMethod: serverSubscription.paymentMethod ?? "google_play",
@@ -613,10 +669,18 @@ export class SubscriptionManager {
         lastPaymentDate: this.currentSubscription.lastPaymentDate,
       }
 
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - Updated currentSubscription:", this.currentSubscription)
+
       this.saveSubscription()
       this.notifyListeners() // UIを更新
+      
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - ✅ Sync completed successfully")
     } catch (error) {
-      console.warn("Failed to sync subscription from server:", error)
+      console.error("[SubscriptionManager] syncSubscriptionFromServer - ❌ Error:", error)
+      if (error instanceof Error) {
+        console.error("[SubscriptionManager] syncSubscriptionFromServer - Error message:", error.message)
+        console.error("[SubscriptionManager] syncSubscriptionFromServer - Error stack:", error.stack)
+      }
     }
   }
 

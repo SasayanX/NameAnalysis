@@ -11,9 +11,24 @@ interface SubscriptionStatusRequest {
   planId?: PlanType
 }
 
-export async function POST(request: NextRequest) {
+async function getSubscriptionStatus(request: NextRequest) {
   try {
-    const body: SubscriptionStatusRequest = await request.json()
+    let body: SubscriptionStatusRequest
+    
+    // GETリクエストの場合はクエリパラメータから取得
+    if (request.method === "GET") {
+      const { searchParams } = new URL(request.url)
+      body = {
+        userId: searchParams.get("userId") || undefined,
+        customerEmail: searchParams.get("customerEmail") || undefined,
+        purchaseToken: searchParams.get("purchaseToken") || undefined,
+        planId: (searchParams.get("planId") as PlanType) || undefined,
+      }
+    } else {
+      // POSTリクエストの場合はリクエストボディから取得
+      body = await request.json()
+    }
+    
     const { userId, customerEmail, purchaseToken, planId } = body
 
     if (!userId && !customerEmail && !purchaseToken) {
@@ -74,6 +89,14 @@ export async function POST(request: NextRequest) {
     console.error("[Subscription Status] Unexpected error:", error)
     return NextResponse.json({ success: false, error: "Unexpected error" }, { status: 500 })
   }
+}
+
+export async function GET(request: NextRequest) {
+  return getSubscriptionStatus(request)
+}
+
+export async function POST(request: NextRequest) {
+  return getSubscriptionStatus(request)
 }
 
 function transformSubscriptionRecord(record: any) {

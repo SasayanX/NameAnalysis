@@ -28,13 +28,15 @@ export const strokeCountData: Record<string, number> = {
   ...extendedKanjiData,
   ...csvImportedData,
   ...csvImportedManusData,
-  // 直接追加
+  // 直接追加（新データと競合する場合のみ手動上書き）
   寛: 15,
   住: 7,
   紳: 11,
   佐: 7,
   靖: 13,
-  隆: 17,
+  隆: 17, // 新データは12画だが、17画が正しい
+  曽: 12, // 曽: 12画（曾の新字体）
+  津: 10, // 津: 10画（csv-imported-manus.tsでは9画だが、10画が正しい）
   慎: 14,
   帆: 6,
   不: 4,
@@ -42,7 +44,7 @@ export const strokeCountData: Record<string, number> = {
   布: 5,
   袋: 11,
   寅: 11,
-  泰: 9,
+  泰: 9, // 新データは10画だが、9画が正しい
   常: 11,
   香: 9,
   申: 5,
@@ -81,6 +83,11 @@ export function getCharStrokeWithContextServer(
   // 「寛」の場合は15画を返す
   if (char === "寛") {
     return { stroke: 15, isDefault: false }
+  }
+  
+  // 「曽」の場合は12画を返す
+  if (char === "曽") {
+    return { stroke: 12, isDefault: false }
   }
   
   // アルファベット文字の画数を取得（大文字・小文字別）

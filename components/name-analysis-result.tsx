@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { InfoIcon, Lock, Crown, Trophy } from "lucide-react"
+import { InfoIcon, Lock, Crown, Trophy, Sparkles } from "lucide-react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,8 @@ interface NameAnalysisResultProps {
   isPro?: boolean
   currentPlan?: "free" | "basic" | "premium"
   advancedResults?: any // 五行分析結果を含む
+  aiFortune?: any // AI鑑定結果
+  isLoadingAiFortune?: boolean // AI鑑定読み込み中フラグ
 }
 
 export function NameAnalysisResult({
@@ -30,6 +32,8 @@ export function NameAnalysisResult({
   isPro = false,
   currentPlan = "free",
   advancedResults,
+  aiFortune,
+  isLoadingAiFortune = false,
 }: NameAnalysisResultProps) {
   const [isAdviceOpen, setIsAdviceOpen] = useState(false)
 
@@ -681,6 +685,80 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
             />
           </div>
         )}
+
+        {/* Gemini AI鑑定結果（言霊と名前を組み合わせた鑑定） */}
+        <div className="mt-6">
+          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-800">
+                <Sparkles className="h-5 w-5" />
+                AI鑑定（言霊と名前の組み合わせ分析）
+              </CardTitle>
+              <CardDescription className="text-purple-600">
+                Firestoreの言霊マスターデータとGemini AIを組み合わせたパーソナライズされた鑑定
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingAiFortune ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <span className="ml-3 text-purple-600">AI鑑定を生成中...</span>
+                </div>
+              ) : aiFortune?.success && aiFortune?.aiFortune ? (
+                <div className="space-y-4">
+                  {/* 鑑定文 */}
+                  <div className="bg-white p-4 rounded-lg border border-purple-100">
+                    <h4 className="font-semibold text-purple-800 mb-2">✨ 今日の運勢</h4>
+                    <p className="text-gray-700 leading-relaxed">{aiFortune.aiFortune.fortune}</p>
+                  </div>
+
+                  {/* ラッキー要素 */}
+                  {aiFortune.aiFortune.luckyElement && (
+                    <div className="bg-white p-4 rounded-lg border border-purple-100">
+                      <h4 className="font-semibold text-purple-800 mb-2">🌟 ラッキー要素</h4>
+                      <p className="text-gray-700">{aiFortune.aiFortune.luckyElement}</p>
+                    </div>
+                  )}
+
+                  {/* 開運アドバイス */}
+                  {aiFortune.aiFortune.advice && (
+                    <div className="bg-white p-4 rounded-lg border border-purple-100">
+                      <h4 className="font-semibold text-purple-800 mb-2">💡 今日の開運アドバイス</h4>
+                      <p className="text-gray-700">{aiFortune.aiFortune.advice}</p>
+                    </div>
+                  )}
+
+                  {/* 使用された言霊 */}
+                  {aiFortune.kotodama && aiFortune.kotodama.length > 0 && (
+                    <div className="bg-white p-4 rounded-lg border border-purple-100">
+                      <h4 className="font-semibold text-purple-800 mb-2">📿 参考にした言霊</h4>
+                      <div className="space-y-2">
+                        {aiFortune.kotodama.map((k: any, index: number) => (
+                          <div key={index} className="text-sm">
+                            <span className="font-medium text-purple-700">「{k.phrase_jp}」</span>
+                            {k.advice_text && (
+                              <span className="text-gray-600 ml-2">- {k.advice_text}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : aiFortune && !aiFortune.success ? (
+                <Alert>
+                  <AlertDescription className="text-red-600">
+                    AI鑑定の生成に失敗しました: {aiFortune.error || '不明なエラー'}
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <p>姓名判断を実行すると、AI鑑定結果が表示されます</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* デバッグ情報表示（開発時のみ） */}
         {process.env.NODE_ENV === "development" && (
