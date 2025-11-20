@@ -823,23 +823,42 @@ async function generateRareCardWithBaseImage(
     }
     
     // ファイルの存在確認
-    if (!fs.existsSync(imagePath)) {
-      throw new Error(`ベース画像が見つかりません: ${imagePath} (元のパス: ${baseImagePath}, cwd: ${process.cwd()})`)
+    if (fs.existsSync(imagePath)) {
+      const baseImageBuffer = fs.readFileSync(imagePath)
+      baseImage = sharp(baseImageBuffer).resize(width, height)
+      console.log('✅ ベース画像読み込み成功:', imagePath)
+    } else {
+      throw new Error(`Local base image not found`)
     }
-    
-    const baseImageBuffer = fs.readFileSync(imagePath)
-    baseImage = sharp(baseImageBuffer).resize(width, height)
-    console.log('✅ ベース画像読み込み成功:', imagePath)
-  } catch (error: any) {
-    console.error('❌ ベース画像の読み込みエラー:', error)
-    console.error('エラー詳細:', {
+  } catch (localError: any) {
+    console.warn('⚠️ ローカルベース画像の読み込みに失敗:', {
       baseImagePath,
       cwd: process.cwd(),
-      errorMessage: error.message,
-      errorStack: error.stack,
+      errorMessage: localError.message,
     })
-    // フォールバック：エラーを返す
-    throw new Error(`ベース画像の読み込みに失敗しました: ${baseImagePath}. 詳細: ${error.message}`)
+    
+    // フォールバック: 公開URLから取得（Netlify等のサーバーレス環境向け）
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.PUBLIC_SITE_URL ||
+      'https://seimei.app'
+    const normalized = baseImagePath.startsWith('/') ? baseImagePath : `/${baseImagePath}`
+    const remoteUrl = `${baseUrl}${normalized}`
+    console.log('🌐 ベース画像をリモート取得:', remoteUrl)
+    
+    try {
+      const response = await fetch(remoteUrl)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch base image: ${response.status} ${response.statusText}`)
+      }
+      const arrayBuffer = await response.arrayBuffer()
+      baseImage = sharp(Buffer.from(arrayBuffer)).resize(width, height)
+      console.log('✅ リモートベース画像読み込み成功')
+    } catch (remoteError: any) {
+      console.error('❌ ベース画像の読み込みエラー（ローカル・リモート共に失敗）:', remoteError)
+      throw new Error(`ベース画像の読み込みに失敗しました: ${baseImagePath}. 詳細: ${remoteError.message}`)
+    }
   }
   
   // テキストレイヤーをPNGに変換
