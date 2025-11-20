@@ -26,10 +26,26 @@ async function getSubscriptionStatus(request: NextRequest) {
       }
     } else {
       // POSTリクエストの場合はリクエストボディから取得
-      body = await request.json()
+      try {
+        body = await request.json()
+      } catch (parseError) {
+        console.error("[Subscription Status] JSON parse error:", parseError)
+        return NextResponse.json(
+          { success: false, error: "Invalid JSON in request body" },
+          { status: 400 }
+        )
+      }
     }
     
     const { userId, customerEmail, purchaseToken, planId } = body
+    
+    console.log("[Subscription Status] Request:", {
+      method: request.method,
+      userId,
+      customerEmail: customerEmail ? `${customerEmail.substring(0, 3)}***` : undefined,
+      hasPurchaseToken: !!purchaseToken,
+      planId,
+    })
 
     if (!userId && !customerEmail && !purchaseToken) {
       return NextResponse.json(
@@ -40,6 +56,11 @@ async function getSubscriptionStatus(request: NextRequest) {
 
     const supabase = getSupabaseServerClient()
     if (!supabase) {
+      console.error("[Subscription Status] Supabase client is not configured", {
+        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        nodeEnv: process.env.NODE_ENV,
+      })
       return NextResponse.json(
         { success: false, error: "Supabase client is not configured" },
         { status: 503 }
@@ -71,13 +92,58 @@ async function getSubscriptionStatus(request: NextRequest) {
     const { data, error } = await query.maybeSingle()
 
     if (error) {
-      console.error("[Subscription Status] Supabase query error:", error)
-      return NextResponse.json({ success: false, error: "Failed to fetch subscription status" }, { status: 500 })
+      console.error("[Subscription Status] Supabase query error:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        query: {
+          table: "user_subscriptions",
+          userId,
+          customerEmail: customerEmail ? `${customerEmail.substring(0, 3)}***` : undefined,
+          purchaseToken: purchaseToken ? `${purchaseToken.substring(0, 10)}***` : undefined,
+          planId,
+        },
+      })
+      
+      // エラー情報をログに記録（本番環境でも）
+      const errorInfo = {
+        message: error.message,
+        code: error.code,
+        hint: error.hint,
+        details: error.details,
+      }
+      console.error("[Subscription Status] Full error info:", errorInfo)
+      
+      // 開発環境では詳細なエラー情報を返す
+      const errorResponse: any = {
+        success: false,
+        error: "Failed to fetch subscription status",
+      }
+      
+      // 本番環境でも、エラーコードとメッセージは返す（セキュリティ上問題ない情報のみ）
+      errorResponse.errorCode = error.code
+      if (process.env.NODE_ENV === "development") {
+        errorResponse.details = errorInfo
+      }
+      
+      return NextResponse.json(errorResponse, { status: 500 })
     }
 
     if (!data) {
+      console.log("[Subscription Status] No subscription found for:", {
+        userId,
+        customerEmail: customerEmail ? `${customerEmail.substring(0, 3)}***` : undefined,
+      })
       return NextResponse.json({ success: true, subscription: null })
     }
+
+    console.log("[Subscription Status] Found subscription:", {
+      id: data.id,
+      plan: data.plan,
+      status: data.status,
+      expiresAt: data.expires_at,
+    })
 
     const subscription = transformSubscriptionRecord(data)
 
@@ -87,7 +153,18 @@ async function getSubscriptionStatus(request: NextRequest) {
     })
   } catch (error) {
     console.error("[Subscription Status] Unexpected error:", error)
-    return NextResponse.json({ success: false, error: "Unexpected error" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: "Unexpected error",
+        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+        stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
+      },
+      { status: 500 }
+    )
   }
 }
 

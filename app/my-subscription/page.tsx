@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function MySubscriptionPage() {
   const [isCheckingPayment, setIsCheckingPayment] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -260,6 +261,95 @@ export default function MySubscriptionPage() {
     }
   }
 
+  const handleResyncSubscription = async () => {
+    setIsSyncing(true)
+    try {
+      toast({
+        title: "同期中",
+        description: "サブスクリプション情報を再同期しています...",
+      })
+
+      // 直接APIを呼び出してエラーの詳細を取得
+      const customerEmail = localStorage.getItem("customerEmail")
+      const userId = localStorage.getItem("userId")
+      
+      if (!customerEmail && !userId) {
+        toast({
+          title: "エラー",
+          description: "ログインが必要です。サブスクリプション情報を同期するには、ログインしてください。",
+          variant: "destructive",
+        })
+        setIsSyncing(false)
+        return
+      }
+
+      const payload: any = {}
+      if (customerEmail) payload.customerEmail = customerEmail.toLowerCase()
+      if (userId) payload.userId = userId
+
+      console.log("[MySubscription] Resync request:", payload)
+
+      const response = await fetch("/api/subscriptions/resync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      const responseText = await response.text()
+      console.log("[MySubscription] Resync response:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText,
+      })
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        try {
+          const errorJson = JSON.parse(responseText)
+          errorMessage = errorJson.error || errorMessage
+          console.error("[MySubscription] Resync error details:", errorJson)
+        } catch {
+          errorMessage = responseText || errorMessage
+        }
+        
+        toast({
+          title: "同期エラー",
+          description: `サブスクリプション情報の同期に失敗しました：${errorMessage}`,
+          variant: "destructive",
+        })
+        setIsSyncing(false)
+        return
+      }
+
+      const result = JSON.parse(responseText)
+      console.log("[MySubscription] Resync success:", result)
+
+      // SubscriptionManagerも同期
+      const manager = SubscriptionManager.getInstance()
+      await manager.syncSubscriptionFromServer()
+
+      toast({
+        title: "同期完了",
+        description: "サブスクリプション情報を更新しました",
+      })
+
+      // ページをリロードして反映
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (error) {
+      console.error("[MySubscription] Subscription sync error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      toast({
+        title: "同期エラー",
+        description: `サブスクリプション情報の同期に失敗しました：${errorMessage}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -269,6 +359,38 @@ export default function MySubscriptionPage() {
         </div>
 
         <SubscriptionStatusCard />
+
+        {/* 再同期ボタン */}
+        <Card className="mt-6 border-green-200 bg-green-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-green-900 mb-1">購入状況を再確認する</h3>
+                <p className="text-sm text-green-700">
+                  Supabaseから最新のサブスクリプション情報を取得して同期します
+                </p>
+              </div>
+              <Button
+                onClick={handleResyncSubscription}
+                disabled={isSyncing}
+                variant="outline"
+                className="border-green-300 bg-white hover:bg-green-100"
+              >
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    同期中...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    再同期
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* 決済確認ボタン */}
         <Card className="mt-6 border-blue-200 bg-blue-50">

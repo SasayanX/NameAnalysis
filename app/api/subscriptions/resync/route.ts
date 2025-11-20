@@ -11,8 +11,23 @@ interface ResyncRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ResyncRequest = await request.json()
+    let body: ResyncRequest
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      console.error("[Subscription Resync] JSON parse error:", parseError)
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON in request body" },
+        { status: 400 }
+      )
+    }
+    
     const { userId, customerEmail } = body
+    
+    console.log("[Subscription Resync] Request:", {
+      userId,
+      customerEmail: customerEmail ? `${customerEmail.substring(0, 3)}***` : undefined,
+    })
 
     if (!userId && !customerEmail) {
       return NextResponse.json(
@@ -23,6 +38,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseServerClient()
     if (!supabase) {
+      console.error("[Subscription Resync] Supabase client is not configured", {
+        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        nodeEnv: process.env.NODE_ENV,
+      })
       return NextResponse.json(
         { success: false, error: "Supabase クライアントが設定されていません" },
         { status: 503 }
@@ -46,8 +66,39 @@ export async function POST(request: NextRequest) {
     const payment = payments?.[0] ?? null
 
     if (paymentError) {
-      console.error("square_payments の取得に失敗しました:", paymentError)
-      return NextResponse.json({ success: false, error: "決済履歴の取得に失敗しました" }, { status: 500 })
+      console.error("[Subscription Resync] square_payments query error:", {
+        message: paymentError.message,
+        details: paymentError.details,
+        hint: paymentError.hint,
+        code: paymentError.code,
+        query: {
+          table: "square_payments",
+          customerEmail: normalizedEmail ? `${normalizedEmail.substring(0, 3)}***` : undefined,
+        },
+      })
+      
+      // エラー情報をログに記録（本番環境でも）
+      const errorInfo = {
+        message: paymentError.message,
+        code: paymentError.code,
+        hint: paymentError.hint,
+        details: paymentError.details,
+      }
+      console.error("[Subscription Resync] Full error info:", errorInfo)
+      
+      // 開発環境では詳細なエラー情報を返す
+      const errorResponse: any = {
+        success: false,
+        error: "決済履歴の取得に失敗しました",
+      }
+      
+      // 本番環境でも、エラーコードとメッセージは返す（セキュリティ上問題ない情報のみ）
+      errorResponse.errorCode = paymentError.code
+      if (process.env.NODE_ENV === "development") {
+        errorResponse.details = errorInfo
+      }
+      
+      return NextResponse.json(errorResponse, { status: 500 })
     }
 
     if (!payment) {
@@ -116,8 +167,20 @@ export async function POST(request: NextRequest) {
         .eq("id", existingId)
 
       if (updateError) {
-        console.error("user_subscriptions の更新に失敗しました:", updateError)
-        return NextResponse.json({ success: false, error: "サブスクリプションの更新に失敗しました" }, { status: 500 })
+        console.error("[Subscription Resync] user_subscriptions update error:", {
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+          code: updateError.code,
+        })
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "サブスクリプションの更新に失敗しました",
+            details: process.env.NODE_ENV === "development" ? updateError.message : undefined,
+          },
+          { status: 500 }
+        )
       }
     } else {
       const { error: insertError } = await supabase
@@ -125,8 +188,20 @@ export async function POST(request: NextRequest) {
         .insert({ ...payload, created_at: now.toISOString() })
 
       if (insertError) {
-        console.error("user_subscriptions への挿入に失敗しました:", insertError)
-        return NextResponse.json({ success: false, error: "サブスクリプションの保存に失敗しました" }, { status: 500 })
+        console.error("[Subscription Resync] user_subscriptions insert error:", {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code,
+        })
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "サブスクリプションの保存に失敗しました",
+            details: process.env.NODE_ENV === "development" ? insertError.message : undefined,
+          },
+          { status: 500 }
+        )
       }
     }
 
@@ -141,9 +216,17 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("サブスクリプション再同期処理でエラー:", error)
+    console.error("[Subscription Resync] Unexpected error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
     return NextResponse.json(
-      { success: false, error: "サブスクリプションの再同期に失敗しました" },
+      { 
+        success: false, 
+        error: "サブスクリプションの再同期に失敗しました",
+        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+        stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
+      },
       { status: 500 }
     )
   }

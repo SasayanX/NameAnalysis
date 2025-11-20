@@ -588,8 +588,9 @@ export class SubscriptionManager {
       console.log("[SubscriptionManager] syncSubscriptionFromServer - identity:", identity)
       
       if (!identity.userId && !identity.customerEmail) {
-        console.warn("[SubscriptionManager] syncSubscriptionFromServer - No userId or customerEmail found, skipping sync")
-        return
+        const errorMessage = "ログインが必要です。サブスクリプション情報を同期するには、ログインしてください。"
+        console.warn("[SubscriptionManager] syncSubscriptionFromServer - No userId or customerEmail found:", errorMessage)
+        throw new Error(errorMessage)
       }
 
       const payload = {
@@ -608,16 +609,39 @@ export class SubscriptionManager {
       })
 
       if (!response.ok) {
-        console.warn("[SubscriptionManager] Failed to sync subscription from server:", response.status, response.statusText)
-        return
+        const errorText = await response.text().catch(() => "Unknown error")
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        let errorDetails: any = null
+        
+        try {
+          const errorJson = JSON.parse(errorText)
+          errorMessage = errorJson.error || errorMessage
+          errorDetails = errorJson.details || errorJson
+        } catch {
+          // JSONパースに失敗した場合は、テキストをそのまま使用
+          if (errorText && errorText !== "Unknown error") {
+            errorMessage = errorText
+          }
+        }
+        
+        console.error("[SubscriptionManager] Failed to sync subscription from server:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          details: errorDetails,
+          fullResponse: errorText,
+        })
+        
+        throw new Error(errorMessage)
       }
 
       const result = await response.json()
       console.log("[SubscriptionManager] syncSubscriptionFromServer - result:", result)
       
       if (!result.success) {
-        console.warn("[SubscriptionManager] syncSubscriptionFromServer - API returned success: false", result.error)
-        return
+        const errorMessage = result.error || "サブスクリプション情報の取得に失敗しました"
+        console.error("[SubscriptionManager] syncSubscriptionFromServer - API returned success: false", errorMessage)
+        throw new Error(errorMessage)
       }
       
       if (!result.subscription) {
