@@ -1326,7 +1326,7 @@ export default function ClientPage() {
                                 AI深層心理鑑定
                               </CardTitle>
                               <CardDescription className="text-purple-600">
-                                AIが既存の姓名判断結果を解釈し、深層心理を分析します
+                                AIが鑑定します
                               </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">

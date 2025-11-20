@@ -628,6 +628,12 @@ export class SubscriptionManager {
 
   async syncSubscriptionFromServer(): Promise<void> {
     try {
+      // TWA環境の検出（関数の最初で1回だけ宣言）
+      const isTWA = typeof navigator !== "undefined" && 
+        (navigator.userAgent?.includes("twa") || 
+         navigator.userAgent?.includes("androidbrowserhelper") ||
+         (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
+      
       const identity = this.getIdentityMetadata()
       console.log("[SubscriptionManager] syncSubscriptionFromServer - identity:", identity)
       
@@ -734,11 +740,6 @@ export class SubscriptionManager {
       })
       
       // TWA環境でのデバッグ情報
-      const isTWA = typeof navigator !== "undefined" && 
-        (navigator.userAgent?.includes("twa") || 
-         navigator.userAgent?.includes("androidbrowserhelper") ||
-         (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
-      
       if (isTWA) {
         console.log("[TWA] Subscription sync details:", {
           plan: serverSubscription.plan,
@@ -790,11 +791,6 @@ export class SubscriptionManager {
       console.log("[SubscriptionManager] syncSubscriptionFromServer - ✅ Sync completed successfully")
       
       // TWA環境での追加確認
-      const isTWA = typeof navigator !== "undefined" && 
-        (navigator.userAgent?.includes("twa") || 
-         navigator.userAgent?.includes("androidbrowserhelper") ||
-         (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
-      
       if (isTWA) {
         console.log("[TWA] ✅ Subscription sync completed:", {
           plan: this.currentSubscription.plan,
