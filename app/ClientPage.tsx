@@ -1330,18 +1330,18 @@ export default function ClientPage() {
                               </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                              {currentPlan !== "premium" ? (
+                                {currentPlan !== "premium" ? (
                                 <div className="text-center py-8">
                                   <div className="p-4 bg-purple-50 rounded-lg mb-4">
-                                    <p className="text-purple-800">プレミアムプランでご利用いただけます</p>
+                                      <p className="text-purple-800">プレミアムプランでご利用いただけます</p>
+                                    </div>
+                                    <Button 
+                                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                      onClick={() => handleStartTrial()}
+                                    >
+                                      3日間無料で始める
+                                    </Button>
                                   </div>
-                                  <Button 
-                                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                                    onClick={() => handleStartTrial()}
-                                  >
-                                    3日間無料で始める
-                                  </Button>
-                                </div>
                               ) : !results ? (
                                 <div className="text-center py-8">
                                   <p className="text-muted-foreground mb-4">
@@ -1366,7 +1366,7 @@ export default function ClientPage() {
                                       </CardHeader>
                                       <CardContent>
                                         <p className="text-purple-900 whitespace-pre-wrap leading-relaxed text-base">
-                                          {aiFortune.aiFortune.fortune}
+                                          {aiFortune.aiFortune.fortune?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
                                         </p>
                                       </CardContent>
                                     </Card>
@@ -1384,7 +1384,7 @@ export default function ClientPage() {
                                       </CardHeader>
                                       <CardContent className="pt-4">
                                         <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                          {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
+                                          {(aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です')?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
                                         </p>
                                       </CardContent>
                                     </Card>
@@ -1400,7 +1400,7 @@ export default function ClientPage() {
                                         </CardHeader>
                                         <CardContent className="pt-4">
                                           <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.talents}
+                                            {aiFortune.aiFortune.talents?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
                                           </p>
                                         </CardContent>
                                       </Card>
@@ -1417,7 +1417,7 @@ export default function ClientPage() {
                                         </CardHeader>
                                         <CardContent className="pt-4">
                                           <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.challenges}
+                                            {aiFortune.aiFortune.challenges?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
                                           </p>
                                         </CardContent>
                                       </Card>
@@ -1434,7 +1434,7 @@ export default function ClientPage() {
                                         </CardHeader>
                                         <CardContent className="pt-4">
                                           <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.advice}
+                                            {aiFortune.aiFortune.advice?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
                                           </p>
                                         </CardContent>
                                       </Card>
@@ -1484,7 +1484,7 @@ export default function ClientPage() {
 
                                   {/* 再分析ボタン */}
                                   <div className="text-center pt-2">
-                                    <Button 
+                                  <Button 
                                       variant="outline"
                                       className="border-purple-200 text-purple-700 hover:bg-purple-50"
                                       onClick={async () => {
@@ -1499,7 +1499,7 @@ export default function ClientPage() {
                                     >
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                       再分析
-                                    </Button>
+                                  </Button>
                                   </div>
 
                                   {/* 希味のイラスト画像 */}
@@ -1522,8 +1522,8 @@ export default function ClientPage() {
                                         エラー: {aiFortune.error || '不明なエラー'}
                                       </AlertDescription>
                                     </Alert>
-                                  )}
-                                </div>
+                                )}
+                              </div>
                               )}
                             </CardContent>
                           </Card>

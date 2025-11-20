@@ -805,14 +805,33 @@ async function generateRareCardWithBaseImage(
   try {
     const fs = await import('fs')
     const path = await import('path')
-    const baseImageBuffer = fs.readFileSync(
-      path.join(process.cwd(), 'public', baseImagePath)
-    )
+    
+    // baseImagePathが`/images/...`で始まる場合は先頭の`/`を削除
+    const normalizedPath = baseImagePath.startsWith('/') 
+      ? baseImagePath.substring(1) 
+      : baseImagePath
+    
+    const imagePath = path.join(process.cwd(), 'public', normalizedPath)
+    console.log('📸 ベース画像パス:', imagePath)
+    
+    // ファイルの存在確認
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`ベース画像が見つかりません: ${imagePath} (元のパス: ${baseImagePath})`)
+    }
+    
+    const baseImageBuffer = fs.readFileSync(imagePath)
     baseImage = sharp(baseImageBuffer).resize(width, height)
-  } catch (error) {
-    console.error('ベース画像の読み込みエラー:', error)
+    console.log('✅ ベース画像読み込み成功:', imagePath)
+  } catch (error: any) {
+    console.error('❌ ベース画像の読み込みエラー:', error)
+    console.error('エラー詳細:', {
+      baseImagePath,
+      cwd: process.cwd(),
+      errorMessage: error.message,
+      errorStack: error.stack,
+    })
     // フォールバック：エラーを返す
-    throw new Error(`ベース画像の読み込みに失敗しました: ${baseImagePath}`)
+    throw new Error(`ベース画像の読み込みに失敗しました: ${baseImagePath}. 詳細: ${error.message}`)
   }
   
   // テキストレイヤーをPNGに変換
