@@ -146,7 +146,24 @@ export default function ClientPage() {
         const subscriptionManager = SubscriptionManager.getInstance()
         
         // 同期前に少し待機（localStorageの保存が完了するのを待つ）
-        await new Promise(resolve => setTimeout(resolve, 300))
+        // TWA環境ではより長く待機（認証情報の保存が完了するのを待つ）
+        const waitTime = isTWA ? 800 : 300
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+        
+        // 認証情報を再確認（localStorageから直接取得）
+        const customerEmail = localStorage.getItem("customerEmail")
+        const userId = localStorage.getItem("userId")
+        if (isTWA) {
+          console.log("[TWA] 同期前の認証情報確認:", {
+            customerEmail: customerEmail ? `${customerEmail.substring(0, 3)}***` : null,
+            userId: userId ? `${userId.substring(0, 8)}***` : null,
+          })
+        }
+        
+        if (!userId && !customerEmail) {
+          console.warn("[TWA] ⚠️ 認証情報が見つかりません。ログインが必要です。")
+          return
+        }
         
         await subscriptionManager.syncSubscriptionFromServer()
         
@@ -159,11 +176,24 @@ export default function ClientPage() {
           isActive,
         })
         
+        // usageStatusを再取得して更新（プラン変更を反映）
+        const updatedUsageStatus = usageTracker.getUsageStatus()
+        setUsageStatus(updatedUsageStatus)
+        setCurrentPlan(updatedUsageStatus.plan as "free" | "basic" | "premium")
+        setIsInTrial(updatedUsageStatus.isInTrial || false)
+        setTrialDaysRemaining(updatedUsageStatus.trialDaysRemaining || 0)
+        
+        console.log("✅ usageStatusを更新しました:", {
+          plan: updatedUsageStatus.plan,
+          isInTrial: updatedUsageStatus.isInTrial,
+        })
+        
         if (isTWA) {
           console.log("[TWA] ✅ 同期完了:", {
             plan: currentPlan.id,
             isActive,
             subscription: subscriptionManager.getSubscriptionInfo(),
+            updatedPlan: updatedUsageStatus.plan,
           })
           
           // プランが有効になっていない場合の警告

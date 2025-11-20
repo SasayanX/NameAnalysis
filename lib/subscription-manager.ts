@@ -121,9 +121,33 @@ export class SubscriptionManager {
   private constructor() {
     this.currentSubscription = this.loadSubscription()
     if (typeof window !== "undefined") {
-      this.syncSubscriptionFromServer().catch((error) => {
-        console.warn("SubscriptionManager initial sync failed:", error)
-      })
+      // TWA環境では、認証情報が確実に取得できるまで待機してから同期
+      const isTWA = typeof navigator !== "undefined" && 
+        (navigator.userAgent?.includes("twa") || 
+         navigator.userAgent?.includes("androidbrowserhelper") ||
+         (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
+      
+      if (isTWA) {
+        // TWA環境では、少し待機してから同期（localStorageの保存が完了するのを待つ）
+        setTimeout(async () => {
+          try {
+            const identity = this.getIdentityMetadata()
+            if (identity.userId || identity.customerEmail) {
+              console.log("[TWA] SubscriptionManager: 認証情報を確認、同期を開始します", identity)
+              await this.syncSubscriptionFromServer()
+            } else {
+              console.warn("[TWA] SubscriptionManager: 認証情報が見つかりません。ログインが必要です。")
+            }
+          } catch (error) {
+            console.error("[TWA] SubscriptionManager initial sync failed:", error)
+          }
+        }, 500)
+      } else {
+        // 通常のWeb環境では即座に同期
+        this.syncSubscriptionFromServer().catch((error) => {
+          console.warn("SubscriptionManager initial sync failed:", error)
+        })
+      }
     }
   }
 
