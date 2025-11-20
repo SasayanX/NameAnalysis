@@ -11,12 +11,14 @@ interface PdfExportButtonProps {
   contentId: string
   fileName?: string
   buttonText?: string
+  className?: string
 }
 
 export function PdfExportButton({
   contentId,
   fileName = "姓名判断結果",
   buttonText = "PDFでダウンロード",
+  className,
 }: PdfExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false)
   const { toast } = useToast()
@@ -128,7 +130,7 @@ export function PdfExportButton({
   }
 
   return (
-    <Button onClick={exportToPdf} disabled={isExporting} variant="outline" size="sm">
+    <Button onClick={exportToPdf} disabled={isExporting} variant="outline" size="sm" className={className}>
       {isExporting ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

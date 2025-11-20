@@ -1050,48 +1050,71 @@ export default function ClientPage() {
         {/* 開発用のデバッグコントロールは非表示化（モバイルの視認性優先） */}
 
         {/* セクション選択 */}
-        <div className="flex justify-between items-center mb-6 gap-2">
-          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
-            <Button
-              variant="ghost"
-              className={getButtonClass(activeSection === "fortune")}
-              onClick={() => setActiveSection("fortune")}
-            >
-              姓名判断
-            </Button>
-            <Button
-              variant="ghost"
-              className={getButtonClass(activeSection === "compatibility")}
-              onClick={() => setActiveSection("compatibility")}
-            >
-              相性診断
-              {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
-            </Button>
-            <Button
-              variant="ghost"
-              className={getButtonClass(activeSection === "baby-naming")}
-              onClick={() => setActiveSection("baby-naming")}
-            >
-              <Baby className="h-4 w-4 mr-2" />
-              赤ちゃん名付け
-              {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
-            </Button>
+        <div className="mb-6">
+          <div className="flex justify-between items-center gap-2">
+            <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+              <Button
+                variant="ghost"
+                className={getButtonClass(activeSection === "fortune")}
+                onClick={() => setActiveSection("fortune")}
+              >
+                姓名判断
+              </Button>
+              <Button
+                variant="ghost"
+                className={getButtonClass(activeSection === "compatibility")}
+                onClick={() => setActiveSection("compatibility")}
+              >
+                相性診断
+                {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
+              </Button>
+              <Button
+                variant="ghost"
+                className={getButtonClass(activeSection === "baby-naming")}
+                onClick={() => setActiveSection("baby-naming")}
+              >
+                <Baby className="h-4 w-4 mr-2" />
+                赤ちゃん名付け
+                {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
+              </Button>
+            </div>
+
+            {/* PDFダウンロードボタン：デスクトップのみ同じ行に配置 */}
+            {results && (
+              <div className="hidden md:block">
+                {currentPlan === "free" ? (
+                  <Button disabled size="sm" className="whitespace-nowrap">
+                    <LockIcon className="h-4 w-4 mr-1" />
+                    PDF取得
+                  </Button>
+                ) : (
+                  <PdfExportButton 
+                    contentId="results-content" 
+                    fileName={`姓名判断結果_${lastName}${firstName}`}
+                    buttonText="PDF取得"
+                  />
+                )}
+              </div>
+            )}
           </div>
 
-          {/* PDFダウンロードボタン：短縮テキストで同じ行に配置 */}
+          {/* PDFダウンロードボタン：モバイルは別行に配置 */}
           {results && (
-            currentPlan === "free" ? (
-              <Button disabled size="sm" className="whitespace-nowrap">
-                <LockIcon className="h-4 w-4 mr-1" />
-                PDF取得
-              </Button>
-            ) : (
-              <PdfExportButton 
-                contentId="results-content" 
-                fileName={`姓名判断結果_${lastName}${firstName}`}
-                buttonText="PDF取得"
-              />
-            )
+            <div className="mt-3 md:hidden">
+              {currentPlan === "free" ? (
+                <Button disabled size="sm" className="w-full">
+                  <LockIcon className="h-4 w-4 mr-1" />
+                  PDF取得
+                </Button>
+              ) : (
+                <PdfExportButton 
+                  contentId="results-content" 
+                  fileName={`姓名判断結果_${lastName}${firstName}`}
+                  buttonText="PDF取得"
+                  className="w-full"
+                />
+              )}
+            </div>
           )}
         </div>
 
