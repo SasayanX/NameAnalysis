@@ -17,8 +17,15 @@ export default function PricingPage() {
   const currentPlan = subscription.getCurrentPlan()
   // 年額プランは無効化：常に月額のみ
   const billingCycle: "monthly" = "monthly"
-  const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(false)
-  const [isTWAContext, setIsTWAContext] = useState(false)
+  // 初期状態でTWA環境を判定（SSRを避けるため）
+  const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(() => {
+    if (typeof window === "undefined") return false
+    return GooglePlayBillingDetector.isTWAEnvironment()
+  })
+  const [isTWAContext, setIsTWAContext] = useState(() => {
+    if (typeof window === "undefined") return false
+    return GooglePlayBillingDetector.isTWAEnvironment()
+  })
   const [processingPlan, setProcessingPlan] = useState<"basic" | "premium" | null>(null)
 
   const plans = {
@@ -44,16 +51,15 @@ export default function PricingPage() {
       price: { monthly: 330 },
       description: "日常的に姓名判断を活用したい方に",
       features: [
-        "個人名判断: 1日10回",
-        "会社名判断: 1日10回",
-        "相性診断: 1日3回",
+        "個人名判断: 無制限",
+        "会社名判断: 無制限",
+        "相性診断: 1日5回",
         "数秘術分析: 1日5回",
         "赤ちゃん名付け: 1日5回",
-        "運勢フロー分析: 1日5回",
-        "PDF出力: 1日10回",
+        "運気運行表: 1日5回",
+        "PDF出力: 1日5回",
         "履歴保存: 50件まで",
         "詳細な運勢解説",
-        "データエクスポート機能",
       ],
       limitations: ["おなまえ格付けランク利用不可", "優先サポートなし", "カスタムレポートなし"],
       buttonText: "ベーシックプランを選ぶ",
@@ -66,15 +72,20 @@ export default function PricingPage() {
       description: "全機能を無制限で利用したいプロフェッショナル向け",
       features: [
         "全機能無制限利用",
+        "個人名判断: 無制限",
+        "会社名判断: 無制限",
+        "相性診断: 無制限",
+        "数秘術分析: 無制限",
+        "赤ちゃん名付け: 無制限",
+        "運気運行表: 無制限",
+        "AI深層心理鑑定",
         "🏆 おなまえ格付けランク（S・A・B・C・D評価）",
         "全国ランキング比較",
         "運勢の強さ・バランス・希少性総合判定",
+        "PDF出力: 無制限",
+        "履歴保存: 無制限",
         "優先サポート",
         "カスタムレポート",
-        "高度な分析機能",
-        "無制限履歴保存",
-        "無制限PDF出力",
-        "専用ダッシュボード",
       ],
       limitations: [],
       buttonText: "プレミアムプランを選ぶ",
@@ -87,6 +98,7 @@ export default function PricingPage() {
   useEffect(() => {
     const checkPlatform = async () => {
       try {
+        // 即座にTWA環境を再判定（初期レンダリング後の確認）
         const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
         setIsTWAContext(isTWA)
         
@@ -94,6 +106,7 @@ export default function PricingPage() {
         console.log("[Pricing] User Agent:", typeof navigator !== "undefined" ? navigator.userAgent : "N/A")
         console.log("[Pricing] Display Mode:", typeof window !== "undefined" && "matchMedia" in window 
           ? window.matchMedia("(display-mode: standalone)").matches : "N/A")
+        console.log("[Pricing] Referrer:", typeof document !== "undefined" ? document.referrer : "N/A")
 
         if (isTWA) {
           // TWA環境の場合は、初期化を試みるが、失敗してもTWA環境として扱う
@@ -107,14 +120,23 @@ export default function PricingPage() {
             // （Digital Goods APIがまだ利用できない場合でも、TWA環境では使用可能）
             setIsGooglePlayAvailable(true)
           }
+          
+          // TWA環境が検出された場合は、確実にGoogle Play Billingを有効にする
+          if (!isGooglePlayAvailable) {
+            console.log("[Pricing] TWA環境が検出されたため、Google Play Billingを強制的に有効化します")
+            setIsGooglePlayAvailable(true)
+          }
         } else {
+          // TWA環境でない場合は、Google Play Billingを無効化
           setIsGooglePlayAvailable(false)
+          console.log("[Pricing] TWA環境ではないため、Square決済を使用します")
         }
       } catch (error) {
         console.warn("[Pricing] Failed to check platform:", error)
         // エラーが発生しても、TWA環境の可能性がある場合はGoogle Play Billingを有効にする
         const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
         if (isTWA) {
+          console.log("[Pricing] エラー発生時もTWA環境が検出されたため、Google Play Billingを有効化します")
           setIsGooglePlayAvailable(true)
           setIsTWAContext(true)
         } else {
@@ -123,8 +145,21 @@ export default function PricingPage() {
       }
     }
 
+    // 即座に実行（非同期処理は後続で実行）
     checkPlatform()
-  }, [])
+    
+    // 定期的に再チェック（TWA環境の検出が遅れる場合があるため）
+    const intervalId = setInterval(() => {
+      const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+      if (isTWA && !isTWAContext) {
+        console.log("[Pricing] 定期チェック: TWA環境が検出されました")
+        setIsTWAContext(true)
+        setIsGooglePlayAvailable(true)
+      }
+    }, 1000) // 1秒ごとにチェック
+    
+    return () => clearInterval(intervalId)
+  }, [isTWAContext, isGooglePlayAvailable])
 
   const handleGooglePlayPurchase = async (planId: "basic" | "premium") => {
     try {
@@ -310,7 +345,7 @@ export default function PricingPage() {
                     <Button variant={plan.buttonVariant} className="w-full" asChild>
                       <Link href="/">{plan.buttonText}</Link>
                     </Button>
-                  ) : (isGooglePlayAvailable || isTWAContext) && typedPlanId ? (
+                  ) : (isTWAContext || isGooglePlayAvailable) && typedPlanId ? (
                     <Button
                       onClick={() => handleGooglePlayPurchase(typedPlanId)}
                       disabled={processingPlan === typedPlanId}

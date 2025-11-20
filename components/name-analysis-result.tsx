@@ -686,7 +686,7 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
           </div>
         )}
 
-        {/* Gemini AI鑑定結果（言霊と名前を組み合わせた鑑定） */}
+        {/* AI鑑定結果（言霊と名前を組み合わせた鑑定） */}
         <div className="mt-6">
           <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
             <CardHeader>
@@ -695,7 +695,7 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
                 AI鑑定（言霊と名前の組み合わせ分析）
               </CardTitle>
               <CardDescription className="text-purple-600">
-                Firestoreの言霊マスターデータとGemini AIを組み合わせたパーソナライズされた鑑定
+                Firestoreの言霊マスターデータとAIを組み合わせたパーソナライズされた鑑定
               </CardDescription>
             </CardHeader>
             <CardContent>

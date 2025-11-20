@@ -101,12 +101,21 @@ const features: Feature[] = [
     icon: <Calendar className="h-5 w-5" />,
     description: "年間の運気の流れをカレンダー表示",
     free: false,
-    basic: false,
-    premium: true,
+    basic: "1日5回",
+    premium: "無制限",
     category: "高度な機能",
   },
   
   // プレミアム限定機能
+  {
+    name: "AI深層心理鑑定",
+    icon: <Sparkles className="h-5 w-5" />,
+    description: "AIが既存の姓名判断結果を解釈し、深層心理を分析",
+    free: false,
+    basic: false,
+    premium: true,
+    category: "プレミアム限定",
+  },
   {
     name: "おなまえ格付けランク",
     icon: <Trophy className="h-5 w-5" />,

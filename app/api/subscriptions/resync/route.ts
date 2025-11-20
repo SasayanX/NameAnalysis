@@ -220,12 +220,23 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     const errorStack = error instanceof Error ? error.stack : undefined
     
+    // エラー情報をログに記録（本番環境でも）
+    console.error("[Subscription Resync] Full error info:", {
+      message: errorMessage,
+      stack: errorStack,
+      error: error,
+    })
+    
     return NextResponse.json(
       { 
         success: false, 
         error: "サブスクリプションの再同期に失敗しました",
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
-        stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
+        errorCode: "UNEXPECTED_ERROR",
+        errorMessage: errorMessage,
+        details: process.env.NODE_ENV === "development" ? {
+          message: errorMessage,
+          stack: errorStack,
+        } : undefined,
       },
       { status: 500 }
     )

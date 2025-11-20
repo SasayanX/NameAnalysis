@@ -81,25 +81,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // 既存セッションがある場合、メールアドレスとuserIdを保存し、サブスクリプション状態を同期
       if (session?.user && typeof window !== "undefined") {
+        // TWA環境では保存を確実にするため、リトライロジックを追加
+        const saveToLocalStorage = (key: string, value: string, retries = 3): boolean => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              localStorage.setItem(key, value)
+              // 保存が成功したか確認
+              const saved = localStorage.getItem(key)
+              if (saved === value) {
+                return true
+              }
+            } catch (error) {
+              console.warn(`[TWA] localStorage保存エラー (試行 ${i + 1}/${retries}):`, error)
+              if (i < retries - 1) {
+                // 次の試行前に少し待機
+                setTimeout(() => {}, 100)
+              }
+            }
+          }
+          return false
+        }
+        
         if (session.user.email) {
-          localStorage.setItem("customerEmail", session.user.email.toLowerCase())
-          console.log("✅ 既存セッション: メールアドレスをlocalStorageに保存:", session.user.email)
+          const emailSaved = saveToLocalStorage("customerEmail", session.user.email.toLowerCase())
+          if (emailSaved) {
+            console.log("✅ 既存セッション: メールアドレスをlocalStorageに保存:", session.user.email)
+          } else {
+            console.error("❌ 既存セッション: メールアドレスのlocalStorage保存に失敗しました")
+          }
         }
         
         if (session.user.id) {
-          localStorage.setItem("userId", session.user.id)
-          console.log("✅ 既存セッション: userIdをlocalStorageに保存:", session.user.id)
+          const userIdSaved = saveToLocalStorage("userId", session.user.id)
+          if (userIdSaved) {
+            console.log("✅ 既存セッション: userIdをlocalStorageに保存:", session.user.id)
+          } else {
+            console.error("❌ 既存セッション: userIdのlocalStorage保存に失敗しました")
+          }
         }
         
-        // サブスクリプション状態を同期
-        try {
-          const { SubscriptionManager } = await import("@/lib/subscription-manager")
-          const subscriptionManager = SubscriptionManager.getInstance()
-          await subscriptionManager.syncSubscriptionFromServer()
-          console.log("✅ 既存セッション: サブスクリプション状態を同期しました")
-        } catch (error) {
-          console.error("❌ 既存セッション: サブスクリプション状態の同期エラー:", error)
-        }
+        // サブスクリプション状態を同期（localStorage保存後に少し待機してから実行）
+        setTimeout(async () => {
+          try {
+            // localStorageの値を再確認
+            const storedEmail = localStorage.getItem("customerEmail")
+            const storedUserId = localStorage.getItem("userId")
+            
+            if (!storedEmail && !storedUserId) {
+              console.error("❌ [TWA] 既存セッション: localStorageに認証情報が保存されていません。再試行します...")
+              // 再試行
+              if (session.user.email) {
+                localStorage.setItem("customerEmail", session.user.email.toLowerCase())
+              }
+              if (session.user.id) {
+                localStorage.setItem("userId", session.user.id)
+              }
+            }
+            
+            const { SubscriptionManager } = await import("@/lib/subscription-manager")
+            const subscriptionManager = SubscriptionManager.getInstance()
+            await subscriptionManager.syncSubscriptionFromServer()
+            console.log("✅ 既存セッション: サブスクリプション状態を同期しました")
+          } catch (error) {
+            console.error("❌ 既存セッション: サブスクリプション状態の同期エラー:", error)
+            // TWA環境でのエラーを詳細にログ出力
+            if (error instanceof Error) {
+              console.error("❌ [TWA] 既存セッション エラー詳細:", {
+                message: error.message,
+                stack: error.stack,
+                localStorage: {
+                  customerEmail: localStorage.getItem("customerEmail"),
+                  userId: localStorage.getItem("userId"),
+                },
+              })
+            }
+          }
+        }, 500) // 500ms待機してから同期を実行
       }
     }).catch((error) => {
       console.error("❌ セッション取得例外:", error)
@@ -117,26 +174,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userId = session.user.id
         if (typeof window !== "undefined") {
           // メールアドレスをlocalStorageに保存（SubscriptionManagerが使用）
+          // TWA環境では保存を確実にするため、リトライロジックを追加
+          const saveToLocalStorage = (key: string, value: string, retries = 3): boolean => {
+            for (let i = 0; i < retries; i++) {
+              try {
+                localStorage.setItem(key, value)
+                // 保存が成功したか確認
+                const saved = localStorage.getItem(key)
+                if (saved === value) {
+                  return true
+                }
+              } catch (error) {
+                console.warn(`[TWA] localStorage保存エラー (試行 ${i + 1}/${retries}):`, error)
+                if (i < retries - 1) {
+                  // 次の試行前に少し待機
+                  setTimeout(() => {}, 100)
+                }
+              }
+            }
+            return false
+          }
+          
           if (userEmail) {
-            localStorage.setItem("customerEmail", userEmail.toLowerCase())
-            console.log("✅ メールアドレスをlocalStorageに保存:", userEmail)
+            const emailSaved = saveToLocalStorage("customerEmail", userEmail.toLowerCase())
+            if (emailSaved) {
+              console.log("✅ メールアドレスをlocalStorageに保存:", userEmail)
+            } else {
+              console.error("❌ メールアドレスのlocalStorage保存に失敗しました")
+            }
           }
           
-          // userIdをlocalStorageに保存（SubscriptionManagerが使用）
           if (userId) {
-            localStorage.setItem("userId", userId)
-            console.log("✅ userIdをlocalStorageに保存:", userId)
+            const userIdSaved = saveToLocalStorage("userId", userId)
+            if (userIdSaved) {
+              console.log("✅ userIdをlocalStorageに保存:", userId)
+            } else {
+              console.error("❌ userIdのlocalStorage保存に失敗しました")
+            }
           }
           
-          // サブスクリプション状態を同期
-          try {
-            const { SubscriptionManager } = await import("@/lib/subscription-manager")
-            const subscriptionManager = SubscriptionManager.getInstance()
-            await subscriptionManager.syncSubscriptionFromServer()
-            console.log("✅ サブスクリプション状態を同期しました")
-          } catch (error) {
-            console.error("❌ サブスクリプション状態の同期エラー:", error)
-          }
+          // サブスクリプション状態を同期（localStorage保存後に少し待機してから実行）
+          setTimeout(async () => {
+            try {
+              // localStorageの値を再確認
+              const storedEmail = localStorage.getItem("customerEmail")
+              const storedUserId = localStorage.getItem("userId")
+              
+              if (!storedEmail && !storedUserId) {
+                console.error("❌ [TWA] localStorageに認証情報が保存されていません。再試行します...")
+                // 再試行
+                if (userEmail) {
+                  localStorage.setItem("customerEmail", userEmail.toLowerCase())
+                }
+                if (userId) {
+                  localStorage.setItem("userId", userId)
+                }
+              }
+              
+              const { SubscriptionManager } = await import("@/lib/subscription-manager")
+              const subscriptionManager = SubscriptionManager.getInstance()
+              await subscriptionManager.syncSubscriptionFromServer()
+              console.log("✅ サブスクリプション状態を同期しました")
+            } catch (error) {
+              console.error("❌ サブスクリプション状態の同期エラー:", error)
+              // TWA環境でのエラーを詳細にログ出力
+              if (error instanceof Error) {
+                console.error("❌ [TWA] エラー詳細:", {
+                  message: error.message,
+                  stack: error.stack,
+                  localStorage: {
+                    customerEmail: localStorage.getItem("customerEmail"),
+                    userId: localStorage.getItem("userId"),
+                  },
+                })
+              }
+            }
+          }, 500) // 500ms待機してから同期を実行
         }
         
         // 非同期で実行（ログインをブロックしない）

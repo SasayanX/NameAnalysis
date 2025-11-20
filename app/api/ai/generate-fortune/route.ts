@@ -42,8 +42,16 @@ export async function POST(request: NextRequest) {
     // Gemini APIクライアントの確認
     const genAI = getGeminiClient()
     if (!genAI) {
+      console.error('[AI Generate Fortune] Gemini API key not configured', {
+        hasApiKey: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+        nodeEnv: process.env.NODE_ENV,
+      })
       return NextResponse.json(
-        { error: 'AI鑑定サービスが設定されていません' },
+        { 
+          success: false,
+          error: 'AI鑑定サービスが設定されていません',
+          details: process.env.NODE_ENV === 'development' ? 'GOOGLE_GENERATIVE_AI_API_KEYが設定されていません' : undefined,
+        },
         { status: 503 }
       )
     }
@@ -238,11 +246,19 @@ ${kotodamaText ? `【今日の言霊アドバイス】\n${kotodamaText}\n\n` : '
       aiFortune: aiFortune,
     })
   } catch (error: any) {
-    console.error('❌ AI鑑定生成エラー:', error)
+    console.error('[AI Generate Fortune] Error:', {
+      message: error.message,
+      stack: error.stack,
+      error: error,
+    })
     return NextResponse.json(
       {
         success: false,
         error: error.message || 'AI鑑定の生成に失敗しました',
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error.message,
+          stack: error.stack,
+        } : undefined,
       },
       { status: 500 }
     )

@@ -129,11 +129,71 @@ export default function ClientPage() {
     
     const syncSubscription = async () => {
       try {
+        // TWA環境の検出
+        const isTWA = typeof navigator !== "undefined" && 
+          (navigator.userAgent?.includes("twa") || 
+           navigator.userAgent?.includes("androidbrowserhelper") ||
+           (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
+        
+        if (isTWA) {
+          console.log("[TWA] 🔄 サブスクリプション同期を開始します...")
+          console.log("[TWA] localStorage確認:", {
+            customerEmail: localStorage.getItem("customerEmail"),
+            userId: localStorage.getItem("userId"),
+          })
+        }
+        
         const subscriptionManager = SubscriptionManager.getInstance()
+        
+        // 同期前に少し待機（localStorageの保存が完了するのを待つ）
+        await new Promise(resolve => setTimeout(resolve, 300))
+        
         await subscriptionManager.syncSubscriptionFromServer()
-        console.log("✅ ページ読み込み時: サブスクリプション状態を同期しました")
+        
+        // 同期後の状態を確認
+        const currentPlan = subscriptionManager.getCurrentPlan()
+        const isActive = subscriptionManager.isSubscriptionActive()
+        
+        console.log("✅ ページ読み込み時: サブスクリプション状態を同期しました", {
+          plan: currentPlan.id,
+          isActive,
+        })
+        
+        if (isTWA) {
+          console.log("[TWA] ✅ 同期完了:", {
+            plan: currentPlan.id,
+            isActive,
+            subscription: subscriptionManager.getSubscriptionInfo(),
+          })
+          
+          // プランが有効になっていない場合の警告
+          if (!isActive && currentPlan.id !== "free") {
+            console.warn("[TWA] ⚠️ プランが有効になっていません:", {
+              plan: currentPlan.id,
+              isActive,
+              subscription: subscriptionManager.getSubscriptionInfo(),
+            })
+          }
+        }
       } catch (error) {
         console.error("❌ ページ読み込み時: サブスクリプション状態の同期エラー:", error)
+        
+        // TWA環境でのエラー詳細
+        const isTWA = typeof navigator !== "undefined" && 
+          (navigator.userAgent?.includes("twa") || 
+           navigator.userAgent?.includes("androidbrowserhelper") ||
+           (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
+        
+        if (isTWA && error instanceof Error) {
+          console.error("[TWA] ❌ 同期エラー詳細:", {
+            message: error.message,
+            stack: error.stack,
+            localStorage: {
+              customerEmail: localStorage.getItem("customerEmail"),
+              userId: localStorage.getItem("userId"),
+            },
+          })
+        }
       }
     }
     
@@ -564,9 +624,25 @@ export default function ClientPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('❌ AI鑑定生成エラー:', errorData)
-        throw new Error(errorData.error || 'AI鑑定の生成に失敗しました')
+        const errorText = await response.text()
+        let errorData: any
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText || `HTTP ${response.status}: ${response.statusText}` }
+        }
+        console.error('❌ AI鑑定生成エラー:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          fullResponse: errorText,
+        })
+        setAiFortune({
+          success: false,
+          error: errorData.error || `AI鑑定の生成に失敗しました (${response.status})`,
+          details: errorData.details,
+        })
+        return
       }
 
       const data = await response.json()
@@ -574,8 +650,10 @@ export default function ClientPage() {
       setAiFortune(data)
     } catch (error: any) {
       console.error('❌ AI鑑定生成エラー:', error)
-      // エラーが発生しても既存の鑑定結果は表示する
-      setAiFortune(null)
+      setAiFortune({
+        success: false,
+        error: error.message || 'AI鑑定の生成に失敗しました',
+      })
     } finally {
       setIsLoadingAiFortune(false)
     }
@@ -1250,7 +1328,7 @@ export default function ClientPage() {
                                 AI深層心理鑑定
                               </CardTitle>
                               <CardDescription className="text-purple-600">
-                                Gemini AIが既存の姓名判断結果を解釈し、深層心理を分析します
+                                AIが既存の姓名判断結果を解釈し、深層心理を分析します
                               </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">

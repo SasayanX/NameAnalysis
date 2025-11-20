@@ -62,13 +62,22 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 330,
     currency: "JPY",
     interval: "month",
-    features: ["個人名分析 1日10回", "会社名分析 1日10回", "赤ちゃん名付け 1日5回", "詳細レポート", "PDF出力"],
+    features: [
+      "個人名分析 無制限",
+      "会社名分析 無制限",
+      "相性診断 1日5回",
+      "数秘術分析 1日5回",
+      "赤ちゃん名付け 1日5回",
+      "運気運行表 1日5回",
+      "詳細レポート",
+      "PDF出力 1日5回",
+    ],
     limits: {
-      personalAnalysis: 10, // 1日10回に制限
-      companyAnalysis: 10, // 1日10回に制限
+      personalAnalysis: -1, // 無制限
+      companyAnalysis: -1, // 無制限
       babyNaming: 5, // 1日5回に制限
       fortuneFlow: 5, // 1日5回に制限
-      dataExport: true,
+      dataExport: false, // 将来の機能として予定
       prioritySupport: false,
     },
   },
@@ -80,10 +89,17 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     interval: "month",
     features: [
       "全機能無制限",
+      "個人名分析 無制限",
+      "会社名分析 無制限",
+      "相性診断 無制限",
+      "数秘術分析 無制限",
       "赤ちゃん名付け 無制限",
-      "運勢フロー分析",
+      "運気運行表 無制限",
+      "AI深層心理鑑定",
+      "おなまえ格付けランク",
+      "全国ランキング比較",
+      "PDF出力 無制限",
       "優先サポート",
-      "データエクスポート",
       "カスタムレポート",
     ],
     limits: {
@@ -91,7 +107,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       companyAnalysis: -1,
       babyNaming: -1,
       fortuneFlow: -1,
-      dataExport: true,
+      dataExport: false, // 将来の機能として予定
       prioritySupport: true,
     },
   },
@@ -177,17 +193,45 @@ export class SubscriptionManager {
     }
 
     try {
-      // localStorageから直接取得
-      const storedEmail = window.localStorage.getItem("customerEmail")
+      // localStorageから直接取得（TWA環境では複数回試行）
+      const getFromLocalStorage = (key: string, retries = 3): string | null => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const value = window.localStorage.getItem(key)
+            if (value) {
+              return value
+            }
+          } catch (error) {
+            console.warn(`[TWA] localStorage読み取りエラー (試行 ${i + 1}/${retries}):`, error)
+            if (i < retries - 1) {
+              // 次の試行前に少し待機
+              setTimeout(() => {}, 50)
+            }
+          }
+        }
+        return null
+      }
+      
+      const storedEmail = getFromLocalStorage("customerEmail")
       if (storedEmail) {
         metadata.customerEmail = storedEmail.toLowerCase()
         console.log("[SubscriptionManager] customerEmail from localStorage:", metadata.customerEmail)
       }
       
-      const storedUserId = window.localStorage.getItem("userId")
+      const storedUserId = getFromLocalStorage("userId")
       if (storedUserId) {
         metadata.userId = storedUserId
         console.log("[SubscriptionManager] userId from localStorage:", metadata.userId)
+      }
+      
+      // TWA環境の検出とログ出力
+      const isTWA = typeof navigator !== "undefined" && 
+        (navigator.userAgent?.includes("twa") || 
+         navigator.userAgent?.includes("androidbrowserhelper") ||
+         (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
+      
+      if (isTWA && !metadata.customerEmail && !metadata.userId) {
+        console.warn("[TWA] ⚠️ localStorageに認証情報が見つかりません。ログイン状態を確認してください。")
       }
     } catch (error) {
       console.warn("Failed to read identity from localStorage:", error)
@@ -670,16 +714,41 @@ export class SubscriptionManager {
       const amount = planDetails?.price ?? this.currentSubscription.amount ?? 0
 
       // isActiveの計算を改善
-      const isExpired = expiresAt && expiresAt.getTime() <= Date.now()
-      const isActive = serverSubscription.status === "active" && !isExpired
+      const now = Date.now()
+      const expiresAtTime = expiresAt ? expiresAt.getTime() : null
+      const isExpired = expiresAtTime ? expiresAtTime <= now : false
+      
+      // statusが"active"で、かつ有効期限が切れていない場合は有効
+      // ただし、statusが"active"で有効期限がない場合も有効とする（Google Play Billingの場合など）
+      const isActive = serverSubscription.status === "active" && (!expiresAtTime || !isExpired)
 
       console.log("[SubscriptionManager] syncSubscriptionFromServer - isActive calculation:", {
         status: serverSubscription.status,
         expiresAt: expiresAt?.toISOString(),
+        expiresAtTime,
+        now: new Date().toISOString(),
+        nowTime: now,
         isExpired,
         isActive,
-        now: new Date().toISOString(),
+        hasExpiresAt: !!expiresAtTime,
       })
+      
+      // TWA環境でのデバッグ情報
+      const isTWA = typeof navigator !== "undefined" && 
+        (navigator.userAgent?.includes("twa") || 
+         navigator.userAgent?.includes("androidbrowserhelper") ||
+         (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
+      
+      if (isTWA) {
+        console.log("[TWA] Subscription sync details:", {
+          plan: serverSubscription.plan,
+          status: serverSubscription.status,
+          isActive,
+          expiresAt: expiresAt?.toISOString(),
+          customerEmail: serverSubscription.customerEmail,
+          userId: serverSubscription.userId,
+        })
+      }
 
       this.currentSubscription = {
         plan: serverSubscription.plan as PlanType,
@@ -693,12 +762,46 @@ export class SubscriptionManager {
         lastPaymentDate: this.currentSubscription.lastPaymentDate,
       }
 
-      console.log("[SubscriptionManager] syncSubscriptionFromServer - Updated currentSubscription:", this.currentSubscription)
+      console.log("[SubscriptionManager] syncSubscriptionFromServer - Updated currentSubscription:", {
+        plan: this.currentSubscription.plan,
+        isActive: this.currentSubscription.isActive,
+        status: this.currentSubscription.status,
+        expiresAt: this.currentSubscription.expiresAt?.toISOString(),
+        fullSubscription: this.currentSubscription,
+      })
 
       this.saveSubscription()
+      
+      // localStorageへの保存を確認
+      const saved = typeof window !== "undefined" ? localStorage.getItem("userSubscription") : null
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        console.log("[SubscriptionManager] syncSubscriptionFromServer - Saved to localStorage:", {
+          plan: parsed.plan,
+          isActive: parsed.isActive,
+          status: parsed.status,
+        })
+      } else {
+        console.warn("[SubscriptionManager] syncSubscriptionFromServer - ⚠️ Failed to save to localStorage")
+      }
+      
       this.notifyListeners() // UIを更新
       
       console.log("[SubscriptionManager] syncSubscriptionFromServer - ✅ Sync completed successfully")
+      
+      // TWA環境での追加確認
+      const isTWA = typeof navigator !== "undefined" && 
+        (navigator.userAgent?.includes("twa") || 
+         navigator.userAgent?.includes("androidbrowserhelper") ||
+         (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
+      
+      if (isTWA) {
+        console.log("[TWA] ✅ Subscription sync completed:", {
+          plan: this.currentSubscription.plan,
+          isActive: this.currentSubscription.isActive,
+          status: this.currentSubscription.status,
+        })
+      }
     } catch (error) {
       console.error("[SubscriptionManager] syncSubscriptionFromServer - ❌ Error:", error)
       if (error instanceof Error) {
