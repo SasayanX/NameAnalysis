@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     // 5. Supabase Storageに画像をアップロード（永続的なURLを取得）
     const timestamp = Date.now()
-    const filename = `card_${lastName}_${firstName}_${rank}_${timestamp}.png`
+    const filename = `card_${rank}_${timestamp}.png`
     const storagePath = `${userId}/${filename}`
     let imageUrl: string
 
