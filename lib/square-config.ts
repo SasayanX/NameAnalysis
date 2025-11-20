@@ -66,6 +66,7 @@ export const getCurrentConfig = () => {
   // 環境変数が設定されている場合は、それらを優先的に使用
   return {
     ...baseConfig,
+    environment: baseConfig.environment, // 環境情報を明示的に含める
     accessToken: envAccessToken || baseConfig.accessToken,
     applicationId: envApplicationId || baseConfig.applicationId,
     locationId: envLocationId || baseConfig.locationId,
