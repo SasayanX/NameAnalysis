@@ -27,15 +27,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // プラン情報
+    // プラン情報（production環境用）
+    const environment = process.env.SQUARE_ENVIRONMENT || "sandbox"
     const planConfig = {
       basic: {
-        name: "ベーシックプラン",
+        name: environment === "production" 
+          ? "まいにちAI姓名判断・ベーシックプラン"
+          : "ベーシックプラン",
         price: 330, // 円（Square APIでは最小単位で指定）
         cadence: "MONTHLY", // 1ヶ月ごと
       },
       premium: {
-        name: "プレミアムプラン",
+        name: environment === "production"
+          ? "まいにちAI姓名判断・プレミアムプラン"
+          : "プレミアムプラン",
         price: 550, // 円（Square APIでは最小単位で指定）
         cadence: "MONTHLY", // 1ヶ月ごと
       },

@@ -108,7 +108,32 @@
       const plan = currentPlan.id as "free" | "basic" | "premium"
       console.log("[LoginBonus] User plan:", plan)
 
-      const result = await processLoginBonusSupa(user.id, plan)
+      // API経由でログインボーナスを処理（サーバーサイドでRLSをバイパス）
+      const response = await fetch("/api/kanau-points/login-bonus", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          plan,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || "ログインボーナスの処理に失敗しました")
+      }
+
+      const result = {
+        user: data.user,
+        bonus: data.bonus,
+      }
       console.log("[LoginBonus] Bonus result:", result)
  
        if (result.bonus.totalPoints === 0) {
@@ -140,12 +165,23 @@
        })
        setHasClaimed(true)
        setTimeout(() => setShowNotification(false), 8000)
-     } catch (error) {
-       console.error("ログインボーナス受け取りエラー:", error)
-       setErrorMessage("ログインボーナスの受け取りに失敗しました。接続状況を確認して再試行してください。")
-     } finally {
-       setIsProcessing(false)
-     }
+    } catch (error) {
+      console.error("ログインボーナス受け取りエラー:", error)
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "ログインボーナスの受け取りに失敗しました"
+      
+      // より詳細なエラーメッセージを表示
+      if (errorMessage.includes("RLS") || errorMessage.includes("権限")) {
+        setErrorMessage("権限エラーが発生しました。ページを再読み込みしてください。")
+      } else if (errorMessage.includes("レコードが見つかりません")) {
+        setErrorMessage("アカウント情報の取得に失敗しました。ページを再読み込みしてください。")
+      } else {
+        setErrorMessage(`ログインボーナスの受け取りに失敗しました: ${errorMessage}`)
+      }
+    } finally {
+      setIsProcessing(false)
+    }
    }
  
    // ゲストKP移行通知をリッスン（従来の挙動を維持）

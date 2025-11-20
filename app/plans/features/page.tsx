@@ -108,7 +108,7 @@ const features: Feature[] = [
   
   // プレミアム限定機能
   {
-    name: "AI深層心理鑑定",
+    name: "AI深層言霊鑑定",
     icon: <Sparkles className="h-5 w-5" />,
     description: "AIが既存の姓名判断結果を解釈し、深層心理を分析",
     free: false,

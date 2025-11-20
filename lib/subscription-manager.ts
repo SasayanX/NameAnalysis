@@ -95,7 +95,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "数秘術分析 無制限",
       "赤ちゃん名付け 無制限",
       "運気運行表 無制限",
-      "AI深層心理鑑定",
+      "AI深層言霊鑑定",
       "おなまえ格付けランク",
       "全国ランキング比較",
       "PDF出力 無制限",

@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
 
       const catalogResult = await catalogResponse.json()
       let planVariationId: string | undefined
+      let planVariationData: any = null
 
       if (catalogResponse.ok && catalogResult.object) {
         const plan = catalogResult.object
@@ -86,9 +87,12 @@ export async function POST(request: NextRequest) {
         }
         // plan_variation_idはsubscription_plan_variationsの最初の要素のidから取得
         if (plan.subscription_plan_data?.subscription_plan_variations && plan.subscription_plan_data.subscription_plan_variations.length > 0) {
-          planVariationId = plan.subscription_plan_data.subscription_plan_variations[0].id
+          const variation = plan.subscription_plan_data.subscription_plan_variations[0]
+          planVariationId = variation.id
+          planVariationData = variation
           if (process.env.NODE_ENV !== "production") {
             console.log("[Square Subscription] Found plan_variation_id from subscription_plan_variations[0].id:", planVariationId)
+            console.log("[Square Subscription] Plan variation data:", JSON.stringify(variation, null, 2))
           }
         }
       } else {
@@ -122,9 +126,12 @@ export async function POST(request: NextRequest) {
           }
           // plan_variation_idはsubscription_plan_variationsの最初の要素のidから取得
           if (plan.subscription_plan_data?.subscription_plan_variations && plan.subscription_plan_data.subscription_plan_variations.length > 0) {
-            planVariationId = plan.subscription_plan_data.subscription_plan_variations[0].id
+            const variation = plan.subscription_plan_data.subscription_plan_variations[0]
+            planVariationId = variation.id
+            planVariationData = variation
             if (process.env.NODE_ENV !== "production") {
               console.log("[Square Subscription] Found plan_variation_id from search subscription_plan_variations[0].id:", planVariationId)
+              console.log("[Square Subscription] Plan variation data:", JSON.stringify(variation, null, 2))
             }
           }
         } else {
@@ -141,10 +148,61 @@ export async function POST(request: NextRequest) {
             success: false,
             error: "plan_variation_idを取得できませんでした。プラン情報を確認してください。",
             catalogResult,
+            debug: {
+              squarePlanId,
+              hasCatalogResult: !!catalogResult,
+              hasObject: !!catalogResult?.object,
+              hasVariations: !!catalogResult?.object?.subscription_plan_data?.subscription_plan_variations,
+            },
           },
           { status: 500 }
         )
       }
+
+      // phasesが存在しない、または空の場合はエラー
+      const phases = planVariationData?.subscription_plan_variation_data?.phases || []
+      if (phases.length === 0) {
+        console.error("[Square Subscription] Plan variation has no phases:", {
+          planVariationId,
+          planVariationData,
+          hasVariationData: !!planVariationData,
+          hasSubscriptionPlanVariationData: !!planVariationData?.subscription_plan_variation_data,
+        })
+        return NextResponse.json(
+          {
+            success: false,
+            error: "サブスクリプションプランにphasesが設定されていません。Square Dashboardでプランを確認し、必要に応じて再作成してください。",
+            planVariationId,
+            planVariationData,
+            debug: {
+              hasVariationData: !!planVariationData,
+              hasSubscriptionPlanVariationData: !!planVariationData?.subscription_plan_variation_data,
+              phasesCount: phases.length,
+            },
+          },
+          { status: 400 }
+        )
+      }
+
+      // phasesの最初の要素を確認
+      const firstPhase = phases[0]
+      if (!firstPhase) {
+        console.error("[Square Subscription] First phase is missing:", phases)
+        return NextResponse.json(
+          {
+            success: false,
+            error: "サブスクリプションプランのphasesが正しく設定されていません。",
+            phases,
+          },
+          { status: 400 }
+        )
+      }
+
+      console.log("[Square Subscription] Plan phases validated:", {
+        phasesCount: phases.length,
+        firstPhaseCadence: firstPhase.cadence,
+        firstPhasePricing: firstPhase.pricing,
+      })
 
       if (process.env.NODE_ENV !== "production") {
         console.log("[Square Subscription] plan_id:", squarePlanId)
@@ -311,11 +369,29 @@ export async function POST(request: NextRequest) {
         })
       } else {
         console.error("Square Subscriptions API error:", result)
+        const firstError = result.errors?.[0]
+        const errorDetail = firstError?.detail || firstError?.field || "サブスクリプションの作成に失敗しました"
+        const errorCode = firstError?.code
+        
+        // phases関連のエラーの場合は、より詳細なメッセージを提供
+        let userFriendlyError = errorDetail
+        if (errorDetail.includes("phases") || errorDetail.includes("RELATIVE pricing")) {
+          userFriendlyError = "サブスクリプションプランの設定に問題があります。プランにphasesが正しく設定されていない可能性があります。Square Dashboardでプランを確認してください。"
+        }
+        
         return NextResponse.json(
           {
             success: false,
-            error: result.errors?.[0]?.detail || "サブスクリプションの作成に失敗しました",
+            error: userFriendlyError,
+            errorCode,
             squareErrors: result.errors,
+            debug: process.env.NODE_ENV !== "production" ? {
+              planId: squarePlanId,
+              planVariationId,
+              hasPhases: phases.length > 0,
+              phasesCount: phases.length,
+              firstPhase: phases[0],
+            } : undefined,
           },
           { status: 400 }
         )

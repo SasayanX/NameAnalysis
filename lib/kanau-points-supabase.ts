@@ -360,7 +360,23 @@ export async function processLoginBonusSupa(userId: string, plan?: "free" | "bas
     .select("user_id, points, total_earned, total_spent, consecutive_login_days, last_login_date, last_login_bonus_date")
     .single()
 
-  if (upErr) throw upErr
+  if (upErr) {
+    console.error("[processLoginBonusSupa] Update error:", {
+      message: upErr.message,
+      code: upErr.code,
+      details: upErr.details,
+      hint: upErr.hint,
+      userId,
+      today,
+    })
+    // より詳細なエラーメッセージを提供
+    const errorMessage = upErr.code === "PGRST116" 
+      ? "レコードが見つかりませんでした"
+      : upErr.code === "42501"
+      ? "権限が不足しています。RLSポリシーを確認してください"
+      : upErr.message || "ログインボーナスの更新に失敗しました"
+    throw new Error(`${errorMessage} (${upErr.code || "UNKNOWN"})`)
+  }
 
   await addTransaction(userId, "earn", totalPoints, "ログインボーナス", "login_bonus", {
     consecutiveDays,

@@ -598,8 +598,10 @@ export default function ClientPage() {
         }
         setAdvancedResults(advancedData)
 
-        // AI鑑定を生成（既存の姓名判断結果と五行分析結果を使用）
-        await generateAiFortune(analysisResultWithName, gogyoResult, birthdate)
+        // AI鑑定を生成（プレミアムプランのみ）
+        if (currentPlan === "premium") {
+          await generateAiFortune(analysisResultWithName, gogyoResult, birthdate)
+        }
       } else {
         // 生年月日なしの場合
         // 実際の五行分析を実行（生年月日なし）
@@ -614,8 +616,10 @@ export default function ClientPage() {
         }
         setAdvancedResults(advancedData)
 
-        // AI鑑定を生成（既存の姓名判断結果と五行分析結果を使用）
-        await generateAiFortune(analysisResultWithName, gogyoResult, undefined)
+        // AI鑑定を生成（プレミアムプランのみ）
+        if (currentPlan === "premium") {
+          await generateAiFortune(analysisResultWithName, gogyoResult, undefined)
+        }
       }
 
       if (usageTracker.incrementUsage("personalAnalysis")) {
@@ -632,6 +636,16 @@ export default function ClientPage() {
     gogyoResult?: any,
     birthdate?: string
   ) => {
+    // プレミアムプランのみ実行可能
+    if (currentPlan !== "premium") {
+      console.warn("⚠️ AI深層言霊鑑定はプレミアムプランでのみ利用可能です")
+      setAiFortune({
+        success: false,
+        error: "AI深層言霊鑑定はプレミアムプランでのみ利用可能です",
+      })
+      return
+    }
+
     setIsLoadingAiFortune(true)
     setAiFortune(null)
 
@@ -687,7 +701,7 @@ export default function ClientPage() {
     } finally {
       setIsLoadingAiFortune(false)
     }
-  }, [])
+  }, [currentPlan])
 
   const handleCompanyAnalysis = useCallback(() => {
     try {
@@ -1052,47 +1066,47 @@ export default function ClientPage() {
         {/* セクション選択 */}
         <div className="mb-6">
           <div className="flex justify-between items-center gap-2">
-            <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
-              <Button
-                variant="ghost"
-                className={getButtonClass(activeSection === "fortune")}
-                onClick={() => setActiveSection("fortune")}
-              >
-                姓名判断
-              </Button>
-              <Button
-                variant="ghost"
-                className={getButtonClass(activeSection === "compatibility")}
-                onClick={() => setActiveSection("compatibility")}
-              >
-                相性診断
-                {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
-              </Button>
-              <Button
-                variant="ghost"
-                className={getButtonClass(activeSection === "baby-naming")}
-                onClick={() => setActiveSection("baby-naming")}
-              >
-                <Baby className="h-4 w-4 mr-2" />
-                赤ちゃん名付け
-                {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
-              </Button>
-            </div>
+          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+            <Button
+              variant="ghost"
+              className={getButtonClass(activeSection === "fortune")}
+              onClick={() => setActiveSection("fortune")}
+            >
+              姓名判断
+            </Button>
+            <Button
+              variant="ghost"
+              className={getButtonClass(activeSection === "compatibility")}
+              onClick={() => setActiveSection("compatibility")}
+            >
+              相性診断
+              {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
+            </Button>
+            <Button
+              variant="ghost"
+              className={getButtonClass(activeSection === "baby-naming")}
+              onClick={() => setActiveSection("baby-naming")}
+            >
+              <Baby className="h-4 w-4 mr-2" />
+              赤ちゃん名付け
+              {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
+            </Button>
+          </div>
 
             {/* PDFダウンロードボタン：デスクトップのみ同じ行に配置 */}
-            {results && (
+          {results && (
               <div className="hidden md:block">
                 {currentPlan === "free" ? (
-                  <Button disabled size="sm" className="whitespace-nowrap">
-                    <LockIcon className="h-4 w-4 mr-1" />
-                    PDF取得
-                  </Button>
-                ) : (
-                  <PdfExportButton 
-                    contentId="results-content" 
-                    fileName={`姓名判断結果_${lastName}${firstName}`}
-                    buttonText="PDF取得"
-                  />
+              <Button disabled size="sm" className="whitespace-nowrap">
+                <LockIcon className="h-4 w-4 mr-1" />
+                PDF取得
+              </Button>
+            ) : (
+              <PdfExportButton 
+                contentId="results-content" 
+                fileName={`姓名判断結果_${lastName}${firstName}`}
+                buttonText="PDF取得"
+              />
                 )}
               </div>
             )}
@@ -1241,13 +1255,13 @@ export default function ClientPage() {
                                   </CardContent>
                                 </Card>
 
-                                {/* AI心理分析 */}
+                                {/* AI深層言霊鑑定 */}
                                 <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ai-personality")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <h3 className="font-semibold">AI心理分析</h3>
-                                        <p className="text-sm text-muted-foreground">AIによる深層心理鑑定</p>
+                                        <h3 className="font-semibold">AI深層言霊鑑定</h3>
+                                        <p className="text-sm text-muted-foreground">AIによる深層言霊鑑定</p>
                                       </div>
                                       <div className="flex items-center gap-1">
                                         {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
@@ -1372,14 +1386,14 @@ export default function ClientPage() {
 
                         {/* AI機能のTabsContent */}
                         <TabsContent value="ai-personality" style={{ display: activeTab === "ai-personality" ? "block" : "none" }}>
-                          <Card className="border-purple-200 shadow-lg">
+                          <Card className="border-purple-200 shadow-lg bg-gradient-to-b from-[#D7C4F3] to-[#F8F5FB]">
                             <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
                               <CardTitle className="flex items-center gap-2 text-purple-800">
                                 <Sparkles className="h-5 w-5 text-purple-600" />
-                                AI深層心理鑑定
+                                AI深層言霊鑑定
                               </CardTitle>
                               <CardDescription className="text-purple-600">
-                                AIが鑑定します
+                                AIがあなたの名前に宿る宿命と言霊を鑑定します
                               </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
@@ -1404,7 +1418,7 @@ export default function ClientPage() {
                               ) : isLoadingAiFortune ? (
                                 <div className="flex items-center justify-center py-8">
                                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                                  <span className="ml-3 text-purple-600">AI深層心理分析を生成中...</span>
+                                  <span className="ml-3 text-purple-600">AI深層言霊鑑定を生成中...</span>
                                 </div>
                               ) : aiFortune?.success && aiFortune?.aiFortune ? (
                                 <div className="space-y-6">
@@ -1414,13 +1428,17 @@ export default function ClientPage() {
                                       <CardHeader className="pb-3">
                                         <CardTitle className="flex items-center gap-2 text-purple-800 text-lg">
                                           <Sparkles className="h-5 w-5 text-purple-600" />
-                                          AI深層心理鑑定
+                                          AI深層言霊鑑定
                                         </CardTitle>
                                       </CardHeader>
                                       <CardContent>
-                                        <p className="text-purple-900 whitespace-pre-wrap leading-relaxed text-base">
-                                          {aiFortune.aiFortune.fortune?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
-                                        </p>
+                                        <div className="text-purple-900 text-base leading-relaxed">
+                                          {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
+                                            <p key={index} className={index > 0 ? 'mt-2' : ''}>
+                                              {paragraph}
+                                            </p>
+                                          ))}
+                                        </div>
                                       </CardContent>
                                     </Card>
                                   )}
@@ -1437,7 +1455,7 @@ export default function ClientPage() {
                                       </CardHeader>
                                       <CardContent className="pt-4">
                                         <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                          {(aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です')?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
+                                          {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
                                         </p>
                                       </CardContent>
                                     </Card>
@@ -1453,7 +1471,7 @@ export default function ClientPage() {
                                         </CardHeader>
                                         <CardContent className="pt-4">
                                           <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.talents?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
+                                            {aiFortune.aiFortune.talents}
                                           </p>
                                         </CardContent>
                                       </Card>
@@ -1470,7 +1488,7 @@ export default function ClientPage() {
                                         </CardHeader>
                                         <CardContent className="pt-4">
                                           <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.challenges?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
+                                            {aiFortune.aiFortune.challenges}
                                           </p>
                                         </CardContent>
                                       </Card>
@@ -1487,7 +1505,7 @@ export default function ClientPage() {
                                         </CardHeader>
                                         <CardContent className="pt-4">
                                           <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.advice?.replace(/\n(?!\n)/g, '\n\n').replace(/\n{3,}/g, '\n\n')}
+                                            {aiFortune.aiFortune.advice}
                                           </p>
                                         </CardContent>
                                       </Card>
@@ -1535,7 +1553,8 @@ export default function ClientPage() {
                                     </Card>
                                   )}
 
-                                  {/* 再分析ボタン */}
+                                  {/* 再分析ボタン（プレミアムプランのみ） */}
+                                  {currentPlan === "premium" && (
                                   <div className="text-center pt-2">
                                   <Button 
                                       variant="outline"
@@ -1554,6 +1573,7 @@ export default function ClientPage() {
                                       再分析
                                   </Button>
                                   </div>
+                                  )}
 
                                   {/* 希味のイラスト画像 */}
                                   <div className="flex justify-center pt-6 pb-4">
@@ -1562,12 +1582,12 @@ export default function ClientPage() {
                                       alt="金雨希味"
                                       className="w-[200px] md:w-[300px] h-auto opacity-80 hover:opacity-100 transition-opacity rounded-lg"
                                     />
-                                  </div>
+                              </div>
                                 </div>
                               ) : (
                                 <div className="text-center py-8">
                                   <p className="text-muted-foreground mb-4">
-                                    AI深層心理分析を生成するには、姓名判断を実行してください
+                                    AI深層言霊鑑定を生成するには、姓名判断を実行してください
                                   </p>
                                   {aiFortune && !aiFortune.success && (
                                     <Alert className="mt-4">

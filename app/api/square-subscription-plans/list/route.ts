@@ -73,14 +73,21 @@ export async function GET() {
       const planName = planData.name || plan.name || "未設定"
       const planNameLower = planName.toLowerCase()
 
-      // ベーシック/プレミアムの判定
-      const isBasic = planNameLower.includes("basic") || 
+      // このアプリのプランかどうかを判定（「まいにちAI姓名判断」を含むプランのみ）
+      const isThisAppPlan = planNameLower.includes("まいにちai姓名判断") || 
+                            planNameLower.includes("まいにち") ||
+                            planNameLower.includes("姓名判断")
+
+      // ベーシック/プレミアムの判定（このアプリのプランのみ）
+      const isBasic = isThisAppPlan && (
+                      planNameLower.includes("basic") || 
                       planNameLower.includes("ベーシック") ||
-                      plan.id.includes("BASIC")
+                      plan.id.includes("BASIC"))
       
-      const isPremium = planNameLower.includes("premium") || 
+      const isPremium = isThisAppPlan && (
+                        planNameLower.includes("premium") || 
                         planNameLower.includes("プレミアム") ||
-                        plan.id.includes("PREMIUM")
+                        plan.id.includes("PREMIUM"))
 
       return {
         id: plan.id,
