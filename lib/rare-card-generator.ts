@@ -811,12 +811,20 @@ async function generateRareCardWithBaseImage(
       ? baseImagePath.substring(1) 
       : baseImagePath
     
-    const imagePath = path.join(process.cwd(), 'public', normalizedPath)
-    console.log('📸 ベース画像パス:', imagePath)
+    // 開発環境と本番環境（Netlify）の両方に対応
+    // 1. まず public フォルダから読み込む（開発環境用）
+    let imagePath = path.join(process.cwd(), 'public', normalizedPath)
+    console.log('📸 ベース画像パス（試行1）:', imagePath)
+    
+    // 2. 存在しない場合は、public をスキップしてルートから読み込む（Netlify本番環境用）
+    if (!fs.existsSync(imagePath)) {
+      imagePath = path.join(process.cwd(), normalizedPath)
+      console.log('📸 ベース画像パス（試行2）:', imagePath)
+    }
     
     // ファイルの存在確認
     if (!fs.existsSync(imagePath)) {
-      throw new Error(`ベース画像が見つかりません: ${imagePath} (元のパス: ${baseImagePath})`)
+      throw new Error(`ベース画像が見つかりません: ${imagePath} (元のパス: ${baseImagePath}, cwd: ${process.cwd()})`)
     }
     
     const baseImageBuffer = fs.readFileSync(imagePath)
