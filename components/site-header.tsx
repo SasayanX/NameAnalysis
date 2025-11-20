@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, CreditCard, Gift, User } from "lucide-react"
+import { BookOpen, CreditCard, Gift, Home, User } from "lucide-react"
 
 import { useAuth } from "@/components/auth/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -14,9 +14,12 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between py-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center space-x-2">
-            {/* モバイル時はサイトアイコンのみ */}
-            <Image src="/images/mainichi.png" alt="まいにち姓名判断" width={48} height={48} className="sm:hidden" />
+          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+            {/* モバイル時はホームアイコンとロゴ */}
+            <div className="flex items-center gap-2 sm:hidden">
+              <Home className="h-6 w-6 text-primary" />
+              <Image src="/images/mainichi.png" alt="まいにち姓名判断" width={40} height={40} />
+            </div>
             {/* デスクトップ時はフルタイトル */}
             <span className="hidden sm:inline-block font-bold text-lg">まいにちの運勢もわかる姓名判断アプリ</span>
           </Link>
