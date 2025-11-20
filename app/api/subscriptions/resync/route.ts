@@ -50,7 +50,92 @@ export async function POST(request: NextRequest) {
     }
 
     const normalizedEmail = customerEmail?.toLowerCase() ?? null
+    const now = new Date()
 
+    // 1. まず user_subscriptions テーブルから直接情報を取得（Google Play Billing / Square 両方に対応）
+    let subscriptionQuery = supabase
+      .from("user_subscriptions")
+      .select("*")
+      .order("last_verified_at", { ascending: false })
+      .limit(1)
+
+    if (userId) {
+      subscriptionQuery = subscriptionQuery.eq("user_id", userId)
+    }
+
+    if (normalizedEmail) {
+      subscriptionQuery = subscriptionQuery.eq("customer_email", normalizedEmail)
+    }
+
+    const { data: existingSubscription, error: subscriptionError } = await subscriptionQuery.maybeSingle()
+
+    if (subscriptionError) {
+      console.error("[Subscription Resync] user_subscriptions query error:", {
+        message: subscriptionError.message,
+        details: subscriptionError.details,
+        hint: subscriptionError.hint,
+        code: subscriptionError.code,
+      })
+    }
+
+    // 2. user_subscriptions に既存のレコードがある場合、それを更新して返す
+    if (existingSubscription) {
+      console.log("[Subscription Resync] Found existing subscription in user_subscriptions:", {
+        id: existingSubscription.id,
+        plan: existingSubscription.plan,
+        status: existingSubscription.status,
+        paymentMethod: existingSubscription.payment_method,
+        expiresAt: existingSubscription.expires_at,
+      })
+
+      // 有効期限を確認してステータスを更新
+      const expiresAt = existingSubscription.expires_at ? new Date(existingSubscription.expires_at) : null
+      const isActive = expiresAt && expiresAt > now && existingSubscription.status === "active"
+      const status: SubscriptionStatus = isActive ? "active" : (existingSubscription.status as SubscriptionStatus)
+
+      const updatePayload = {
+        last_verified_at: now.toISOString(),
+        status,
+        updated_at: now.toISOString(),
+      }
+
+      const { error: updateError } = await supabase
+        .from("user_subscriptions")
+        .update(updatePayload)
+        .eq("id", existingSubscription.id)
+
+      if (updateError) {
+        console.error("[Subscription Resync] user_subscriptions update error:", {
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+          code: updateError.code,
+        })
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "サブスクリプションの更新に失敗しました",
+            details: process.env.NODE_ENV === "development" ? updateError.message : undefined,
+          },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        subscription: {
+          plan: existingSubscription.plan as PlanType,
+          status,
+          paymentMethod: existingSubscription.payment_method || "google_play",
+          expiresAt: expiresAt ? expiresAt.toISOString() : null,
+          lastVerifiedAt: now.toISOString(),
+        },
+      })
+    }
+
+    // 3. user_subscriptions にレコードがない場合、square_payments から情報を取得（Square決済の場合）
+    console.log("[Subscription Resync] No existing subscription found, checking square_payments...")
+    
     const paymentsQuery = supabase
       .from("square_payments")
       .select("*")
@@ -110,7 +195,6 @@ export async function POST(request: NextRequest) {
 
     const plan = (payment.plan || "basic") as PlanType
     const expiresAt = payment.expires_at ? new Date(payment.expires_at) : null
-    const now = new Date()
     const status: SubscriptionStatus = expiresAt && expiresAt > now ? "active" : "expired"
     const payload = {
       user_id: userId ?? null,
@@ -130,6 +214,7 @@ export async function POST(request: NextRequest) {
       updated_at: now.toISOString(),
     }
 
+    // 4. square_payments から取得した情報を user_subscriptions に保存
     let existingId: string | null = null
 
     if (userId) {
