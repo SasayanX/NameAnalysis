@@ -1108,8 +1108,6 @@ export default function ClientPage() {
                             gender={gender} 
                             currentPlan={currentPlan}
                             advancedResults={advancedResults}
-                            aiFortune={aiFortune}
-                            isLoadingAiFortune={isLoadingAiFortune}
                           />
                           {/* 無料プランでのアップグレード誘導 */}
                           {currentPlan === "free" && (
