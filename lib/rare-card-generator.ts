@@ -145,6 +145,7 @@ export async function generateRareCardImage(
 ): Promise<Buffer> {
   const design = RANK_DESIGNS[rank]
   const fullName = lastName + firstName
+  const nameChars = Array.from(fullName)
 
   // カードサイズ（縦向き）
   const width = 1200
@@ -189,11 +190,10 @@ export async function generateRareCardImage(
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
-      <!-- 強力な発光フィルター（SSS用、RareCard.tsxと同じ） -->
+      <!-- 強力な発光フィルター（SSS用、最小限のぼかし） -->
       <filter id="strong-glow">
-        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feGaussianBlur stdDeviation="1" result="blur"/>
         <feMerge>
-          <feMergeNode in="blur"/>
           <feMergeNode in="blur"/>
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
@@ -297,24 +297,24 @@ export async function generateRareCardImage(
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
-      <!-- ランク別色付きグローフィルター（RareCard.tsxのtextShadowを完全再現: 0 0 6px glow, 0 0 14px glow, 0 4px 4px shadow） -->
+      <!-- ランク別色付きグローフィルター（最小限のぼかし） -->
       <filter id="glow-colored-${rank}" x="-100%" y="-100%" width="300%" height="300%">
-        <!-- 0 0 6px ${colors.glow} -->
-        <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur1"/>
+        <!-- 0 0 1px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur1"/>
         <feOffset in="blur1" dx="0" dy="0" result="offset1"/>
-        <feFlood flood-color="${colors.glow}" flood-opacity="0.8" result="glowColor1"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.15" result="glowColor1"/>
         <feComposite in="glowColor1" in2="offset1" operator="in" result="glow1"/>
         
-        <!-- 0 0 14px ${colors.glow} -->
-        <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="blur2"/>
+        <!-- 0 0 2px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur2"/>
         <feOffset in="blur2" dx="0" dy="0" result="offset2"/>
-        <feFlood flood-color="${colors.glow}" flood-opacity="0.6" result="glowColor2"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.1" result="glowColor2"/>
         <feComposite in="glowColor2" in2="offset2" operator="in" result="glow2"/>
         
-        <!-- 0 4px 4px ${colors.shadow} -->
-        <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur3"/>
-        <feOffset in="blur3" dx="0" dy="4" result="offset3"/>
-        <feFlood flood-color="${colors.shadow}" flood-opacity="0.6" result="shadowColor"/>
+        <!-- 0 0.5px 0.5px ${colors.shadow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="0.5" result="blur3"/>
+        <feOffset in="blur3" dx="0" dy="0.5" result="offset3"/>
+        <feFlood flood-color="${colors.shadow}" flood-opacity="0.1" result="shadowColor"/>
         <feComposite in="shadowColor" in2="offset3" operator="in" result="shadow"/>
         
         <!-- マージ: 影 → 外側グロー → 内側グロー → テキスト -->
@@ -332,12 +332,89 @@ export async function generateRareCardImage(
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
+      <!-- 昇龍エフェクト用: ランク別グラデーション（各文字用） -->
+      ${nameChars.map((char, index) => {
+        if (rank === 'SSS') {
+          // SSS: 金色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#B8860B;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#DAA520;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#FFD700;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#FFE55C;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFF8D9;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="stroke-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#C0C0C0;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'SS') {
+          // SS: 銀色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#4A5568;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#718096;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#A0AEC0;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#C0CCD4;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#F2F7FF;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="stroke-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#C0C0C0;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'A+') {
+          // A+: 紺色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#203060;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#334A66;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#5C7FB8;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#B0C8FF;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#DDE8FF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'A') {
+          // A: 緑系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#2E7D32;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#388E3C;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#66BB6A;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#A5D6A7;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#C8E6C9;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'B+') {
+          // B+: 銀色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#4A5568;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#718096;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#A0AEC0;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#C0CCD4;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#F2F7FF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else {
+          // S以下（B、C、D）: 現状の炎グラデーション（赤→オレンジ→黄色→金色）
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#FF4500;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#FF6347;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#FFA500;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#FFD700;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFE0;stop-opacity:1" />
+        </linearGradient>
+      `
+        }
+      }).join('')}
       ${specialEffectsDef}
     </defs>
   `
 
   // 縦書き名前の配置（RareCard.tsxと同じ計算ロジックを使用）
-  const nameChars = Array.from(fullName)
   
   // セーフゾーン（RareCard.tsxと同じ）
   const safeZone = { top: 120, bottom: 120, left: 80, right: 80 }
@@ -345,58 +422,56 @@ export async function generateRareCardImage(
   const nameAreaHeight = height - safeZone.top - safeZone.bottom
   
   // 文字サイズと行間を自動計算（RareCard.tsxと同じ）
-  const charSize = Math.min(180, Math.floor(nameAreaWidth / nameChars.length * 1.2))
+  const charSize = Math.min(200, Math.floor(nameAreaWidth / nameChars.length * 1.2))
   const charSpacing = charSize * 1.05
   const nameStartX = width / 2
   const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
 
   // 名前の文字要素（RareCard.tsxと同じ実装）
+  // フォント指定: KSW闘龍
+  const fontFamily = "'KSW闘龍', serif"
+  console.log('🎨 カード生成 - フォント指定:', fontFamily)
   const nameElements = nameChars.map((char, index) => {
     const y = nameStartY + index * charSpacing
 
     return `
-      <!-- 後光エフェクト（SSSのみ） -->
+      <!-- 後光エフェクト（SSSのみ、くっきりしたエッジ） -->
       ${rank === 'SSS' ? `
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
+            font-family="${fontFamily}" 
             font-size="${charSize}" 
-            font-weight="900" 
+            font-weight="700" 
             fill="${colors.glow}" 
             opacity="0.6"
-            filter="url(#strong-glow)">${char}</text>
+            text-rendering="optimizeLegibility"
+            shape-rendering="crispEdges">${char}</text>
       ` : ''}
       
       <!-- 多段影（RareCard.tsxと同じ） -->
       <text x="${nameStartX + 2}" y="${y + 3}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
+            font-family="${fontFamily}" 
             font-size="${charSize}" 
-            font-weight="900" 
+            font-weight="700" 
             fill="${colors.shadow}" 
             opacity="0.6">${char}</text>
       
-      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用、SSランクは縁取り強化） -->
+      <!-- メインテキスト（昇龍エフェクト: 下から上への炎グラデーション + 縁取り） -->
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
+            font-family="${fontFamily}" 
             font-size="${charSize}" 
-            font-weight="900" 
-            fill="${colors.main}" 
-            stroke="${rank === 'SS' ? '#1A3A5F' : colors.shadow}"
-            stroke-width="${rank === 'SS' ? 6 : 4}"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-colored-${rank})`}">${char}</text>
-      
-      <!-- 内側ハイライト（RareCard.tsxと同じ） -->
-      <text x="${nameStartX - 1}" y="${y - 2}" 
-            text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
-            font-size="${charSize * 0.98}" 
-            font-weight="900" 
-            fill="rgba(255,255,255,0.4)" 
-            opacity="0.5">${char}</text>
+            font-weight="700" 
+            fill="url(#flame-gradient-${index})" 
+            stroke="${rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-${index})` : '#FFD700'}"
+            stroke-width="1.5"
+            stroke-linejoin="miter"
+            stroke-linecap="butt"
+            stroke-opacity="0.9"
+            stroke-miterlimit="4"
+            text-rendering="optimizeLegibility"
+            shape-rendering="crispEdges">${char}</text>
     `
   }).join('\n')
 
@@ -503,8 +578,9 @@ export async function generateRareCardImage(
   }
 
   // SVG生成（従来の方法：ベース画像なし）
+  // フォント指定確認用: HG明朝E
   const svg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" text-rendering="optimizeLegibility">
       ${gradientDef}
       
       <!-- 背景（より暗く） -->
@@ -589,10 +665,10 @@ export async function generateRareCardImage(
               stroke="${colors.glow}"
               stroke-width="3"
               filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}"/>
-        <!-- ポイント表示（RareCard.tsxと同じ） -->
+        <!-- ポイント表示（ランク別グラデーション適用） -->
         <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
               font-family="Arial, sans-serif" font-size="64" font-weight="900"
-              fill="#FFFFFF" 
+              fill="url(#flame-gradient-0)" 
               filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}">${totalPoints}pt</text>
         <!-- パワーレベル表示（RareCard.tsxと同じ） -->
         <text x="0" y="65" text-anchor="middle"
@@ -647,7 +723,7 @@ async function generateRareCardWithBaseImage(
   const nameAreaHeight = height - safeZone.top - safeZone.bottom
   
   // 文字サイズと行間を自動計算（RareCard.tsxと同じ）
-  const charSize = Math.min(180, Math.floor(nameAreaWidth / nameChars.length * 1.2))
+  const charSize = Math.min(200, Math.floor(nameAreaWidth / nameChars.length * 1.2))
   const charSpacing = charSize * 1.05
   const nameStartX = width / 2
   const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
@@ -678,34 +754,33 @@ async function generateRareCardWithBaseImage(
         </feMerge>
       </filter>
       
-      <!-- 強力な発光フィルター（SSS用、RareCard.tsxと同じ） -->
+      <!-- 強力な発光フィルター（SSS用、最小限のぼかし） -->
       <filter id="strong-glow">
-        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feGaussianBlur stdDeviation="1" result="blur"/>
         <feMerge>
-          <feMergeNode in="blur"/>
           <feMergeNode in="blur"/>
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
       
-      <!-- ランク別色付きグローフィルター（RareCard.tsxのtextShadowを完全再現: 0 0 6px glow, 0 0 14px glow, 0 4px 4px shadow） -->
+      <!-- ランク別色付きグローフィルター（最小限のぼかし） -->
       <filter id="glow-colored-${rank}" x="-100%" y="-100%" width="300%" height="300%">
-        <!-- 0 0 6px ${colors.glow} -->
-        <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur1"/>
+        <!-- 0 0 1px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur1"/>
         <feOffset in="blur1" dx="0" dy="0" result="offset1"/>
-        <feFlood flood-color="${colors.glow}" flood-opacity="0.8" result="glowColor1"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.15" result="glowColor1"/>
         <feComposite in="glowColor1" in2="offset1" operator="in" result="glow1"/>
         
-        <!-- 0 0 14px ${colors.glow} -->
-        <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="blur2"/>
+        <!-- 0 0 2px ${colors.glow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur2"/>
         <feOffset in="blur2" dx="0" dy="0" result="offset2"/>
-        <feFlood flood-color="${colors.glow}" flood-opacity="0.6" result="glowColor2"/>
+        <feFlood flood-color="${colors.glow}" flood-opacity="0.1" result="glowColor2"/>
         <feComposite in="glowColor2" in2="offset2" operator="in" result="glow2"/>
         
-        <!-- 0 4px 4px ${colors.shadow} -->
-        <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur3"/>
-        <feOffset in="blur3" dx="0" dy="4" result="offset3"/>
-        <feFlood flood-color="${colors.shadow}" flood-opacity="0.6" result="shadowColor"/>
+        <!-- 0 0.5px 0.5px ${colors.shadow} -->
+        <feGaussianBlur in="SourceAlpha" stdDeviation="0.5" result="blur3"/>
+        <feOffset in="blur3" dx="0" dy="0.5" result="offset3"/>
+        <feFlood flood-color="${colors.shadow}" flood-opacity="0.1" result="shadowColor"/>
         <feComposite in="shadowColor" in2="offset3" operator="in" result="shadow"/>
         
         <!-- マージ: 影 → 外側グロー → 内側グロー → テキスト -->
@@ -716,10 +791,90 @@ async function generateRareCardWithBaseImage(
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
+      <!-- 昇龍エフェクト用: ランク別グラデーション（各文字用） -->
+      ${nameChars.map((char, index) => {
+        if (rank === 'SSS') {
+          // SSS: 金色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#B8860B;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#DAA520;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#FFD700;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#FFE55C;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFF8D9;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="stroke-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#C0C0C0;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'SS') {
+          // SS: 銀色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#4A5568;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#718096;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#A0AEC0;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#C0CCD4;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#F2F7FF;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="stroke-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#C0C0C0;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'A+') {
+          // A+: 紺色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#203060;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#334A66;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#5C7FB8;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#B0C8FF;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#DDE8FF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'A') {
+          // A: 緑系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#2E7D32;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#388E3C;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#66BB6A;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#A5D6A7;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#C8E6C9;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'B+') {
+          // B+: 銀色系グラデーション（下から上へ）
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#4A5568;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#718096;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#A0AEC0;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#C0CCD4;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#F2F7FF;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else {
+          // S以下（B、C、D）: 現状の炎グラデーション（赤→オレンジ→黄色→金色）
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#FF4500;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#FF6347;stop-opacity:1" />
+          <stop offset="60%" style="stop-color:#FFA500;stop-opacity:1" />
+          <stop offset="85%" style="stop-color:#FFD700;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFE0;stop-opacity:1" />
+        </linearGradient>
+      `
+        }
+      }).join('')}
     </defs>
   `
   
   // 名前テキスト要素（RareCard.tsxと同じ実装）
+  // フォント指定: KSW闘龍
+  const fontFamily = "'KSW闘龍', serif"
   const nameElements = nameChars.map((char, index) => {
     const y = nameStartY + index * charSpacing
 
@@ -728,9 +883,9 @@ async function generateRareCardWithBaseImage(
       ${rank === 'SSS' ? `
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
+            font-family="${fontFamily}" 
             font-size="${charSize}" 
-            font-weight="900" 
+            font-weight="700" 
             fill="${colors.glow}" 
             opacity="0.6"
             filter="url(#strong-glow)">${char}</text>
@@ -739,39 +894,33 @@ async function generateRareCardWithBaseImage(
       <!-- 多段影（RareCard.tsxと同じ） -->
       <text x="${nameStartX + 2}" y="${y + 3}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
+            font-family="${fontFamily}" 
             font-size="${charSize}" 
-            font-weight="900" 
+            font-weight="700" 
             fill="${colors.shadow}" 
             opacity="0.6">${char}</text>
       
-      <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用、SSランクは縁取り強化） -->
+      <!-- メインテキスト（昇龍エフェクト: 下から上への炎グラデーション + 縁取り） -->
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
+            font-family="${fontFamily}" 
             font-size="${charSize}" 
-            font-weight="900" 
-            fill="${colors.main}" 
-            stroke="${rank === 'SS' ? '#1A3A5F' : colors.shadow}"
-            stroke-width="${rank === 'SS' ? 6 : 4}"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-colored-${rank})`}">${char}</text>
-      
-      <!-- 内側ハイライト（RareCard.tsxと同じ） -->
-      <text x="${nameStartX - 1}" y="${y - 2}" 
-            text-anchor="middle" dominant-baseline="central"
-            font-family="'Arial','Helvetica','sans-serif'" 
-            font-size="${charSize * 0.98}" 
-            font-weight="900" 
-            fill="rgba(255,255,255,0.4)" 
-            opacity="0.5">${char}</text>
+            font-weight="700" 
+            fill="url(#flame-gradient-base-${index})" 
+            stroke="${rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-base-${index})` : '#FFD700'}"
+            stroke-width="1.5"
+            stroke-linejoin="miter"
+            stroke-linecap="butt"
+            stroke-opacity="0.9"
+            stroke-miterlimit="4"
+            text-rendering="optimizeLegibility"
+            shape-rendering="crispEdges">${char}</text>
     `
   }).join('\n')
   
   // テキストレイヤーのSVG生成
   const textLayerSvg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" text-rendering="optimizeLegibility">
       ${textEffectsDef}
       
       <!-- 名前（縦書き） -->
@@ -786,10 +935,10 @@ async function generateRareCardWithBaseImage(
               stroke="${colors.glow}"
               stroke-width="3"
               filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}"/>
-        <!-- ポイント表示（RareCard.tsxと同じ） -->
+        <!-- ポイント表示（ランク別グラデーション適用） -->
         <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
               font-family="Arial, sans-serif" font-size="64" font-weight="900"
-              fill="#FFFFFF" 
+              fill="url(#flame-gradient-base-0)" 
               filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}">${totalPoints}pt</text>
         <!-- パワーレベル表示（RareCard.tsxと同じ） -->
         <text x="0" y="65" text-anchor="middle"

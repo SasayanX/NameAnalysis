@@ -53,7 +53,7 @@ export default function RareCard({
   const nameAreaHeight = height - safeZone.top - safeZone.bottom
 
   // 縦書きの文字サイズと行間を自動計算
-  const charSize = Math.min(180, Math.floor(nameAreaWidth / nameChars.length * 1.2)) // 144から180に増加、係数も1.2に
+  const charSize = Math.min(200, Math.floor(nameAreaWidth / nameChars.length * 1.2)) // 最大200px
   const charSpacing = charSize * 1.05
   const nameStartX = width / 2
   const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
@@ -107,6 +107,89 @@ export default function RareCard({
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+
+          {/* 昇龍エフェクト用: ランク別グラデーション（各文字用） */}
+          {nameChars.map((char, index) => {
+            if (rank === 'SSS') {
+              // SSS: 金色系グラデーション（下から上へ）
+              return (
+                <>
+                  <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: '#B8860B', stopOpacity: 1 }} />
+                    <stop offset="30%" style={{ stopColor: '#DAA520', stopOpacity: 1 }} />
+                    <stop offset="60%" style={{ stopColor: '#FFD700', stopOpacity: 1 }} />
+                    <stop offset="85%" style={{ stopColor: '#FFE55C', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#FFF8D9', stopOpacity: 1 }} />
+                  </linearGradient>
+                  <linearGradient key={`stroke-${index}`} id={`stroke-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: '#C0C0C0', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#FFFFFF', stopOpacity: 1 }} />
+                  </linearGradient>
+                </>
+              )
+            } else if (rank === 'SS') {
+              // SS: 銀色系グラデーション（下から上へ）
+              return (
+                <>
+                  <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: '#4A5568', stopOpacity: 1 }} />
+                    <stop offset="30%" style={{ stopColor: '#718096', stopOpacity: 1 }} />
+                    <stop offset="60%" style={{ stopColor: '#A0AEC0', stopOpacity: 1 }} />
+                    <stop offset="85%" style={{ stopColor: '#C0CCD4', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#F2F7FF', stopOpacity: 1 }} />
+                  </linearGradient>
+                  <linearGradient key={`stroke-${index}`} id={`stroke-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: '#C0C0C0', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#FFFFFF', stopOpacity: 1 }} />
+                  </linearGradient>
+                </>
+              )
+            } else if (rank === 'A+') {
+              // A+: 紺色系グラデーション（下から上へ）
+              return (
+                <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: '#203060', stopOpacity: 1 }} />
+                  <stop offset="30%" style={{ stopColor: '#334A66', stopOpacity: 1 }} />
+                  <stop offset="60%" style={{ stopColor: '#5C7FB8', stopOpacity: 1 }} />
+                  <stop offset="85%" style={{ stopColor: '#B0C8FF', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#DDE8FF', stopOpacity: 1 }} />
+                </linearGradient>
+              )
+            } else if (rank === 'A') {
+              // A: 緑系グラデーション（下から上へ）
+              return (
+                <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: '#2E7D32', stopOpacity: 1 }} />
+                  <stop offset="30%" style={{ stopColor: '#388E3C', stopOpacity: 1 }} />
+                  <stop offset="60%" style={{ stopColor: '#66BB6A', stopOpacity: 1 }} />
+                  <stop offset="85%" style={{ stopColor: '#A5D6A7', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#C8E6C9', stopOpacity: 1 }} />
+                </linearGradient>
+              )
+            } else if (rank === 'B+') {
+              // B+: 銀色系グラデーション（下から上へ）
+              return (
+                <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: '#4A5568', stopOpacity: 1 }} />
+                  <stop offset="30%" style={{ stopColor: '#718096', stopOpacity: 1 }} />
+                  <stop offset="60%" style={{ stopColor: '#A0AEC0', stopOpacity: 1 }} />
+                  <stop offset="85%" style={{ stopColor: '#C0CCD4', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#F2F7FF', stopOpacity: 1 }} />
+                </linearGradient>
+              )
+            } else {
+              // S以下（B、C、D）: 現状の炎グラデーション（赤→オレンジ→黄色→金色）
+              return (
+                <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: '#FF4500', stopOpacity: 1 }} />
+                  <stop offset="30%" style={{ stopColor: '#FF6347', stopOpacity: 1 }} />
+                  <stop offset="60%" style={{ stopColor: '#FFA500', stopOpacity: 1 }} />
+                  <stop offset="85%" style={{ stopColor: '#FFD700', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#FFFFE0', stopOpacity: 1 }} />
+                </linearGradient>
+              )
+            }
+          })}
         </defs>
 
         {/* 背景ベース画像 */}
@@ -123,6 +206,7 @@ export default function RareCard({
         {nameChars.map((char, index) => {
           const y = nameStartY + index * charSpacing
           const glowFilter = rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'
+          const fontFamily = "'KSW闘龍', serif"
 
           return (
             <g key={index}>
@@ -134,11 +218,11 @@ export default function RareCard({
                   textAnchor="middle"
                   dominantBaseline="central"
                   fontSize={charSize}
-                  fontWeight="900"
+                  fontWeight="700"
                   fill={colors.glow}
                   opacity="0.6"
                   filter="url(#strong-glow)"
-                  fontFamily="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif"
+                  fontFamily={fontFamily}
                 >
                   {char}
                 </text>
@@ -151,47 +235,34 @@ export default function RareCard({
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontSize={charSize}
-                fontWeight="900"
+                fontWeight="700"
                 fill={colors.shadow}
                 opacity="0.6"
-                fontFamily="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif"
+                fontFamily={fontFamily}
               >
                 {char}
               </text>
 
-              {/* メインテキスト */}
+              {/* メインテキスト（昇龍エフェクト: 下から上への炎グラデーション + 縁取り） */}
               <text
                 x={nameStartX}
                 y={y}
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontSize={charSize}
-                fontWeight="900"
-                fill={colors.main}
-                stroke={rank === 'SS' ? '#1A3A5F' : colors.shadow}
-                strokeWidth={rank === 'SS' ? 6 : 4}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                filter={glowFilter}
-                fontFamily="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif"
+                fontWeight="700"
+                fill={`url(#flame-gradient-front-${index})`}
+                stroke={rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-front-${index})` : '#FFD700'}
+                strokeWidth={1.5}
+                strokeLinejoin="miter"
+                strokeLinecap="butt"
+                strokeOpacity={0.9}
+                strokeMiterlimit={4}
+                fontFamily={fontFamily}
                 style={{
-                  textShadow: `0 0 6px ${colors.glow}, 0 0 14px ${colors.glow}, 0 4px 4px ${colors.shadow}`,
+                  textRendering: 'optimizeLegibility',
+                  shapeRendering: 'crispEdges',
                 }}
-              >
-                {char}
-              </text>
-
-              {/* 内側ハイライト */}
-              <text
-                x={nameStartX - 1}
-                y={y - 2}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={charSize * 0.98}
-                fontWeight="900"
-                fill="rgba(255,255,255,0.4)"
-                opacity="0.5"
-                fontFamily="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif"
               >
                 {char}
               </text>
@@ -221,7 +292,7 @@ export default function RareCard({
             dominantBaseline="central"
             fontSize="64"
             fontWeight="900"
-            fill="#FFFFFF"
+            fill={`url(#flame-gradient-front-0)`}
             filter={rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}
           >
             {score}pt
