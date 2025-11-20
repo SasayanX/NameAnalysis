@@ -96,70 +96,94 @@ export default function PricingPage() {
   }
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null
+    let checkCount = 0
+    const maxChecks = 10 // 最大10回チェック（10秒間）
+
     const checkPlatform = async () => {
       try {
         // 即座にTWA環境を再判定（初期レンダリング後の確認）
         const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
-        setIsTWAContext(isTWA)
         
-        console.log("[Pricing] TWA環境判定:", isTWA)
+        console.log("[Pricing] TWA環境判定:", isTWA, "チェック回数:", checkCount)
         console.log("[Pricing] User Agent:", typeof navigator !== "undefined" ? navigator.userAgent : "N/A")
         console.log("[Pricing] Display Mode:", typeof window !== "undefined" && "matchMedia" in window 
           ? window.matchMedia("(display-mode: standalone)").matches : "N/A")
-        console.log("[Pricing] Referrer:", typeof document !== "undefined" ? document.referrer : "N/A")
 
         if (isTWA) {
-          // TWA環境の場合は、初期化を試みるが、失敗してもTWA環境として扱う
+          // TWA環境が検出された場合は、即座にGoogle Play Billingを有効化
+          console.log("[Pricing] ✅ TWA環境が検出されました。Google Play Billingを有効化します")
+          setIsTWAContext(true)
+          setIsGooglePlayAvailable(true)
+          
+          // 初期化を試みる（非同期、失敗しても問題なし）
           try {
             const available = await GooglePlayBillingDetector.initialize()
-            setIsGooglePlayAvailable(available)
             console.log("[Pricing] Google Play Billing初期化結果:", available)
+            // 初期化が成功した場合は、状態を更新（既にtrueの場合は変更なし）
+            if (available) {
+              setIsGooglePlayAvailable(true)
+            }
           } catch (initError) {
-            console.warn("[Pricing] Google Play Billing初期化エラー:", initError)
+            console.warn("[Pricing] Google Play Billing初期化エラー（無視）:", initError)
             // TWA環境であれば、初期化が失敗してもGoogle Play Billingを使用可能とする
-            // （Digital Goods APIがまだ利用できない場合でも、TWA環境では使用可能）
             setIsGooglePlayAvailable(true)
           }
           
-          // TWA環境が検出された場合は、確実にGoogle Play Billingを有効にする
-          if (!isGooglePlayAvailable) {
-            console.log("[Pricing] TWA環境が検出されたため、Google Play Billingを強制的に有効化します")
-            setIsGooglePlayAvailable(true)
+          // TWA環境が確定したら、定期チェックを停止
+          if (intervalId) {
+            clearInterval(intervalId)
+            intervalId = null
           }
         } else {
-          // TWA環境でない場合は、Google Play Billingを無効化
-          setIsGooglePlayAvailable(false)
-          console.log("[Pricing] TWA環境ではないため、Square決済を使用します")
+          // TWA環境でない場合
+          checkCount++
+          
+          // まだチェック回数が少ない場合は、継続してチェック
+          if (checkCount < maxChecks) {
+            console.log("[Pricing] TWA環境ではない（チェック継続中）")
+            // 状態は変更しない（まだ確定していない）
+          } else {
+            // 最大チェック回数に達した場合は、TWA環境ではないと確定
+            console.log("[Pricing] TWA環境ではないと確定しました。Square決済を使用します")
+            setIsTWAContext(false)
+            setIsGooglePlayAvailable(false)
+            
+            // 定期チェックを停止
+            if (intervalId) {
+              clearInterval(intervalId)
+              intervalId = null
+            }
+          }
         }
       } catch (error) {
         console.warn("[Pricing] Failed to check platform:", error)
-        // エラーが発生しても、TWA環境の可能性がある場合はGoogle Play Billingを有効にする
-        const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
-        if (isTWA) {
-          console.log("[Pricing] エラー発生時もTWA環境が検出されたため、Google Play Billingを有効化します")
-          setIsGooglePlayAvailable(true)
-          setIsTWAContext(true)
-        } else {
-          setIsGooglePlayAvailable(false)
+        // エラーが発生しても、TWA環境の可能性がある場合は継続してチェック
+        checkCount++
+        if (checkCount >= maxChecks) {
+          // 最大チェック回数に達した場合は、エラーでも停止
+          if (intervalId) {
+            clearInterval(intervalId)
+            intervalId = null
+          }
         }
       }
     }
 
-    // 即座に実行（非同期処理は後続で実行）
+    // 即座に実行
     checkPlatform()
     
     // 定期的に再チェック（TWA環境の検出が遅れる場合があるため）
-    const intervalId = setInterval(() => {
-      const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
-      if (isTWA && !isTWAContext) {
-        console.log("[Pricing] 定期チェック: TWA環境が検出されました")
-        setIsTWAContext(true)
-        setIsGooglePlayAvailable(true)
-      }
+    intervalId = setInterval(() => {
+      checkPlatform()
     }, 1000) // 1秒ごとにチェック
     
-    return () => clearInterval(intervalId)
-  }, [isTWAContext, isGooglePlayAvailable])
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId)
+      }
+    }
+  }, []) // 依存配列を空にして、マウント時のみ実行
 
   const handleGooglePlayPurchase = async (planId: "basic" | "premium") => {
     try {
@@ -345,7 +369,8 @@ export default function PricingPage() {
                     <Button variant={plan.buttonVariant} className="w-full" asChild>
                       <Link href="/">{plan.buttonText}</Link>
                     </Button>
-                  ) : (isTWAContext || isGooglePlayAvailable) && typedPlanId ? (
+                  ) : isTWAContext && typedPlanId ? (
+                    // TWA環境が検出された場合は、常にGoogle Play Billingボタンを表示
                     <Button
                       onClick={() => handleGooglePlayPurchase(typedPlanId)}
                       disabled={processingPlan === typedPlanId}
@@ -365,6 +390,7 @@ export default function PricingPage() {
                       )}
                     </Button>
                   ) : typedPlanId ? (
+                    // TWA環境でない場合のみSquare決済ボタンを表示
                     <SquareCheckoutButton
                       planId={typedPlanId}
                       price={plan.price[billingCycle]}
@@ -380,7 +406,7 @@ export default function PricingPage() {
                   ) : null}
                 </div>
 
-                {isPaidPlan && (isGooglePlayAvailable || isTWAContext) && (
+                {isPaidPlan && isTWAContext && (
                   <p className="mt-3 text-xs text-blue-600 text-center">Google Play決済で処理されます</p>
                 )}
               </CardContent>

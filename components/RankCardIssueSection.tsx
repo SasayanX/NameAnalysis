@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
@@ -32,8 +32,47 @@ export default function RankCardIssueSection({
   const [isIssuing, setIsIssuing] = useState(false)
   const [issuedImageUrl, setIssuedImageUrl] = useState<string | null>(null)
   const [cardId, setCardId] = useState<string | null>(null)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const { user: authUser, loading: authLoading } = useAuth()
   const { toast } = useToast()
+
+  // マウント時とユーザー変更時に発行済みカードを読み込む
+  useEffect(() => {
+    if (!authUser || authLoading) {
+      return
+    }
+
+    const loadIssuedCardHistory = async () => {
+      setIsLoadingHistory(true)
+      try {
+        const response = await fetch(`/api/issued-cards?userId=${encodeURIComponent(authUser.id)}&lastName=${encodeURIComponent(lastName)}&firstName=${encodeURIComponent(firstName)}&rank=${encodeURIComponent(rank)}`)
+        
+        if (!response.ok) {
+          console.warn("発行済みカード履歴の取得に失敗:", response.status)
+          return
+        }
+
+        const data = await response.json()
+        
+        if (data.success && data.card) {
+          // 最新のカードを表示
+          setIssuedImageUrl(data.card.image_url)
+          setCardId(data.card.id)
+          console.log("✅ 発行済みカードを読み込みました:", data.card.image_url)
+        } else {
+          // カードがない場合は、発行済みカードの状態をリセット
+          setIssuedImageUrl(null)
+          setCardId(null)
+        }
+      } catch (error) {
+        console.error("❌ 発行済みカード履歴の取得エラー:", error)
+      } finally {
+        setIsLoadingHistory(false)
+      }
+    }
+
+    loadIssuedCardHistory()
+  }, [authUser, authLoading, lastName, firstName, rank])
 
   // KP残高を取得（API Route経由）
   const loadKpBalance = async () => {
@@ -314,7 +353,7 @@ export default function RankCardIssueSection({
   return (
     <>
       {/* 発行ボタン */}
-      {!issuedImageUrl && (
+      {!issuedImageUrl && !isLoadingHistory && (
         <div className="space-y-2">
           <Button
             onClick={async (e) => {
@@ -349,9 +388,9 @@ export default function RankCardIssueSection({
             className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800"
             size="lg"
             type="button"
-            disabled={authLoading}
+            disabled={authLoading || isLoadingHistory}
           >
-            {authLoading 
+            {authLoading || isLoadingHistory
               ? "読み込み中..." 
               : !authUser 
                 ? "ログインしてランクカードを発行"
@@ -366,6 +405,13 @@ export default function RankCardIssueSection({
         </div>
       )}
 
+      {/* 履歴読み込み中 */}
+      {isLoadingHistory && !issuedImageUrl && (
+        <div className="text-center py-4 text-gray-500">
+          発行済みカードを確認中...
+        </div>
+      )}
+
       {/* 発行済みカード表示 */}
       {issuedImageUrl && (
         <div className="space-y-4">
@@ -374,6 +420,17 @@ export default function RankCardIssueSection({
               src={issuedImageUrl}
               alt={`${lastName}${firstName}のランクカード`}
               className="w-full h-auto"
+              onError={(e) => {
+                console.error("❌ 画像の読み込みエラー:", issuedImageUrl)
+                toast({
+                  title: "画像読み込みエラー",
+                  description: "カード画像の読み込みに失敗しました。再度発行してください。",
+                  variant: "destructive",
+                })
+                // エラー時は発行済みカードの状態をリセット
+                setIssuedImageUrl(null)
+                setCardId(null)
+              }}
             />
           </div>
 
