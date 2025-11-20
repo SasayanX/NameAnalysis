@@ -359,7 +359,7 @@ export async function generateRareCardImage(
       ${rank === 'SSS' ? `
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.glow}" 
@@ -370,7 +370,7 @@ export async function generateRareCardImage(
       <!-- 多段影（RareCard.tsxと同じ） -->
       <text x="${nameStartX + 2}" y="${y + 3}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.shadow}" 
@@ -379,7 +379,7 @@ export async function generateRareCardImage(
       <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用、SSランクは縁取り強化） -->
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.main}" 
@@ -392,7 +392,7 @@ export async function generateRareCardImage(
       <!-- 内側ハイライト（RareCard.tsxと同じ） -->
       <text x="${nameStartX - 1}" y="${y - 2}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize * 0.98}" 
             font-weight="900" 
             fill="rgba(255,255,255,0.4)" 
@@ -728,7 +728,7 @@ async function generateRareCardWithBaseImage(
       ${rank === 'SSS' ? `
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.glow}" 
@@ -739,7 +739,7 @@ async function generateRareCardWithBaseImage(
       <!-- 多段影（RareCard.tsxと同じ） -->
       <text x="${nameStartX + 2}" y="${y + 3}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.shadow}" 
@@ -748,7 +748,7 @@ async function generateRareCardWithBaseImage(
       <!-- メインテキスト（RareCard.tsxと同じ、色付きグロー適用、SSランクは縁取り強化） -->
       <text x="${nameStartX}" y="${y}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize}" 
             font-weight="900" 
             fill="${colors.main}" 
@@ -761,7 +761,7 @@ async function generateRareCardWithBaseImage(
       <!-- 内側ハイライト（RareCard.tsxと同じ） -->
       <text x="${nameStartX - 1}" y="${y - 2}" 
             text-anchor="middle" dominant-baseline="central"
-            font-family="'Hannari','Yu Mincho','Hiragino Mincho ProN',serif" 
+            font-family="'Arial','Helvetica','sans-serif'" 
             font-size="${charSize * 0.98}" 
             font-weight="900" 
             fill="rgba(255,255,255,0.4)" 
