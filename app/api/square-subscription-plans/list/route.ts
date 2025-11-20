@@ -58,23 +58,42 @@ export async function GET() {
       const firstPhase = phases[0] || {}
       const pricing = firstPhase.pricing || {}
       const priceMoney = pricing.price_money || {}
+      
+      // 価格の取得（複数の方法を試行）
+      let priceDisplay = "未設定"
+      if (priceMoney.amount) {
+        priceDisplay = `${priceMoney.amount} ${priceMoney.currency || "JPY"}`
+      } else if (pricing.price) {
+        priceDisplay = `${pricing.price} ${pricing.currency || "JPY"}`
+      } else if (firstPhase.price_money?.amount) {
+        priceDisplay = `${firstPhase.price_money.amount} ${firstPhase.price_money.currency || "JPY"}`
+      }
+
+      // プラン名を取得（複数の方法を試行）
+      const planName = planData.name || plan.name || "未設定"
+      const planNameLower = planName.toLowerCase()
+
+      // ベーシック/プレミアムの判定
+      const isBasic = planNameLower.includes("basic") || 
+                      planNameLower.includes("ベーシック") ||
+                      plan.id.includes("BASIC")
+      
+      const isPremium = planNameLower.includes("premium") || 
+                        planNameLower.includes("プレミアム") ||
+                        plan.id.includes("PREMIUM")
 
       return {
         id: plan.id,
-        name: planData.name || "未設定",
+        name: planName,
         variationId: firstVariation.id || null,
-        price: priceMoney.amount ? `${priceMoney.amount} ${priceMoney.currency || "JPY"}` : "未設定",
+        price: priceDisplay,
         cadence: firstPhase.cadence || "未設定",
         createdAt: plan.created_at || null,
         updatedAt: plan.updated_at || null,
         // 環境変数に設定するための情報
         envVariable: {
-          basic: planData.name?.toLowerCase().includes("basic") || plan.id.includes("BASIC") 
-            ? `SQUARE_SUBSCRIPTION_PLAN_ID_BASIC=${plan.id}`
-            : null,
-          premium: planData.name?.toLowerCase().includes("premium") || plan.id.includes("PREMIUM")
-            ? `SQUARE_SUBSCRIPTION_PLAN_ID_PREMIUM=${plan.id}`
-            : null,
+          basic: isBasic ? `SQUARE_SUBSCRIPTION_PLAN_ID_BASIC=${plan.id}` : null,
+          premium: isPremium ? `SQUARE_SUBSCRIPTION_PLAN_ID_PREMIUM=${plan.id}` : null,
         },
       }
     })
