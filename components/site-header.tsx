@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, CreditCard, Gift, ShoppingBag, User } from "lucide-react"
+import { BookOpen, CreditCard, Gift, User } from "lucide-react"
 
 import { useAuth } from "@/components/auth/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -36,14 +36,6 @@ export function SiteHeader() {
               <Gift className="h-4 w-4" />
               <span className="hidden sm:inline">お守りショップ</span>
               <span className="sm:hidden">お守り</span>
-            </Link>
-            <Link
-              href="/point-shop"
-              className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span className="hidden sm:inline">ポイントショップ</span>
-              <span className="sm:hidden">ショップ</span>
             </Link>
             <Link
               href="/pricing"
