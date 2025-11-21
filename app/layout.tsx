@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { AdBanner } from "@/components/ad-banner"
 import { FortuneDataProvider } from "@/contexts/fortune-data-context"
 import { StrokeDataProvider } from "@/contexts/stroke-data-context"
 import { UserPreferencesProvider } from "@/contexts/user-preferences-context"
@@ -120,6 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="flex min-h-screen flex-col">
                   <SiteHeader />
                   <main className="flex-1">{children}</main>
+                  <AdBanner placement="bottom" className="w-full border-t" />
                   <SiteFooter />
                 </div>
                   <Toaster />
