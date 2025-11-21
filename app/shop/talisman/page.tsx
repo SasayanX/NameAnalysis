@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Coins, 
   Gift, 
@@ -14,13 +15,16 @@ import {
   Share2,
   Crown,
   PenTool,
-  Zap
+  Zap,
+  CircleDollarSign
 } from "lucide-react"
 import { KanauPointsManager, type KanauPointsUser } from "@/lib/kanau-points-system"
 import { useAuth } from "@/components/auth/auth-provider"
 import { getOrCreatePointsSummary, addPointsSupa, spendPointsSupa } from "@/lib/kanau-points-supabase"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAvailableTalismans, type Talisman } from "@/lib/talisman-data"
+import { SubscriptionManager } from "@/lib/subscription-manager"
+import Link from "next/link"
 
 // 巫女 金雨 希実のメッセージ
 const RYDIA_MESSAGES = {
@@ -47,12 +51,26 @@ export default function TalismanShopPage() {
   
   // 利用可能なお守り一覧（初回計算のみ）
   const availableTalismans = useMemo(() => getAvailableTalismans(), [])
-  const [selectedTalismanId, setSelectedTalismanId] = useState<string | null>(() => availableTalismans[0]?.id ?? null)
+  
+  // KP購入のお守りと円購入のアイテムに分ける
+  const kpTalismans = useMemo(() => availableTalismans.filter(t => !t.purchaseType || t.purchaseType === "kp"), [availableTalismans])
+  const yenItems = useMemo(() => availableTalismans.filter(t => t.purchaseType === "yen"), [availableTalismans])
+  
+  const [activeTab, setActiveTab] = useState<"kp" | "yen">("kp")
+  const [selectedTalismanId, setSelectedTalismanId] = useState<string | null>(() => kpTalismans[0]?.id ?? null)
+  const [selectedYenItemId, setSelectedYenItemId] = useState<string | null>(() => yenItems[0]?.id ?? null)
+  
   const currentTalisman = useMemo(() => {
-    if (availableTalismans.length === 0) return null
-    if (!selectedTalismanId) return availableTalismans[0]
-    return availableTalismans.find((t) => t.id === selectedTalismanId) || availableTalismans[0]
-  }, [availableTalismans, selectedTalismanId])
+    if (activeTab === "kp") {
+      if (kpTalismans.length === 0) return null
+      if (!selectedTalismanId) return kpTalismans[0]
+      return kpTalismans.find((t) => t.id === selectedTalismanId) || kpTalismans[0]
+    } else {
+      if (yenItems.length === 0) return null
+      if (!selectedYenItemId) return yenItems[0]
+      return yenItems.find((t) => t.id === selectedYenItemId) || yenItems[0]
+    }
+  }, [activeTab, kpTalismans, yenItems, selectedTalismanId, selectedYenItemId])
 
   useEffect(() => {
     setImageError(false)
@@ -108,12 +126,135 @@ export default function TalismanShopPage() {
     init()
   }, [authUser])
 
+  // 購入完了後の処理（URLパラメータから検知）
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const params = new URLSearchParams(window.location.search)
+    const purchase = params.get("purchase")
+    const userId = params.get("userId")
+    const plan = params.get("plan")
+
+    if (purchase === "dragon-breath" && userId && plan && authUser?.id === userId) {
+      // 購入確認APIを呼び出し
+      const verifyPurchase = async () => {
+        try {
+          let paymentLinkId = params.get("paymentLinkId")
+          if (!paymentLinkId || paymentLinkId === "{PAYMENT_LINK_ID}") {
+            paymentLinkId = localStorage.getItem("dragon_breath_payment_link_id")
+          }
+
+          if (!paymentLinkId || paymentLinkId === "{PAYMENT_LINK_ID}") {
+            setPurchaseMessage("購入処理を確認中です。しばらくお待ちください...")
+            setTimeout(() => {
+              setPurchaseMessage("")
+              window.history.replaceState({}, "", window.location.pathname)
+            }, 5000)
+            return
+          }
+
+          const response = await fetch("/api/dragon-breath/verify-purchase", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              paymentLinkId,
+              userId,
+            }),
+          })
+
+          const result = await response.json()
+
+          if (result.success) {
+            setPurchaseMessage("購入が完了しました！龍の息吹が付与されました。")
+            setShowPurchaseEffect(true)
+            localStorage.removeItem("dragon_breath_payment_link_id")
+            setTimeout(() => {
+              setShowPurchaseEffect(false)
+              setPurchaseMessage("")
+              window.history.replaceState({}, "", window.location.pathname)
+            }, 5000)
+          } else {
+            setPurchaseMessage(result.error || "購入確認に失敗しました。しばらく時間をおいてから再度お試しください。")
+          }
+        } catch (error) {
+          console.error("購入確認エラー:", error)
+          setPurchaseMessage("購入確認中にエラーが発生しました")
+        }
+      }
+
+      verifyPurchase()
+    }
+  }, [authUser])
+
   const handlePurchase = async () => {
     if (!currentTalisman) {
       setPurchaseMessage("お守りが選択されていません")
       return
     }
 
+    // 円購入の場合は別の処理
+    if (currentTalisman.purchaseType === "yen") {
+      if (!authUser) {
+        setPurchaseMessage("ログインが必要です")
+        return
+      }
+
+      setIsPurchasing(true)
+
+      try {
+        // 現在のプランを取得
+        const subscriptionManager = SubscriptionManager.getInstance()
+        const subscriptionInfo = subscriptionManager.getSubscriptionInfo()
+        const currentPlan = subscriptionInfo.plan || "free"
+
+        // メールアドレスを取得
+        const customerEmail = localStorage.getItem("customerEmail") || authUser.email
+        if (!customerEmail) {
+          setPurchaseMessage("メールアドレスが必要です")
+          return
+        }
+
+        // 円購入APIを呼び出し
+        const response = await fetch("/api/dragon-breath/purchase-yen", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: authUser.id,
+            plan: currentPlan,
+            customerEmail,
+          }),
+        })
+
+        const result = await response.json()
+
+        if (!result.success) {
+          setPurchaseMessage(result.error || "購入処理中にエラーが発生しました")
+          return
+        }
+
+        // Payment Link IDをlocalStorageに保存（リダイレクト後の確認用）
+        if (result.paymentLinkId) {
+          localStorage.setItem("dragon_breath_payment_link_id", result.paymentLinkId)
+        }
+
+        // Payment Linkにリダイレクト
+        if (result.paymentLinkUrl) {
+          window.location.href = result.paymentLinkUrl
+        }
+      } catch (error) {
+        console.error("Purchase failed:", error)
+        setPurchaseMessage("購入処理中にエラーが発生しました")
+      } finally {
+        setIsPurchasing(false)
+      }
+      return
+    }
+
+    // KP購入の処理
     if (!user || user.points < currentTalisman.price) {
       setPurchaseMessage(RYDIA_MESSAGES.insufficientPoints)
       return
@@ -330,8 +471,8 @@ export default function TalismanShopPage() {
     )
   }
 
-  const canAfford = user ? user.points >= currentTalisman.price : false
-  const purchaseProgress = user ? (user.points / currentTalisman.price) * 100 : 0
+  const canAfford = currentTalisman?.purchaseType === "yen" ? true : (user ? user.points >= (currentTalisman?.price || 0) : false)
+  const purchaseProgress = currentTalisman?.purchaseType === "yen" ? 100 : (user ? (user.points / (currentTalisman?.price || 1)) * 100 : 0)
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
@@ -358,95 +499,189 @@ export default function TalismanShopPage() {
         </div>
       </div>
 
-      {/* 護符セレクション */}
-      <Card className="border-2 border-yellow-200 dark:border-yellow-800">
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-xl font-semibold">授与する護符を選択</h2>
-            <p className="text-sm text-muted-foreground">ラインアップから1つ選んで授与を受けられます</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {availableTalismans.map((talisman) => {
-              const isSelected = talisman.id === currentTalisman?.id
-              return (
-                <button
-                  key={talisman.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedTalismanId(talisman.id)
-                    setPurchaseMessage("")
-                  }}
-                  className={`group relative rounded-xl border-2 p-4 text-left transition-all ${
-                    isSelected
-                      ? "border-yellow-500 ring-2 ring-yellow-400/60 shadow-lg shadow-yellow-500/30"
-                      : "border-transparent hover:border-yellow-300 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/20"
-                  }`}
-                  aria-pressed={isSelected}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-shrink-0 rounded-lg border-2 border-yellow-200 bg-white/80 p-2 dark:border-yellow-700 dark:bg-yellow-950/40">
-                      <Image
-                        src={talisman.image}
-                        alt={talisman.name}
-                        width={110}
-                        height={110}
-                        className="h-24 w-24 object-contain"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-lg font-semibold leading-tight">{talisman.name}</p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{talisman.description}</p>
+      {/* タブセクション */}
+      <Tabs value={activeTab} onValueChange={(value) => {
+        setActiveTab(value as "kp" | "yen")
+        if (value === "kp") {
+          setSelectedTalismanId(kpTalismans[0]?.id ?? null)
+        } else {
+          setSelectedYenItemId(yenItems[0]?.id ?? null)
+        }
+        setPurchaseMessage("")
+      }}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="kp" className="flex items-center gap-2">
+            <Coins className="h-4 w-4" />
+            KP購入のお守り
+          </TabsTrigger>
+          <TabsTrigger value="yen" className="flex items-center gap-2">
+            <CircleDollarSign className="h-4 w-4" />
+            円購入のアイテム
+          </TabsTrigger>
+        </TabsList>
+
+        {/* KP購入タブ */}
+        <TabsContent value="kp" className="space-y-6">
+          {/* 護符セレクション */}
+          <Card className="border-2 border-yellow-200 dark:border-yellow-800">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-xl font-semibold">授与する護符を選択</h2>
+                <p className="text-sm text-muted-foreground">ラインアップから1つ選んで授与を受けられます</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {kpTalismans.map((talisman) => {
+                  const isSelected = talisman.id === selectedTalismanId
+                  return (
+                    <button
+                      key={talisman.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTalismanId(talisman.id)
+                        setPurchaseMessage("")
+                      }}
+                      className={`group relative rounded-xl border-2 p-4 text-left transition-all ${
+                        isSelected
+                          ? "border-yellow-500 ring-2 ring-yellow-400/60 shadow-lg shadow-yellow-500/30"
+                          : "border-transparent hover:border-yellow-300 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/20"
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="relative flex-shrink-0 rounded-lg border-2 border-yellow-200 bg-white/80 p-2 dark:border-yellow-700 dark:bg-yellow-950/40">
+                          <Image
+                            src={talisman.image}
+                            alt={talisman.name}
+                            width={110}
+                            height={110}
+                            className="h-24 w-24 object-contain"
+                            unoptimized
+                          />
                         </div>
-                        <Badge className="bg-yellow-600 text-white">
-                          {talisman.price.toLocaleString()} Kp
-                        </Badge>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-lg font-semibold leading-tight">{talisman.name}</p>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{talisman.description}</p>
+                            </div>
+                            <Badge className="bg-yellow-600 text-white">
+                              {talisman.price.toLocaleString()} Kp
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{talisman.attribute}</span>
+                            <span>•</span>
+                            <span>{talisman.category}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-yellow-500">
+                            {Array(talisman.rarity)
+                              .fill(null)
+                              .map((_, index) => (
+                                <Star key={index} className="h-3 w-3 fill-current" />
+                              ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{talisman.attribute}</span>
-                        <span>•</span>
-                        <span>{talisman.category}</span>
+                      {isSelected && (
+                        <div className="absolute -right-3 -top-3 rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white shadow">
+                          選択中
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 円購入タブ */}
+        <TabsContent value="yen" className="space-y-6">
+          {/* アイテムセレクション */}
+          <Card className="border-2 border-yellow-200 dark:border-yellow-800">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-xl font-semibold">購入するアイテムを選択</h2>
+                <p className="text-sm text-muted-foreground">ラインアップから1つ選んで購入できます</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {yenItems.map((item) => {
+                  const isSelected = item.id === selectedYenItemId
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedYenItemId(item.id)
+                        setPurchaseMessage("")
+                      }}
+                      className={`group relative rounded-xl border-2 p-4 text-left transition-all ${
+                        isSelected
+                          ? "border-yellow-500 ring-2 ring-yellow-400/60 shadow-lg shadow-yellow-500/30"
+                          : "border-transparent hover:border-yellow-300 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/20"
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="relative flex-shrink-0 rounded-lg border-2 border-yellow-200 bg-white/80 p-2 dark:border-yellow-700 dark:bg-yellow-950/40">
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            width={110}
+                            height={110}
+                            className="h-24 w-24 object-contain"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-lg font-semibold leading-tight">{item.name}</p>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
+                            </div>
+                            <Badge className="bg-green-600 text-white">
+                              ¥{item.price.toLocaleString()}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{item.attribute}</span>
+                            <span>•</span>
+                            <span>{item.category}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 text-yellow-500">
-                        {Array(talisman.rarity)
-                          .fill(null)
-                          .map((_, index) => (
-                            <Star key={index} className="h-3 w-3 fill-current" />
-                          ))}
-                      </div>
-                    </div>
-                  </div>
-                  {isSelected && (
-                    <div className="absolute -right-3 -top-3 rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white shadow">
-                      選択中
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                      {isSelected && (
+                        <div className="absolute -right-3 -top-3 rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white shadow">
+                          選択中
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* カード展示セクション */}
+      {currentTalisman && (
       <Card className="overflow-hidden border-2 border-yellow-200 dark:border-yellow-800">
         <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-2xl mb-2">{currentTalisman.name}</CardTitle>
+              <CardTitle className="text-2xl mb-2">{currentTalisman?.name || ""}</CardTitle>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-yellow-600 text-white">
                   <Sparkles className="h-3 w-3 mr-1" />
-                  {currentTalisman.attribute}
+                  {currentTalisman?.attribute || ""}
                 </Badge>
                 <Badge className="bg-purple-600 text-white">
                   <Zap className="h-3 w-3 mr-1" />
-                  {currentTalisman.category}
+                  {currentTalisman?.category || ""}
                 </Badge>
                 <Badge className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-2 border-yellow-300">
-                  {Array(currentTalisman.rarity).fill(null).map((_, i) => (
+                  {Array(currentTalisman?.rarity || 1).fill(null).map((_, i) => (
                     <Star key={i} className="h-3 w-3 inline fill-current" />
                   ))}
                 </Badge>
@@ -460,8 +695,8 @@ export default function TalismanShopPage() {
             <div className="relative w-full h-full rounded-lg border-4 border-yellow-400 dark:border-yellow-600 overflow-hidden bg-gradient-to-br from-yellow-100 to-amber-200 dark:from-yellow-900/30 dark:to-amber-900/30">
               {!imageError ? (
                 <Image
-                  src={currentTalisman.image}
-                  alt={currentTalisman.name}
+                  src={currentTalisman?.image || ""}
+                  alt={currentTalisman?.name || ""}
                   fill
                   className="object-contain p-4"
                   unoptimized
@@ -485,9 +720,19 @@ export default function TalismanShopPage() {
           {/* 価格情報 */}
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <Coins className="h-5 w-5 mx-auto mb-1 text-yellow-600" />
-              <p className="text-sm text-muted-foreground">価格</p>
-              <p className="text-lg font-bold">{currentTalisman.price.toLocaleString()} Kp</p>
+              {currentTalisman?.purchaseType === "yen" ? (
+                <>
+                  <CircleDollarSign className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                  <p className="text-sm text-muted-foreground">価格</p>
+                  <p className="text-lg font-bold">¥{currentTalisman?.price?.toLocaleString() || "0"}</p>
+                </>
+              ) : (
+                <>
+                  <Coins className="h-5 w-5 mx-auto mb-1 text-yellow-600" />
+                  <p className="text-sm text-muted-foreground">価格</p>
+                  <p className="text-lg font-bold">{currentTalisman?.price?.toLocaleString() || "0"} Kp</p>
+                </>
+              )}
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Gift className="h-5 w-5 mx-auto mb-1 text-purple-600" />
@@ -505,10 +750,10 @@ export default function TalismanShopPage() {
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">護符の由来</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {currentTalisman.description}
+              {currentTalisman?.description || ""}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              特に「{currentTalisman.effects.join("」「")}」を高める効果があるとされています。
+              特に「{currentTalisman?.effects?.join("」「") || ""}」を高める効果があるとされています。
             </p>
           </div>
 
@@ -525,26 +770,35 @@ export default function TalismanShopPage() {
                 </div>
               </div>
 
-              {!canAfford && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>購入まで</span>
-                    <span>{Math.ceil((currentTalisman.price - (user?.points || 0)))} Kp</span>
-                  </div>
-                  <Progress value={Math.min(purchaseProgress, 100)} className="h-2" />
+              {currentTalisman?.purchaseType === "yen" ? (
+                <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">決済方法</p>
+                  <p className="text-lg font-bold text-green-600">Square決済</p>
                 </div>
+              ) : (
+                <>
+                  {!canAfford && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>購入まで</span>
+                        <span>{Math.ceil((currentTalisman?.price || 0) - (user?.points || 0))} Kp</span>
+                      </div>
+                      <Progress value={Math.min(purchaseProgress, 100)} className="h-2" />
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>交換レート</span>
-                <span>{currentTalisman.exchangeRate || "特典あり"}</span>
+                <span>{currentTalisman?.exchangeRate || "特典あり"}</span>
               </div>
 
               <Button
                 onClick={handlePurchase}
-                disabled={!canAfford || isPurchasing}
+                disabled={(currentTalisman?.purchaseType !== "yen" && !canAfford) || isPurchasing}
                 className={`w-full h-14 text-lg font-bold ${
-                  canAfford
+                  (currentTalisman?.purchaseType === "yen" || canAfford)
                     ? "bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                     : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 }`}
@@ -554,10 +808,15 @@ export default function TalismanShopPage() {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     処理中...
                   </>
+                ) : currentTalisman?.purchaseType === "yen" ? (
+                  <>
+                    <CircleDollarSign className="h-5 w-5 mr-2" />
+                    ¥{currentTalisman?.price?.toLocaleString() || "0"}で購入する
+                  </>
                 ) : canAfford ? (
                   <>
                     <PenTool className="h-5 w-5 mr-2" />
-                    今すぐ授かる ({currentTalisman.price.toLocaleString()} Kp)
+                    今すぐ授かる ({currentTalisman?.price?.toLocaleString() || "0"} Kp)
                   </>
                 ) : (
                   "Kpが不足しています"
@@ -587,7 +846,7 @@ export default function TalismanShopPage() {
           <Card className="border-dashed">
             <CardContent className="pt-6 space-y-4">
               <div className="text-center space-y-2">
-                <h4 className="font-semibold">あなたも「{currentTalisman.name}」を授かりました✨</h4>
+                <h4 className="font-semibold">あなたも「{currentTalisman?.name || ""}」を授かりました✨</h4>
                 <p className="text-sm text-muted-foreground">
                   #カナウ護符 #AI姓名判断 #開運アプリ
                 </p>
@@ -614,7 +873,6 @@ export default function TalismanShopPage() {
                   先にお守りを授かるとシェアボーナスが解放されます
                 </p>
               ) : null}
-              )}
               {showShareBonus && (
                 <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
                   <Gift className="h-4 w-4 text-blue-600" />
@@ -645,6 +903,7 @@ export default function TalismanShopPage() {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }
