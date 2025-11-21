@@ -230,6 +230,15 @@ export async function POST(request: NextRequest) {
       const result = await response.json()
 
       if (response.ok && result.subscription) {
+        // トライアル終了日を計算（開始日 + 3日）
+        const startDate = result.subscription.start_date ? new Date(result.subscription.start_date) : new Date()
+        const trialEndsAt = new Date(startDate)
+        trialEndsAt.setDate(trialEndsAt.getDate() + 3) // 3日後
+        
+        // 有効期限を計算（トライアル終了後、1ヶ月後）
+        const expiresAt = new Date(trialEndsAt)
+        expiresAt.setMonth(expiresAt.getMonth() + 1) // トライアル終了後1ヶ月後
+        
         // Supabaseにサブスクリプション情報を保存
         const supabase = getSupabaseServerClient()
         let supabaseSaveResult = null
@@ -238,8 +247,6 @@ export async function POST(request: NextRequest) {
           try {
             // 顧客情報を取得（customerIdからemailを取得する必要がある場合）
             // 今回はcustomerIdをそのまま使用
-            const expiresAt = new Date()
-            expiresAt.setMonth(expiresAt.getMonth() + 1) // 1ヶ月後
 
             // user_subscriptionsテーブルに保存
             // 既存レコードを検索（customer_emailとplanの組み合わせで）
@@ -265,12 +272,14 @@ export async function POST(request: NextRequest) {
                 product_id: result.subscription.id,
                 last_verified_at: new Date().toISOString(),
                 expires_at: expiresAt.toISOString(),
+                trial_ends_at: trialEndsAt.toISOString(), // トライアル終了日を追加
                 auto_renewing: true,
                 raw_response: {
                   subscription_id: result.subscription.id,
                   plan_id: squarePlanId,
                   status: result.subscription.status,
                   start_date: result.subscription.start_date,
+                  trial_ends_at: trialEndsAt.toISOString(), // トライアル終了日を追加
                   customer_id: customerId,
                   card_id: cardId,
                 },

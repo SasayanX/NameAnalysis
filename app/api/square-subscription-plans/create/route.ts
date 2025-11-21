@@ -67,11 +67,25 @@ export async function POST(request: NextRequest) {
             type: "SUBSCRIPTION_PLAN_VARIATION",
             id: variationObjectId,
             subscription_plan_variation_data: {
-              name: `${config.name} - 月額`,
+              name: `${config.name} - 月額（3日間無料トライアル付き）`,
               phases: [
+                // Phase 0: トライアル期間（3日間、0円）
+                {
+                  cadence: "DAILY",
+                  ordinal: 0,
+                  periods: 3, // 3日間
+                  pricing: {
+                    type: "STATIC",
+                    price_money: {
+                      amount: 0, // 0円（無料）
+                      currency: "JPY",
+                    },
+                  },
+                },
+                // Phase 1: 通常の課金期間（1ヶ月、330円/550円）
                 {
                   cadence: config.cadence,
-                  ordinal: 0,
+                  ordinal: 1,
                   pricing: {
                     type: "STATIC",
                     price_money: {

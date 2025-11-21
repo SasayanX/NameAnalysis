@@ -15,8 +15,13 @@ export function GooglePlayBillingInitializer() {
       try {
         const subscriptionManager = SubscriptionManager.getInstance()
 
-        // サーバー側のサブスクリプション状態を同期
-        await subscriptionManager.syncSubscriptionFromServer()
+        // サーバー側のサブスクリプション状態を同期 (エラーをキャッチしてログに記録するが、処理は続行)
+        try {
+          await subscriptionManager.syncSubscriptionFromServer()
+        } catch (syncError) {
+          console.warn('[Google Play Billing] SubscriptionManager initial sync failed (possibly not logged in):', syncError)
+          // ログインしていない場合でも、Digital Goods APIの初期化は試みる
+        }
 
         // Digital Goods APIを初期化
         const available = await GooglePlayBillingDetector.initialize()

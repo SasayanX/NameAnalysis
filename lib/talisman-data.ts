@@ -13,6 +13,7 @@ export interface Talisman {
   exchangeRate?: string
   addedDate: string // YYYY-MM-DD形式
   isAvailable: boolean
+  purchaseType?: "kp" | "yen" // 購入タイプ（KPまたは円）
 }
 
 // お守りデータ（月ごとに追加していく）
@@ -62,6 +63,22 @@ export const TALISMAN_DATA: Talisman[] = [
   //   addedDate: "2025-02-01",
   //   isAvailable: true,
   // },
+  {
+    id: "dragon-breath",
+    name: "龍の息吹",
+    price: 120,
+    rarity: 3,
+    attribute: "言霊属性",
+    category: "AI鑑定系",
+    description:
+      "AI深層言霊鑑定を利用できる特別なアイテムです。\n契約プランにより、解放される占い回数が異なります。\n無料プラン: 1回、ベーシックプラン: 2回、プレミアムプラン: 3回",
+    effects: ["AI深層言霊鑑定利用可能", "プラン別回数追加"],
+    image: "/images/RyuNoIbuki.png",
+    exchangeRate: "120円 = AI鑑定1-3回",
+    addedDate: new Date().toISOString().split('T')[0],
+    isAvailable: true,
+    purchaseType: "yen" as const, // 円購入
+  },
 ]
 
 // 利用可能なお守りのみを取得

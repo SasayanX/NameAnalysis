@@ -662,9 +662,18 @@ export class SubscriptionManager {
       console.log("[SubscriptionManager] syncSubscriptionFromServer - identity:", identity)
       
       if (!identity.userId && !identity.customerEmail) {
-        const errorMessage = "ログインが必要です。サブスクリプション情報を同期するには、ログインしてください。"
-        console.warn("[SubscriptionManager] syncSubscriptionFromServer - No userId or customerEmail found:", errorMessage)
-        throw new Error(errorMessage)
+        // ログイン情報がない場合はエラーを投げずにfreeプランにリセットして早期リターン
+        this.currentSubscription = {
+          plan: "free",
+          expiresAt: null,
+          isActive: false,
+          trialEndsAt: null,
+          status: "inactive",
+        }
+        this.saveSubscription()
+        this.notifyListeners()
+        console.warn("[SubscriptionManager] syncSubscriptionFromServer - No userId or customerEmail found. Resetting to free plan.")
+        return
       }
 
       const payload = {
@@ -737,6 +746,7 @@ export class SubscriptionManager {
       console.log("[SubscriptionManager] syncSubscriptionFromServer - serverSubscription:", serverSubscription)
 
       const expiresAt = serverSubscription.expiresAt ? new Date(serverSubscription.expiresAt) : null
+      const trialEndsAt = serverSubscription.trialEndsAt ? new Date(serverSubscription.trialEndsAt) : null
       const nextBillingDate = serverSubscription.nextBillingDate
         ? new Date(serverSubscription.nextBillingDate)
         : expiresAt
@@ -779,7 +789,7 @@ export class SubscriptionManager {
         plan: serverSubscription.plan as PlanType,
         expiresAt,
         isActive,
-        trialEndsAt: null,
+        trialEndsAt, // トライアル終了日を設定
         status: serverSubscription.status,
         paymentMethod: serverSubscription.paymentMethod ?? "google_play",
         amount,

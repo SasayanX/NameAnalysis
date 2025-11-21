@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button"
 import { PdfExportButton } from "@/components/pdf-export-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -67,6 +77,8 @@ export default function ClientPage() {
   const [advancedResults, setAdvancedResults] = useState<any>(null)
   const [aiFortune, setAiFortune] = useState<any>(null)
   const [isLoadingAiFortune, setIsLoadingAiFortune] = useState(false)
+  const [aiFortuneUsage, setAiFortuneUsage] = useState<{ count: number; limit: number }>({ count: 0, limit: 1 })
+  const [availableDragonBreathItems, setAvailableDragonBreathItems] = useState<any[]>([])
 
   const [companyName, setCompanyName] = useState("")
   const [companyResults, setCompanyResults] = useState<any>(null)
@@ -598,10 +610,7 @@ export default function ClientPage() {
         }
         setAdvancedResults(advancedData)
 
-        // AI鑑定を生成（プレミアムプランのみ）
-        if (currentPlan === "premium") {
-          await generateAiFortune(analysisResultWithName, gogyoResult, birthdate)
-        }
+        // AI鑑定は自動生成せず、ユーザーが「AI深層言霊鑑定」タブでボタンをクリックした時に生成
       } else {
         // 生年月日なしの場合
         // 実際の五行分析を実行（生年月日なし）
@@ -616,10 +625,7 @@ export default function ClientPage() {
         }
         setAdvancedResults(advancedData)
 
-        // AI鑑定を生成（プレミアムプランのみ）
-        if (currentPlan === "premium") {
-          await generateAiFortune(analysisResultWithName, gogyoResult, undefined)
-        }
+        // AI鑑定は自動生成せず、ユーザーが「AI深層言霊鑑定」タブでボタンをクリックした時に生成
       }
 
       if (usageTracker.incrementUsage("personalAnalysis")) {
@@ -630,20 +636,139 @@ export default function ClientPage() {
     }
   }, [lastName, firstName, gender, birthdate, usageTracker])
 
+  // プラン別の龍の息吹使用回数
+  const PLAN_USAGE_COUNTS = {
+    free: 1,
+    basic: 2,
+    premium: 3,
+  } as const
+
+  // 確認ダイアログの状態
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+
+  // AI鑑定の使用回数と龍の息吹アイテムを取得
+  useEffect(() => {
+    const fetchAiFortuneUsage = async () => {
+      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+      if (!userId) return
+      
+      try {
+        const response = await fetch(`/api/ai-fortune/usage?userId=${userId}&plan=${currentPlan}`)
+        const data = await response.json()
+        if (data.success) {
+          setAiFortuneUsage({ count: data.count, limit: data.limit })
+        }
+      } catch (error) {
+        console.error("Failed to fetch AI fortune usage:", error)
+      }
+    }
+
+    const fetchDragonBreathItems = async () => {
+      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+      if (!userId) return
+      
+      try {
+        const response = await fetch(`/api/dragon-breath/items?userId=${userId}`)
+        const data = await response.json()
+        if (data.success) {
+          setAvailableDragonBreathItems(data.items)
+        }
+      } catch (error) {
+        console.error("Failed to fetch Dragon's Breath items:", error)
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      fetchAiFortuneUsage()
+      fetchDragonBreathItems()
+    }
+  }, [currentPlan])
+
   // AI鑑定を生成する関数
   const generateAiFortune = useCallback(async (
     nameAnalysisResult: any,
     gogyoResult?: any,
     birthdate?: string
   ) => {
-    // プレミアムプランのみ実行可能
-    if (currentPlan !== "premium") {
-      console.warn("⚠️ AI深層言霊鑑定はプレミアムプランでのみ利用可能です")
-      setAiFortune({
-        success: false,
-        error: "AI深層言霊鑑定はプレミアムプランでのみ利用可能です",
-      })
+    const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+    if (!userId) {
+      setAiFortune({ success: false, error: "ログインが必要です" })
       return
+    }
+
+    // 【重要】最新の使用回数を取得（姓名判断を繰り返す場合に備えて）
+    let currentUsage = aiFortuneUsage.count
+    let currentLimit = aiFortuneUsage.limit
+    try {
+      const usageResponse = await fetch(`/api/ai-fortune/usage?userId=${userId}&plan=${currentPlan}`)
+      const usageData = await usageResponse.json()
+      if (usageData.success) {
+        currentUsage = usageData.count
+        currentLimit = usageData.limit
+        setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
+      }
+    } catch (error) {
+      console.error("Failed to fetch latest AI fortune usage:", error)
+      // エラー時は既存の状態を使用
+    }
+
+    // 無料・ベーシックプランは龍の息吹がないと使えない
+    if (currentPlan !== "premium") {
+      if (availableDragonBreathItems.length === 0) {
+        setAiFortune({
+          success: false,
+          error: "AI深層言霊鑑定はプレミアムプラン、または龍の息吹が必要です。",
+        })
+        return
+      }
+      // 龍の息吹を使用
+      const useResponse = await fetch("/api/dragon-breath/use", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0].id }),
+      })
+      const useResult = await useResponse.json()
+
+      if (!useResult.success) {
+        setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
+        return
+      }
+
+      // 使用成功したらアイテムリストを更新
+      setAvailableDragonBreathItems(useResult.remainingItems || [])
+      // 使用回数を更新（龍の息吹で追加された回数）
+      setAiFortuneUsage(prev => ({ ...prev, count: prev.count + (useResult.addedCount || 1) }))
+    } else {
+      // プレミアムプラン: 基本制限1回、龍の息吹で追加可能
+      if (currentUsage >= currentLimit) {
+        // 龍の息吹アイテムがあるかチェック
+        if (availableDragonBreathItems.length > 0) {
+          // アイテムを使用
+          const useResponse = await fetch("/api/dragon-breath/use", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0].id }),
+          })
+          const useResult = await useResponse.json()
+
+          if (useResult.success) {
+            // 使用成功したらアイテムリストを更新
+            setAvailableDragonBreathItems(useResult.remainingItems || [])
+            // 使用回数を更新（龍の息吹で追加された回数）
+            setAiFortuneUsage(prev => ({ ...prev, count: prev.count + (useResult.addedCount || 3) }))
+            // 鑑定を続行
+          } else {
+            setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
+            return
+          }
+        } else {
+          setAiFortune({
+            success: false,
+            error: `AI深層言霊鑑定は1日${aiFortuneUsage.limit}回までです。龍の息吹を購入して回数を回復できます。`,
+          })
+          return
+        }
+      }
     }
 
     setIsLoadingAiFortune(true)
@@ -691,6 +816,15 @@ export default function ClientPage() {
 
       const data = await response.json()
       console.log("✅ AI鑑定生成成功:", data)
+      
+      // 成功した場合、使用回数をインクリメント
+      await fetch("/api/ai-fortune/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, increment: 1, plan: currentPlan }),
+      })
+      setAiFortuneUsage(prev => ({ ...prev, count: prev.count + 1 }))
+      
       setAiFortune(data)
     } catch (error: any) {
       console.error('❌ AI鑑定生成エラー:', error)
@@ -701,7 +835,7 @@ export default function ClientPage() {
     } finally {
       setIsLoadingAiFortune(false)
     }
-  }, [currentPlan])
+  }, [currentPlan, aiFortuneUsage, availableDragonBreathItems])
 
   const handleCompanyAnalysis = useCallback(() => {
     try {
@@ -1397,30 +1531,276 @@ export default function ClientPage() {
                               </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {currentPlan !== "premium" ? (
-                                <div className="text-center py-8">
-                                  <div className="p-4 bg-purple-50 rounded-lg mb-4">
-                                      <p className="text-purple-800">プレミアムプランでご利用いただけます</p>
+                                {currentPlan === "free" || currentPlan === "basic" ? (
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-sm text-muted-foreground">
+                                        龍の息吹所持数:{" "}
+                                        <span className="font-semibold text-purple-700">
+                                          {availableDragonBreathItems.length}個
+                                        </span>
+                                      </p>
+                                      {availableDragonBreathItems.length === 0 && (
+                                        <Link href="/shop/talisman?tab=yen">
+                                          <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50">
+                                            <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を購入
+                                          </Button>
+                                        </Link>
+                                      )}
                                     </div>
-                                    <Button 
-                                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                                      onClick={() => handleStartTrial()}
-                                    >
-                                      3日間無料で始める
-                                    </Button>
+                                    {!results ? (
+                                      <div className="text-center py-8">
+                                        <p className="text-muted-foreground mb-4">
+                                          AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                        </p>
+                                      </div>
+                                    ) : availableDragonBreathItems.length === 0 ? (
+                                      // 姓名判断済み、龍の息吹なし → ボタン無効化、メッセージ表示
+                                      <div className="text-center py-8">
+                                        <div className="p-4 bg-purple-50 rounded-lg mb-4">
+                                          <p className="text-purple-800 mb-2 font-semibold">
+                                            龍の息吹で{PLAN_USAGE_COUNTS[currentPlan as keyof typeof PLAN_USAGE_COUNTS] || 1}回AI鑑定が可能です
+                                          </p>
+                                          <p className="text-sm text-purple-600 mb-3">
+                                            龍の息吹を所持していません。ショップで購入が可能です。
+                                          </p>
+                                        </div>
+                                        <Link href="/shop/talisman?tab=yen">
+                                          <Button 
+                                            disabled
+                                            className="bg-gray-400 text-white cursor-not-allowed"
+                                          >
+                                            <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を生成（龍の息吹が必要）
+                                          </Button>
+                                        </Link>
+                                      </div>
+                                    ) : !aiFortune || !aiFortune.success ? (
+                                      // 姓名判断済み、龍の息吹あり、結果未生成 → 生成ボタンを表示（確認ダイアログ付き）
+                                      <div className="text-center py-8">
+                                        <p className="text-muted-foreground mb-4">
+                                          AI深層言霊鑑定を生成しますか？
+                                        </p>
+                                        <Button
+                                          onClick={() => setShowConfirmDialog(true)}
+                                          disabled={isLoadingAiFortune}
+                                          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                        >
+                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を生成（龍の息吹使用）
+                                        </Button>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                          残り: {availableDragonBreathItems.length}個
+                                        </p>
+                                        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>龍の息吹を使用しますか？</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                {availableDragonBreathItems.length}個所持しています。1個使用しますか？
+                                                <br />
+                                                <span className="text-purple-600 font-semibold">
+                                                  龍の息吹で{PLAN_USAGE_COUNTS[currentPlan as keyof typeof PLAN_USAGE_COUNTS] || 1}回AI鑑定が可能です。
+                                                </span>
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={() => {
+                                                  setShowConfirmDialog(false)
+                                                  generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)
+                                                }}
+                                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                              >
+                                                使用する
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </div>
+                                    ) : isLoadingAiFortune ? (
+                                      <div className="flex items-center justify-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を生成中...</span>
+                                      </div>
+                                    ) : aiFortune?.success && aiFortune?.aiFortune ? (
+                                      // 無料・ベーシックプランでも結果表示（プレミアムと同じ表示）
+                                      <div className="space-y-6">
+                                        {/* 生成ボタン（龍の息吹がある場合、再生成用） */}
+                                        {availableDragonBreathItems.length > 0 && (
+                                          <div className="text-center py-4">
+                                            <Button
+                                              onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
+                                              disabled={isLoadingAiFortune}
+                                              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                            >
+                                              <Sparkles className="h-4 w-4 mr-2" /> 龍の息吹を使用して再生成 ({availableDragonBreathItems.length}個)
+                                            </Button>
+                                          </div>
+                                        )}
+                                        {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
+                                        {aiFortune.aiFortune.fortune && (
+                                          <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50">
+                                            <CardHeader className="pb-3">
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-lg">
+                                                <Sparkles className="h-5 w-5 text-purple-600" />
+                                                AI深層言霊鑑定
+                                              </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                              <div className="text-purple-900 text-base leading-relaxed">
+                                                {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
+                                                  <p key={index} className={index > 0 ? 'mt-2' : ''}>
+                                                    {paragraph}
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        )}
+
+                                        {/* グリッドレイアウトでカードを表示 */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          {/* 深層心理的特徴 */}
+                                          <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                                            <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100">
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-base">
+                                                <Brain className="h-4 w-4 text-purple-600" />
+                                                深層心理的特徴
+                                              </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="pt-4">
+                                              <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
+                                              </p>
+                                            </CardContent>
+                                          </Card>
+
+                                          {/* 潜在的な才能・適性 */}
+                                          {aiFortune.aiFortune.talents && (
+                                            <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100">
+                                                <CardTitle className="flex items-center gap-2 text-yellow-800 text-base">
+                                                  <Sparkles className="h-4 w-4 text-yellow-600" />
+                                                  潜在的な才能・適性
+                                                </CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="pt-4">
+                                                <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                  {aiFortune.aiFortune.talents}
+                                                </p>
+                                              </CardContent>
+                                            </Card>
+                                          )}
+
+                                          {/* 人生における課題と解決策 */}
+                                          {aiFortune.aiFortune.challenges && (
+                                            <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100">
+                                                <CardTitle className="flex items-center gap-2 text-orange-800 text-base">
+                                                  <Lightbulb className="h-4 w-4 text-orange-600" />
+                                                  人生における課題と解決策
+                                                </CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="pt-4">
+                                                <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                  {aiFortune.aiFortune.challenges}
+                                                </p>
+                                              </CardContent>
+                                            </Card>
+                                          )}
+
+                                          {/* 具体的なアドバイス */}
+                                          {aiFortune.aiFortune.advice && (
+                                            <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100">
+                                                <CardTitle className="flex items-center gap-2 text-green-800 text-base">
+                                                  <Target className="h-4 w-4 text-green-600" />
+                                                  今日の開運アドバイス
+                                                </CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="pt-4">
+                                                <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                  {aiFortune.aiFortune.advice}
+                                                </p>
+                                              </CardContent>
+                                            </Card>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-8">
+                                        <p className="text-muted-foreground mb-4">
+                                          AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                        </p>
+                                        {aiFortune && !aiFortune.success && (
+                                          <Alert className="mt-4">
+                                            <AlertDescription className="text-red-600">
+                                              エラー: {aiFortune.error || '不明なエラー'}
+                                            </AlertDescription>
+                                          </Alert>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
-                              ) : !results ? (
-                                <div className="text-center py-8">
-                                  <p className="text-muted-foreground mb-4">
-                                    まず姓名判断を実行してください
-                                  </p>
-                                </div>
-                              ) : isLoadingAiFortune ? (
-                                <div className="flex items-center justify-center py-8">
-                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                                  <span className="ml-3 text-purple-600">AI深層言霊鑑定を生成中...</span>
-                                </div>
-                              ) : aiFortune?.success && aiFortune?.aiFortune ? (
+                                ) : (
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-sm text-muted-foreground">
+                                        今日のAI鑑定使用回数:{" "}
+                                        <span className="font-semibold text-purple-700">
+                                          {aiFortuneUsage.count}/{aiFortuneUsage.limit}
+                                        </span>
+                                      </p>
+                                      {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
+                                        <Link href="/shop/talisman?tab=yen">
+                                          <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50">
+                                            <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を購入
+                                          </Button>
+                                        </Link>
+                                      )}
+                                      {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length > 0 && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
+                                          disabled={isLoadingAiFortune}
+                                          className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                                        >
+                                          <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を使用 ({availableDragonBreathItems.length}個)
+                                        </Button>
+                                      )}
+                                    </div>
+                                    {!results ? (
+                                      <div className="text-center py-8">
+                                        <p className="text-muted-foreground mb-4">
+                                          AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                        </p>
+                                      </div>
+                                    ) : !aiFortune || !aiFortune.success ? (
+                                      // 姓名判断済み、結果未生成 → 生成ボタンを表示
+                                      <div className="text-center py-8">
+                                        <p className="text-muted-foreground mb-4">
+                                          AI深層言霊鑑定を生成しますか？
+                                        </p>
+                                        <Button
+                                          onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
+                                          disabled={isLoadingAiFortune}
+                                          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                        >
+                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を生成
+                                        </Button>
+                                        {currentPlan === "premium" && (
+                                          <p className="text-xs text-muted-foreground mt-2">
+                                            使用回数: {aiFortuneUsage.count} / {aiFortuneUsage.limit}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ) : isLoadingAiFortune ? (
+                                      <div className="flex items-center justify-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を生成中...</span>
+                                      </div>
+                                    ) : aiFortune?.success && aiFortune?.aiFortune ? (
                                 <div className="space-y-6">
                                   {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
                                   {aiFortune.aiFortune.fortune && (
@@ -1585,18 +1965,20 @@ export default function ClientPage() {
                               </div>
                                 </div>
                               ) : (
-                                <div className="text-center py-8">
-                                  <p className="text-muted-foreground mb-4">
-                                    AI深層言霊鑑定を生成するには、姓名判断を実行してください
-                                  </p>
-                                  {aiFortune && !aiFortune.success && (
-                                    <Alert className="mt-4">
-                                      <AlertDescription className="text-red-600">
-                                        エラー: {aiFortune.error || '不明なエラー'}
-                                      </AlertDescription>
-                                    </Alert>
-                                )}
-                              </div>
+                                    <div className="text-center py-8">
+                                      <p className="text-muted-foreground mb-4">
+                                        AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                      </p>
+                                      {aiFortune && !aiFortune.success && (
+                                        <Alert className="mt-4">
+                                          <AlertDescription className="text-red-600">
+                                            エラー: {aiFortune.error || '不明なエラー'}
+                                          </AlertDescription>
+                                        </Alert>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </CardContent>
                           </Card>

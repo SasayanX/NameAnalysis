@@ -13,6 +13,7 @@ export interface TalismanData {
   description: string
   effects: string[]
   image: string
+  purchaseType?: "kp" | "yen" // 購入タイプ（KPまたは円）
 }
 
 const TALISMAN_MASTER_DATA: TalismanData[] = [

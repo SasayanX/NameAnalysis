@@ -56,9 +56,31 @@ export default function TalismanShopPage() {
   const kpTalismans = useMemo(() => availableTalismans.filter(t => !t.purchaseType || t.purchaseType === "kp"), [availableTalismans])
   const yenItems = useMemo(() => availableTalismans.filter(t => t.purchaseType === "yen"), [availableTalismans])
   
-  const [activeTab, setActiveTab] = useState<"kp" | "yen">("kp")
+  // URLパラメータから初期タブを取得
+  const getInitialTab = (): "kp" | "yen" => {
+    if (typeof window === "undefined") return "kp"
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get("tab")
+    return tab === "yen" ? "yen" : "kp"
+  }
+
+  const [activeTab, setActiveTab] = useState<"kp" | "yen">(getInitialTab())
   const [selectedTalismanId, setSelectedTalismanId] = useState<string | null>(() => kpTalismans[0]?.id ?? null)
   const [selectedYenItemId, setSelectedYenItemId] = useState<string | null>(() => yenItems[0]?.id ?? null)
+  
+  // URLパラメータが変更されたときにタブを更新
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get("tab")
+    if (tab === "yen" && activeTab !== "yen") {
+      setActiveTab("yen")
+      setSelectedYenItemId(yenItems[0]?.id ?? null)
+    } else if (tab === "kp" && activeTab !== "kp") {
+      setActiveTab("kp")
+      setSelectedTalismanId(kpTalismans[0]?.id ?? null)
+    }
+  }, [activeTab, kpTalismans, yenItems])
   
   const currentTalisman = useMemo(() => {
     if (activeTab === "kp") {

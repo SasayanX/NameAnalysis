@@ -199,6 +199,7 @@ function transformSubscriptionRecord(record: any) {
     customerEmail: record.customer_email ?? null,
     userId: record.user_id ?? null,
     expiresAt: record.expires_at,
+    trialEndsAt: record.trial_ends_at ?? null, // トライアル終了日を追加
     lastVerifiedAt: record.last_verified_at,
     nextBillingDate: record.expires_at,
     rawResponse: record.raw_response,
