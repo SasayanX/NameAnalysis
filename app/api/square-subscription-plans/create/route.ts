@@ -72,26 +72,18 @@ export async function POST(request: NextRequest) {
                 // Phase 0: トライアル期間（3日間、0円）
                 {
                   cadence: "DAILY",
-                  ordinal: 0,
                   periods: 3, // 3日間
-                  pricing: {
-                    type: "STATIC",
-                    price_money: {
-                      amount: 0, // 0円（無料）
-                      currency: "JPY",
-                    },
+                  recurring_price_money: {
+                    amount: 0, // 0円（無料）
+                    currency: "JPY",
                   },
                 },
                 // Phase 1: 通常の課金期間（1ヶ月、330円/550円）
                 {
                   cadence: config.cadence,
-                  ordinal: 1,
-                  pricing: {
-                    type: "STATIC",
-                    price_money: {
-                      amount: config.price, // 円単位（日本円の場合、330円 = 330）
-                      currency: "JPY",
-                    },
+                  recurring_price_money: {
+                    amount: config.price, // 円単位（日本円の場合、330円 = 330）
+                    currency: "JPY",
                   },
                 },
               ],
@@ -101,20 +93,39 @@ export async function POST(request: NextRequest) {
       },
     }
 
+    // デバッグ: リクエストボディをログに出力（本番環境でも）
+    console.log("[Square Plan Create] Request body:", JSON.stringify(catalogObject, null, 2))
+
     // Square Catalog APIでオブジェクトを作成
     const apiEndpoint = getSquareApiEndpoint()
-    const catalogResponse = await fetch(`${apiEndpoint}/catalog/object`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${squareAccessToken}`,
-        "Content-Type": "application/json",
-        "Square-Version": "2023-10-18",
-      },
-      body: JSON.stringify({
-        idempotency_key: `plan_${planId}_${Date.now()}`,
-        object: catalogObject,
-      }),
-    })
+    
+    let catalogResponse: Response
+    try {
+      catalogResponse = await fetch(`${apiEndpoint}/catalog/object`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${squareAccessToken}`,
+          "Content-Type": "application/json",
+          "Square-Version": "2023-10-18",
+        },
+        body: JSON.stringify({
+          idempotency_key: `plan_${planId}_${Date.now()}`,
+          object: catalogObject,
+        }),
+        signal: AbortSignal.timeout(30000), // 30秒でタイムアウト
+      })
+    } catch (error: any) {
+      console.error("[Square Catalog API] Network error:", error)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Square APIへの接続に失敗しました",
+          details: error.message || "Network error",
+          type: error.name || "Unknown",
+        },
+        { status: 500 }
+      )
+    }
 
     const responseText = await catalogResponse.text()
     let catalogResult: any
@@ -132,21 +143,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // デバッグログ（開発環境のみ）
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[Square Catalog API] Request URL:", `${apiEndpoint}/catalog/object`)
-      console.log("[Square Catalog API] Request body:", JSON.stringify(catalogObject, null, 2))
-      console.log("[Square Catalog API] Response status:", catalogResponse.status)
-      console.log("[Square Catalog API] Response body:", JSON.stringify(catalogResult, null, 2))
-      if (!catalogResponse.ok) {
-        console.error("[Square Catalog API] Error details:")
-        console.error("  - Status:", catalogResponse.status)
-        console.error("  - Errors:", catalogResult.errors)
-        if (catalogResult.errors && catalogResult.errors.length > 0) {
-          catalogResult.errors.forEach((error: any, index: number) => {
-            console.error(`  - Error ${index + 1}:`, error.code, error.detail, error.field)
-          })
-        }
+    // デバッグログ（常に出力）
+    console.log("[Square Catalog API] Request URL:", `${apiEndpoint}/catalog/object`)
+    console.log("[Square Catalog API] Response status:", catalogResponse.status)
+    console.log("[Square Catalog API] Response body:", JSON.stringify(catalogResult, null, 2))
+    if (!catalogResponse.ok) {
+      console.error("[Square Catalog API] Error details:")
+      console.error("  - Status:", catalogResponse.status)
+      console.error("  - Errors:", catalogResult.errors)
+      if (catalogResult.errors && catalogResult.errors.length > 0) {
+        catalogResult.errors.forEach((error: any, index: number) => {
+          console.error(`  - Error ${index + 1}:`, error.code, error.detail, error.field)
+        })
       }
     }
 

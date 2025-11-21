@@ -9,13 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const planId = searchParams.get("planId") as "basic" | "premium" | null
-
-    if (!planId || !["basic", "premium"].includes(planId)) {
-      return NextResponse.json(
-        { success: false, error: "planId (basic or premium) is required" },
-        { status: 400 }
-      )
-    }
+    const squarePlanIdParam = searchParams.get("squarePlanId") // 直接プランIDを指定可能
 
     const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN
     const squareLocationId = process.env.SQUARE_LOCATION_ID
@@ -27,12 +21,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const squarePlanId = getSquarePlanId(planId)
-    if (!squarePlanId) {
-      return NextResponse.json(
-        { success: false, error: `SquareプランIDが設定されていません (${planId})` },
-        { status: 500 }
-      )
+    // squarePlanIdを直接指定した場合、それを使用
+    // そうでない場合、planIdから環境変数を読み取る
+    let squarePlanId: string | null = null
+    if (squarePlanIdParam) {
+      squarePlanId = squarePlanIdParam
+    } else {
+      if (!planId || !["basic", "premium"].includes(planId)) {
+        return NextResponse.json(
+          { success: false, error: "planId (basic or premium) または squarePlanId が必要です" },
+          { status: 400 }
+        )
+      }
+      squarePlanId = getSquarePlanId(planId)
+      if (!squarePlanId) {
+        return NextResponse.json(
+          { success: false, error: `SquareプランIDが設定されていません (${planId})` },
+          { status: 500 }
+        )
+      }
     }
 
     const apiEndpoint = getSquareApiEndpoint()
@@ -92,7 +99,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        planId,
+        planId: planId || null,
         squarePlanId,
         plan: {
           id: plan.id,
@@ -107,6 +114,7 @@ export async function GET(request: NextRequest) {
             index,
             cadence: phase.cadence,
             periods: phase.periods,
+            recurring_price_money: phase.recurring_price_money,
             pricing: phase.pricing,
             ordinal: phase.ordinal,
           })),
@@ -124,7 +132,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      planId,
+      planId: planId || null,
       squarePlanId,
       plan: {
         id: plan.id,

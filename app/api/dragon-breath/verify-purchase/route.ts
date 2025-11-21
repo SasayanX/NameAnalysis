@@ -4,8 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase-server'
-import { getSquareConfig } from '@/lib/square-config'
-import { Client, Environment } from 'squareup'
+import { getSquareApiEndpoint } from '@/lib/square-config'
 
 const PLAN_USAGE_COUNTS = {
   free: 1,
@@ -25,37 +24,53 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const config = getSquareConfig()
-    if (!config.accessToken) {
+    const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN
+
+    if (!squareAccessToken) {
       return NextResponse.json(
         { error: 'Square設定が不完全です' },
         { status: 500 }
       )
     }
 
-    const squareClient = new Client({
-      accessToken: config.accessToken,
-      environment: config.environment === 'production' ? Environment.Production : Environment.Sandbox,
-    })
+    const apiEndpoint = getSquareApiEndpoint()
 
     // Payment Linkの状態を確認
-    const { result: paymentLinkResult, statusCode } = await squareClient.checkoutApi.retrievePaymentLink(paymentLinkId)
+    const paymentLinkResponse = await fetch(`${apiEndpoint}/checkout/payment-links/${paymentLinkId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${squareAccessToken}`,
+        'Content-Type': 'application/json',
+        'Square-Version': '2023-10-18',
+      },
+    })
 
-    if (statusCode !== 200 || !paymentLinkResult.paymentLink) {
+    const paymentLinkResult = await paymentLinkResponse.json()
+
+    if (!paymentLinkResponse.ok || !paymentLinkResult.payment_link) {
       return NextResponse.json(
-        { error: 'Payment Linkが見つかりません' },
-        { status: 404 }
+        { error: 'Payment Linkが見つかりません', details: paymentLinkResult.errors },
+        { status: paymentLinkResponse.status || 404 }
       )
     }
 
-    const paymentLink = paymentLinkResult.paymentLink
+    const paymentLink = paymentLinkResult.payment_link
 
     // 決済が完了しているか確認
-    if (paymentLink.orderId) {
+    if (paymentLink.order_id) {
       // 注文情報を取得
-      const { result: orderResult } = await squareClient.ordersApi.retrieveOrder(paymentLink.orderId)
+      const orderResponse = await fetch(`${apiEndpoint}/orders/${paymentLink.order_id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${squareAccessToken}`,
+          'Content-Type': 'application/json',
+          'Square-Version': '2023-10-18',
+        },
+      })
 
-      if (orderResult.order?.state === 'COMPLETED') {
+      const orderResult = await orderResponse.json()
+
+      if (orderResponse.ok && orderResult.order?.state === 'COMPLETED') {
         // メタデータからプラン情報を取得
         const metadata = paymentLink.metadata || {}
         const plan = (metadata.plan as keyof typeof PLAN_USAGE_COUNTS) || 'free'

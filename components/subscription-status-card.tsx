@@ -48,6 +48,9 @@ export function SubscriptionStatusCard() {
     // プラン情報を取得
     const planInfo = SUBSCRIPTION_PLANS.find((p) => p.id === effectivePlan) || SUBSCRIPTION_PLANS[0]
     
+    // トライアル期間中かどうかを確認
+    const isTrialPeriod = subscription.trialEndsAt && new Date(subscription.trialEndsAt) > new Date()
+    
     // 使用状況を取得
     const usageTracker = UsageTracker.getInstance()
     const usageStatus = usageTracker.getUsageStatus()
@@ -185,18 +188,41 @@ export function SubscriptionStatusCard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {status.status === "active" && status.nextBillingDate && (
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="font-medium text-green-800">プラン有効中</span>
+          {status.status === "active" && (() => {
+            const manager = SubscriptionManager.getInstance()
+            const subscription = manager.getSubscriptionInfo()
+            const isTrialPeriod = subscription.trialEndsAt && new Date(subscription.trialEndsAt) > new Date()
+            
+            if (isTrialPeriod) {
+              return (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium text-blue-800">3日間無料トライアル中</span>
+                  </div>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <div>トライアル終了日: {new Date(subscription.trialEndsAt!).toLocaleDateString("ja-JP")}</div>
+                    <div className="text-xs text-blue-600 mt-2">
+                      ※ トライアル期間中に解約すれば、課金は発生しません
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+            
+            return (
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">プラン有効中</span>
+                </div>
+                <div className="text-sm text-green-700 space-y-1">
+                  <div>次回更新日: {status.nextBillingDate ? new Date(status.nextBillingDate).toLocaleDateString("ja-JP") : "未設定"}</div>
+                  <div>月額: ¥{status.amount?.toLocaleString()}</div>
+                </div>
               </div>
-              <div className="text-sm text-green-700 space-y-1">
-                <div>次回更新日: {new Date(status.nextBillingDate).toLocaleDateString("ja-JP")}</div>
-                <div>月額: ¥{status.amount?.toLocaleString()}</div>
-              </div>
-            </div>
-          )}
+            )
+          })()}
 
           {status.status === "pending" && (
             <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
@@ -260,24 +286,47 @@ export function SubscriptionStatusCard() {
                   variant="outline" 
                   size="sm"
                   onClick={async () => {
-                    if (!confirm("本当に解約しますか？解約後は無料プランに戻ります。")) {
+                    const manager = SubscriptionManager.getInstance()
+                    const subscription = manager.getSubscriptionInfo()
+                    const isTrialPeriod = subscription.trialEndsAt && new Date(subscription.trialEndsAt) > new Date()
+                    
+                    const confirmMessage = isTrialPeriod
+                      ? "トライアル期間中に解約しますか？\n解約後は無料プランに戻り、課金は発生しません。"
+                      : "本当に解約しますか？\n解約後は無料プランに戻ります。"
+                    
+                    if (!confirm(confirmMessage)) {
                       return
                     }
                     
                     try {
-                      // Squareダッシュボードで解約する必要があることを通知
-                      toast({
-                        title: "解約について",
-                        description: "解約はSquareダッシュボードから行う必要があります。詳細はマイページをご確認ください。",
-                        variant: "default",
-                      })
+                      // SquareサブスクリプションIDを取得
+                      const squareSubscriptionId = subscription.squareSubscriptionId
                       
-                      // ローカルでは無料プランに戻す
-                      const manager = SubscriptionManager.getInstance()
+                      if (squareSubscriptionId && subscription.paymentMethod === "square") {
+                        // Square APIで解約
+                        const response = await fetch("/api/subscription/cancel", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ subscriptionId: squareSubscriptionId }),
+                        })
+                        
+                        const result = await response.json()
+                        
+                        if (!result.success) {
+                          toast({
+                            title: "解約エラー",
+                            description: result.error || "解約処理に失敗しました",
+                            variant: "destructive",
+                          })
+                          return
+                        }
+                      }
+                      
+                      // ローカルで無料プランに戻す
                       const now = new Date()
                       const freeSubscription = {
                         plan: "free" as const,
-                        expiresAt: now.toISOString(), // 過去の日付に設定（即座に無効化）
+                        expiresAt: now.toISOString(),
                         isActive: false,
                         trialEndsAt: null,
                         status: "cancelled" as const,
@@ -286,9 +335,14 @@ export function SubscriptionStatusCard() {
                       
                       localStorage.setItem("userSubscription", JSON.stringify(freeSubscription))
                       
+                      // サーバー側の状態も更新（同期）
+                      await manager.syncSubscriptionFromServer()
+                      
                       toast({
-                        title: "プランを無料に戻しました",
-                        description: "Squareダッシュボードで解約手続きも完了してください。",
+                        title: isTrialPeriod ? "トライアルを解約しました" : "解約完了",
+                        description: isTrialPeriod 
+                          ? "トライアル期間中に解約したため、課金は発生しませんでした。"
+                          : "プランを無料プランに戻しました。",
                       })
                       
                       setTimeout(() => {

@@ -5,8 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase-server'
-import { getSquareConfig } from '@/lib/square-config'
-import { Client, Environment } from 'squareup'
+import { getSquareApiEndpoint } from '@/lib/square-config'
 
 const DRAGON_BREATH_PRICE = 120 // 120円
 
@@ -37,57 +36,66 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const config = getSquareConfig()
-    if (!config.accessToken || !config.locationId) {
+    const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN
+    const squareLocationId = process.env.SQUARE_LOCATION_ID
+
+    if (!squareAccessToken || !squareLocationId) {
       return NextResponse.json(
         { error: 'Square設定が不完全です' },
         { status: 500 }
       )
     }
 
-    const squareClient = new Client({
-      accessToken: config.accessToken,
-      environment: config.environment === 'production' ? Environment.Production : Environment.Sandbox,
-    })
-
     const usageCount = PLAN_USAGE_COUNTS[planKey]
+    const apiEndpoint = getSquareApiEndpoint()
 
     // Square Payment Linkを作成
-    const { result: paymentLinkResult, statusCode } = await squareClient.checkoutApi.createPaymentLink({
-      idempotencyKey: `dragon_breath_${userId}_${Date.now()}`,
-      quickPay: {
-        name: `龍の息吹（${planKey}プラン: ${usageCount}回）`,
-        priceMoney: {
-          amount: BigInt(DRAGON_BREATH_PRICE),
-          currency: 'JPY',
+    const paymentLinkResponse = await fetch(`${apiEndpoint}/checkout/payment-links`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${squareAccessToken}`,
+        'Content-Type': 'application/json',
+        'Square-Version': '2023-10-18',
+      },
+      body: JSON.stringify({
+        idempotency_key: `dragon_breath_${userId}_${Date.now()}`,
+        quick_pay: {
+          name: `龍の息吹（${planKey}プラン: ${usageCount}回）`,
+          price_money: {
+            amount: DRAGON_BREATH_PRICE,
+            currency: 'JPY',
+          },
         },
-      },
-      checkoutOptions: {
-        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://seimei.app'}/shop/talisman?purchase=dragon-breath&userId=${userId}&plan=${planKey}&paymentLinkId={PAYMENT_LINK_ID}`,
-        askForShippingAddress: false,
-      },
-      prePopulatedData: {
-        buyerEmail: customerEmail,
-      },
-      metadata: {
-        userId,
-        plan: planKey,
-        usageCount: usageCount.toString(),
-        itemType: 'dragon_breath',
-      },
+        checkout_options: {
+          redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://seimei.app'}/shop/talisman?purchase=dragon-breath&userId=${userId}&plan=${planKey}&paymentLinkId={PAYMENT_LINK_ID}`,
+          ask_for_shipping_address: false,
+        },
+        pre_populated_data: {
+          buyer_email: customerEmail,
+        },
+        metadata: {
+          userId,
+          plan: planKey,
+          usageCount: usageCount.toString(),
+          itemType: 'dragon_breath',
+        },
+      }),
     })
 
-    if (statusCode !== 200 || !paymentLinkResult.paymentLink) {
+    const paymentLinkResult = await paymentLinkResponse.json()
+
+    if (!paymentLinkResponse.ok || !paymentLinkResult.payment_link) {
+      console.error('Payment Link作成エラー:', paymentLinkResult)
       return NextResponse.json(
-        { error: 'Payment Linkの作成に失敗しました' },
-        { status: 500 }
+        { error: 'Payment Linkの作成に失敗しました', details: paymentLinkResult.errors },
+        { status: paymentLinkResponse.status || 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      paymentLinkUrl: paymentLinkResult.paymentLink.url,
-      paymentLinkId: paymentLinkResult.paymentLink.id,
+      paymentLinkUrl: paymentLinkResult.payment_link.url,
+      paymentLinkId: paymentLinkResult.payment_link.id,
     })
   } catch (error: any) {
     console.error('龍の息吹購入エラー:', error)
