@@ -841,7 +841,15 @@ export default function ClientPage() {
       })
       setAiFortuneUsage(prev => ({ ...prev, count: prev.count + 1 }))
       
-      setAiFortune(data)
+      // 氏名情報を保存（姓名判断結果が変更されたかチェックするため）
+      const targetName = nameAnalysisResult?.name || 
+        (nameAnalysisResult?.lastName && nameAnalysisResult?.firstName 
+          ? `${nameAnalysisResult.lastName}${nameAnalysisResult.firstName}` 
+          : null)
+      setAiFortune({
+        ...data,
+        targetName: targetName,
+      })
     } catch (error: any) {
       console.error('❌ AI鑑定生成エラー:', error)
       setAiFortune({
@@ -852,6 +860,40 @@ export default function ClientPage() {
       setIsLoadingAiFortune(false)
     }
   }, [currentPlan, aiFortuneUsage, availableDragonBreathItems])
+
+  // 姓名判断結果が変更されたら、AI深層鑑定結果をリセット
+  useEffect(() => {
+    if (!results) {
+      // 姓名判断結果がない場合は、AI鑑定結果もリセット
+      if (aiFortune) {
+        setAiFortune(null)
+      }
+      return
+    }
+
+    // 現在の姓名判断結果の氏名を取得
+    const currentName = results.name || 
+      (results.lastName && results.firstName 
+        ? `${results.lastName}${results.firstName}` 
+        : null)
+    
+    // 氏名が取得できない場合はスキップ
+    if (!currentName) {
+      return
+    }
+    
+    // AI鑑定結果に保存されている氏名
+    const aiFortuneName = aiFortune?.targetName
+
+    // 氏名が一致しない場合は、AI鑑定結果をリセット
+    if (aiFortuneName && aiFortuneName !== currentName) {
+      console.log('[AI Fortune Reset] 姓名判断結果が変更されました。AI鑑定結果をリセットします。', {
+        previousName: aiFortuneName,
+        currentName: currentName,
+      })
+      setAiFortune(null)
+    }
+  }, [results, aiFortune])
 
   const handleCompanyAnalysis = useCallback(() => {
     try {
