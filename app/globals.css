@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* KSW闘龍フォントの読み込み */
+@font-face {
+  font-family: 'KSW闘龍';
+  src: url('/fonts/KswTouryu.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

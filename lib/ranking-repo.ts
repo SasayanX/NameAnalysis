@@ -83,7 +83,12 @@ export async function submitRankingEntry(
   const seasonKey = getCurrentSeasonKey()
   const seasonalBonus = computeSeasonalBonusFromName(name)
   const itemBonus = await getSeasonalItemBonus(userId)
-  const totalScore = Math.round(powerScore * (1 + (seasonalBonus + itemBonus) / 100))
+  
+  // データベースのint型に合わせて、すべての値を整数に丸める
+  const roundedPowerScore = Math.round(powerScore)
+  const roundedSeasonalBonus = Math.round(seasonalBonus)
+  const roundedItemBonus = Math.round(itemBonus)
+  const totalScore = Math.round(roundedPowerScore * (1 + (roundedSeasonalBonus + roundedItemBonus) / 100))
 
   // 後方互換性のため、optionsが指定されていない場合は既存の動作を維持
   const displayNameType = options?.displayNameType || "MASKED"
@@ -98,9 +103,9 @@ export async function submitRankingEntry(
       real_name: name, // 本名を保存
       display_name_type: displayNameType,
       ranking_display_name: rankingDisplayName,
-      power_score: powerScore,
-      seasonal_bonus: seasonalBonus,
-      item_bonus: itemBonus,
+      power_score: roundedPowerScore,
+      seasonal_bonus: roundedSeasonalBonus,
+      item_bonus: roundedItemBonus,
       total_score: totalScore,
     })
     .select("id")

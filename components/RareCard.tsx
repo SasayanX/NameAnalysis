@@ -2,6 +2,45 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 
+// フォントをBase64エンコードしてSVGに埋め込む（クライアントサイド）
+async function loadFontAsBase64(): Promise<string> {
+  const startTime = performance.now()
+  try {
+    console.log('🌐 [loadFontAsBase64] 開始:', new Date().toISOString())
+    console.log('🌐 [loadFontAsBase64] フォントファイルをフェッチ中: /fonts/KswTouryu.ttf')
+    const response = await fetch('/fonts/KswTouryu.ttf', {
+      cache: 'no-cache', // キャッシュを無効化
+    })
+    
+    console.log('📡 [loadFontAsBase64] レスポンス受信:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries()),
+    })
+    
+    if (!response.ok) {
+      console.error('❌ [loadFontAsBase64] フォントファイルの読み込みに失敗:', response.status, response.statusText)
+      return ''
+    }
+    
+    console.log('📦 [loadFontAsBase64] フォントファイルをBlobに変換中...')
+    const blob = await response.blob()
+    console.log('📦 [loadFontAsBase64] Blobサイズ:', blob.size, 'bytes', 'type:', blob.type)
+    
+    const arrayBuffer = await blob.arrayBuffer()
+    console.log('🔄 [loadFontAsBase64] Base64エンコード中...')
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    const elapsed = performance.now() - startTime
+    console.log('✅ [loadFontAsBase64] Base64エンコード完了:', base64.length, '文字', `(${elapsed.toFixed(2)}ms)`)
+    return base64
+  } catch (error) {
+    const elapsed = performance.now() - startTime
+    console.error('❌ [loadFontAsBase64] フォントのBase64エンコードに失敗:', error, `(${elapsed.toFixed(2)}ms)`)
+    return ''
+  }
+}
+
 interface RareCardProps {
   lastName: string
   firstName: string
@@ -25,7 +64,70 @@ export default function RareCard({
   width = 1024,
   height = 1536,
 }: RareCardProps) {
+  // 即座に実行されるログ（コンポーネント関数の最初に配置）
+  if (typeof window !== 'undefined') {
+    console.log('🎴 [RareCard] コンポーネント関数が実行されました', { lastName, firstName, rank, timestamp: new Date().toISOString() })
+  }
+  
   const svgRef = useRef<SVGSVGElement>(null)
+  const [fontBase64, setFontBase64] = useState<string>('')
+  
+  // コンポーネントがマウントされたことを確認（即座に実行）
+  console.log('🎴 RareCardコンポーネントがレンダリングされました', { lastName, firstName, rank })
+  
+  // コンポーネントがマウントされたことを確認
+  useEffect(() => {
+    console.log('🎴 RareCardコンポーネントがマウントされました（useEffect）')
+  }, [])
+  
+  // フォントを読み込む
+  useEffect(() => {
+    console.log('🔍 [useEffect] フォント読み込み開始（RareCard）', new Date().toISOString())
+    console.log('🔍 [useEffect] svgRef.current:', svgRef.current ? '存在' : 'null')
+    
+    loadFontAsBase64()
+      .then((base64) => {
+        console.log('📦 [useEffect] フォント読み込み結果:', base64 ? `${base64.length}文字` : '失敗')
+        if (base64) {
+          setFontBase64(base64)
+          console.log('✅ [useEffect] fontBase64を設定しました')
+          
+          // フォントが実際に読み込まれているか確認
+          setTimeout(() => {
+            console.log('⏰ [useEffect] 1秒後、フォント適用確認開始')
+            document.fonts.ready.then(() => {
+              console.log('📚 [useEffect] document.fonts.ready完了')
+              const isLoaded = document.fonts.check('16px "KSW闘龍"')
+              console.log('📝 [useEffect] フォント適用確認:', isLoaded ? '✅ 適用済み' : '❌ 未適用')
+              
+              // 利用可能なフォントを一覧表示
+              const availableFonts = Array.from(document.fonts).map(f => f.family)
+              console.log('📋 [useEffect] 利用可能なフォント:', availableFonts)
+              
+              // SVG内のフォントも確認
+              if (svgRef.current) {
+                const svgElement = svgRef.current
+                const textElements = svgElement.querySelectorAll('text')
+                console.log('📊 [useEffect] SVG内のtext要素数:', textElements.length)
+                if (textElements.length > 0) {
+                  const firstText = textElements[0] as SVGTextElement
+                  const computedStyle = window.getComputedStyle(firstText)
+                  console.log('📝 [useEffect] 最初のtext要素のfont-family:', computedStyle.fontFamily)
+                }
+              } else {
+                console.warn('⚠️ [useEffect] svgRef.currentがnullです')
+              }
+            })
+          }, 1000)
+        } else {
+          console.warn('⚠️ [useEffect] fontBase64が空です。globals.cssの@font-faceを使用します。')
+        }
+      })
+      .catch((error) => {
+        console.error('❌ [useEffect] フォント読み込みエラー:', error)
+      })
+  }, [])
+  
   // スペースを除外した文字配列を作成
   const lastNameChars = Array.from(lastName)
   const firstNameChars = Array.from(firstName)
@@ -76,6 +178,35 @@ export default function RareCard({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
+          {/* フォント定義（Base64埋め込み + globals.cssのフォールバック） */}
+          {fontBase64 ? (
+            <style>
+              {`@font-face {
+                font-family: 'KSW闘龍';
+                src: url(data:font/truetype;charset=utf-8;base64,${fontBase64}) format('truetype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+              }`}
+            </style>
+          ) : (
+            <style>
+              {`/* globals.cssの@font-faceを使用（フォールバック） */
+              @font-face {
+                font-family: 'KSW闘龍';
+                src: url('/fonts/KswTouryu.ttf') format('truetype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+              }`}
+            </style>
+          )}
+          {/* デバッグ: フォント状態を確認 */}
+          {process.env.NODE_ENV === 'development' && (
+            <style>
+              {`/* フォントBase64状態: ${fontBase64 ? `${fontBase64.length}文字` : '未設定'} */`}
+            </style>
+          )}
 
           {/* 発光フィルター */}
           <filter id="glow">

@@ -784,6 +784,7 @@ export async function generateRareCardImage(
   `
 
   // SVGをPNGに変換（@resvg/resvg-js使用、フォント対応）
+  // 注意: SVG内に@font-faceが含まれている場合、@resvg/resvg-jsはそれを処理できる
   try {
     // フォントファイルのパスを取得
     const fontPath = join(process.cwd(), 'public', 'fonts', 'KswTouryu.ttf')
@@ -798,9 +799,12 @@ export async function generateRareCardImage(
       console.log('✅ フォントファイル設定成功（resvg）:', fontPath)
     } else {
       console.warn('⚠️ フォントファイルが見つかりません（resvg）:', fontPath)
+      // SVG内に@font-faceが埋め込まれているので、それを使用
+      console.log('📝 SVG内の@font-faceを使用します')
     }
 
     // @resvg/resvg-jsでSVGをレンダリング
+    // SVG内に@font-faceが含まれている場合、それも処理される
     const resvg = new Resvg(svg, {
       font: fontConfig,
     })
@@ -812,6 +816,7 @@ export async function generateRareCardImage(
     return imageBuffer
   } catch (resvgError: any) {
     console.warn('⚠️ @resvg/resvg-jsでのレンダリングに失敗、sharpにフォールバック:', resvgError.message)
+    console.warn('詳細:', resvgError)
     // フォールバック: sharpを使用（フォントは反映されない）
     const imageBuffer = await sharp(Buffer.from(svg))
       .png()
@@ -1178,6 +1183,7 @@ async function generateRareCardWithBaseImage(
   }
   
   // テキストレイヤーをPNGに変換（@resvg/resvg-js使用、フォント対応）
+  // 注意: SVG内に@font-faceが含まれている場合、@resvg/resvg-jsはそれを処理できる
   let textLayerBuffer: Buffer
   try {
     // フォントファイルのパスを取得
@@ -1193,9 +1199,12 @@ async function generateRareCardWithBaseImage(
       console.log('✅ フォントファイル設定成功（resvg、ベース画像版）:', fontPath)
     } else {
       console.warn('⚠️ フォントファイルが見つかりません（resvg、ベース画像版）:', fontPath)
+      // SVG内に@font-faceが埋め込まれているので、それを使用
+      console.log('📝 SVG内の@font-faceを使用します（ベース画像版）')
     }
 
     // @resvg/resvg-jsでSVGをレンダリング
+    // SVG内に@font-faceが含まれている場合、それも処理される
     const resvg = new Resvg(textLayerSvg, {
       font: fontConfig,
     })
@@ -1206,6 +1215,7 @@ async function generateRareCardWithBaseImage(
     console.log('✅ テキストレイヤーSVGレンダリング成功（resvg）')
   } catch (resvgError: any) {
     console.warn('⚠️ @resvg/resvg-jsでのレンダリングに失敗、sharpにフォールバック:', resvgError.message)
+    console.warn('詳細:', resvgError)
     // フォールバック: sharpを使用（フォントは反映されない）
     textLayerBuffer = await sharp(Buffer.from(textLayerSvg))
       .png()
