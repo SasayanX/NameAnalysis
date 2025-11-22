@@ -2076,6 +2076,10 @@ export default function ClientPage() {
                                     <span className="flex-1">✓ <strong>おなまえ格付けランク表示</strong>: 名前の格付けとランクを表示</span>
                                     <Badge variant="secondary" className="text-xs shrink-0 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">プレミアム</Badge>
                                   </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="flex-1">✓ <strong>AI深層言霊鑑定</strong>: AIによる深層心理分析と運命鑑定</span>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">プレミアム</Badge>
+                                  </li>
                                 </ul>
                               </div>
                               <div className="pt-4 border-t">
