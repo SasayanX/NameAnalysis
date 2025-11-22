@@ -52,6 +52,7 @@ export default function TalismanShopPage() {
   const [hasAcquiredTalisman, setHasAcquiredTalisman] = useState(false)
   const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(false)
   const [isInitializingGooglePlay, setIsInitializingGooglePlay] = useState(false)
+  const [availableDragonBreathItems, setAvailableDragonBreathItems] = useState<any[]>([])
   
   // 利用可能なお守り一覧（初回計算のみ）
   const availableTalismans = useMemo(() => getAvailableTalismans(), [])
@@ -125,6 +126,17 @@ export default function TalismanShopPage() {
           const { hasEarnedPointsToday } = await import("@/lib/kanau-points-supabase")
           const shared = await hasEarnedPointsToday(authUser.id, "お守りショップSNS共有ボーナス")
           setHasSharedToday(shared)
+          
+          // 龍の息吹の所持数を取得
+          try {
+            const response = await fetch(`/api/dragon-breath/items?userId=${authUser.id}`)
+            const data = await response.json()
+            if (data.success) {
+              setAvailableDragonBreathItems(data.items || [])
+            }
+          } catch (error) {
+            console.error("Failed to fetch Dragon's Breath items:", error)
+          }
         } catch (e) {
           console.error("Failed to load user points:", e)
         } finally {
@@ -214,6 +226,16 @@ export default function TalismanShopPage() {
           if (result.success) {
             setPurchaseMessage("購入が完了しました！龍の息吹が付与されました。")
             setShowPurchaseEffect(true)
+            // 所持数を更新
+            try {
+              const itemsResponse = await fetch(`/api/dragon-breath/items?userId=${authUser.id}`)
+              const itemsData = await itemsResponse.json()
+              if (itemsData.success) {
+                setAvailableDragonBreathItems(itemsData.items || [])
+              }
+            } catch (error) {
+              console.error("Failed to fetch Dragon's Breath items:", error)
+            }
             localStorage.removeItem("dragon_breath_payment_link_id")
             setTimeout(() => {
               setShowPurchaseEffect(false)
@@ -294,6 +316,16 @@ export default function TalismanShopPage() {
 
             setPurchaseMessage("購入が完了しました！龍の息吹が付与されました。")
             setShowPurchaseEffect(true)
+            // 所持数を更新
+            try {
+              const itemsResponse = await fetch(`/api/dragon-breath/items?userId=${authUser.id}`)
+              const itemsData = await itemsResponse.json()
+              if (itemsData.success) {
+                setAvailableDragonBreathItems(itemsData.items || [])
+              }
+            } catch (error) {
+              console.error("Failed to fetch Dragon's Breath items:", error)
+            }
             setTimeout(() => {
               setShowPurchaseEffect(false)
               setPurchaseMessage("")
@@ -752,6 +784,14 @@ export default function TalismanShopPage() {
                             <span>•</span>
                             <span>{item.category}</span>
                           </div>
+                          {item.id === "dragon-breath" && authUser && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Sparkles className="h-3 w-3 text-purple-600" />
+                              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                                所持数: {availableDragonBreathItems.length}個
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       {isSelected && (
@@ -875,12 +915,33 @@ export default function TalismanShopPage() {
               </div>
 
               {currentTalisman?.purchaseType === "yen" ? (
-                <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-2">決済方法</p>
-                  {GooglePlayBillingDetector.isTWAEnvironment() ? (
-                    <p className="text-lg font-bold text-blue-600">Google Play Billing</p>
-                  ) : (
-                    <p className="text-lg font-bold text-green-600">Square決済</p>
+                <div className="space-y-3">
+                  <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-2">決済方法</p>
+                    {GooglePlayBillingDetector.isTWAEnvironment() ? (
+                      <p className="text-lg font-bold text-blue-600">Google Play Billing</p>
+                    ) : (
+                      <p className="text-lg font-bold text-green-600">Square決済</p>
+                    )}
+                  </div>
+                  {currentTalisman?.id === "dragon-breath" && authUser && (
+                    <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                          <p className="text-sm text-muted-foreground dark:text-gray-300">
+                            所持数:{" "}
+                            <span className="text-xl font-bold text-purple-700 dark:text-purple-300">
+                              {availableDragonBreathItems.length}
+                            </span>
+                            <span className="text-sm text-purple-700 dark:text-purple-300">個</span>
+                          </p>
+                        </div>
+                        {availableDragonBreathItems.length > 0 && (
+                          <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">所持中</Badge>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (

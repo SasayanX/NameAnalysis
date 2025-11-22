@@ -28,16 +28,6 @@ export function SEOHead({ structuredData = [], noIndex = false }: SEOHeadProps) 
       {/* noindex指定 */}
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
-      {/* プリロード重要リソース */}
-      {/* KSW闘龍フォントのプリロード */}
-      <link
-        rel="preload"
-        href="/fonts/KswTouryu.ttf"
-        as="font"
-        type="font/ttf"
-        crossOrigin="anonymous"
-      />
-
       {/* DNS プリフェッチ */}
       <link rel="dns-prefetch" href="//fonts.googleapis.com" />
       <link rel="dns-prefetch" href="//fonts.gstatic.com" />

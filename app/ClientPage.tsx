@@ -1852,183 +1852,183 @@ export default function ClientPage() {
                                         <span className="ml-3 text-purple-600">AI深層言霊鑑定を依頼中...</span>
                                       </div>
                                     ) : aiFortune?.success && aiFortune?.aiFortune ? (
-                                <div className="space-y-6">
-                                  {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
-                                  {aiFortune.aiFortune.fortune && (
-                                    <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50">
-                                      <CardHeader className="pb-3">
-                                        <CardTitle className="flex items-center gap-2 text-purple-800 text-lg">
-                                          <Sparkles className="h-5 w-5 text-purple-600" />
-                                          AI深層言霊鑑定
-                                        </CardTitle>
-                                      </CardHeader>
-                                      <CardContent>
-                                        <div className="text-purple-900 text-base leading-relaxed">
-                                          {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
-                                            <p key={index} className={index > 0 ? 'mt-2' : ''}>
-                                              {paragraph}
-                                            </p>
-                                          ))}
+                                      <div className="space-y-6">
+                                        {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
+                                        {aiFortune.aiFortune.fortune && (
+                                          <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50">
+                                            <CardHeader className="pb-3">
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-lg">
+                                                <Sparkles className="h-5 w-5 text-purple-600" />
+                                                AI深層言霊鑑定
+                                              </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                              <div className="text-purple-900 text-base leading-relaxed">
+                                                {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
+                                                  <p key={index} className={index > 0 ? 'mt-2' : ''}>
+                                                    {paragraph}
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        )}
+
+                                        {/* グリッドレイアウトでカードを表示 */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          {/* 深層心理的特徴 */}
+                                          <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                                            <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100">
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-base">
+                                                <Brain className="h-4 w-4 text-purple-600" />
+                                                深層心理的特徴
+                                              </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="pt-4">
+                                              <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
+                                              </p>
+                                            </CardContent>
+                                          </Card>
+
+                                          {/* 潜在的な才能・適性 */}
+                                          {aiFortune.aiFortune.talents && (
+                                            <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100">
+                                                <CardTitle className="flex items-center gap-2 text-yellow-800 text-base">
+                                                  <Sparkles className="h-4 w-4 text-yellow-600" />
+                                                  潜在的な才能・適性
+                                                </CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="pt-4">
+                                                <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                  {aiFortune.aiFortune.talents}
+                                                </p>
+                                              </CardContent>
+                                            </Card>
+                                          )}
+
+                                          {/* 人生における課題と解決策 */}
+                                          {aiFortune.aiFortune.challenges && (
+                                            <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100">
+                                                <CardTitle className="flex items-center gap-2 text-orange-800 text-base">
+                                                  <Lightbulb className="h-4 w-4 text-orange-600" />
+                                                  人生における課題と解決策
+                                                </CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="pt-4">
+                                                <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                  {aiFortune.aiFortune.challenges}
+                                                </p>
+                                              </CardContent>
+                                            </Card>
+                                          )}
+
+                                          {/* 具体的なアドバイス */}
+                                          {aiFortune.aiFortune.advice && (
+                                            <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100">
+                                                <CardTitle className="flex items-center gap-2 text-green-800 text-base">
+                                                  <Target className="h-4 w-4 text-green-600" />
+                                                  今日の開運アドバイス
+                                                </CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="pt-4">
+                                                <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                  {aiFortune.aiFortune.advice}
+                                                </p>
+                                              </CardContent>
+                                            </Card>
+                                          )}
                                         </div>
-                                      </CardContent>
-                                    </Card>
-                                  )}
 
-                                  {/* グリッドレイアウトでカードを表示 */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* 深層心理的特徴 */}
-                                    <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-                                      <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100">
-                                        <CardTitle className="flex items-center gap-2 text-purple-800 text-base">
-                                          <Brain className="h-4 w-4 text-purple-600" />
-                                          深層心理的特徴
-                                        </CardTitle>
-                                      </CardHeader>
-                                      <CardContent className="pt-4">
-                                        <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                          {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
-                                        </p>
-                                      </CardContent>
-                                    </Card>
+                                        {/* ラッキー要素（フル幅） */}
+                                        {aiFortune.aiFortune.luckyElement && (
+                                          <Card className="border-blue-200 shadow-sm bg-gradient-to-r from-blue-50 to-cyan-50">
+                                            <CardHeader className="pb-3">
+                                              <CardTitle className="flex items-center gap-2 text-blue-800 text-base">
+                                                <Star className="h-4 w-4 text-blue-600" />
+                                                ラッキー要素
+                                              </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                              <p className="text-blue-700 font-medium text-base">
+                                                {aiFortune.aiFortune.luckyElement}
+                                              </p>
+                                            </CardContent>
+                                          </Card>
+                                        )}
 
-                                    {/* 潜在的な才能・適性 */}
-                                    {aiFortune.aiFortune.talents && (
-                                      <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
-                                        <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100">
-                                          <CardTitle className="flex items-center gap-2 text-yellow-800 text-base">
-                                            <Sparkles className="h-4 w-4 text-yellow-600" />
-                                            潜在的な才能・適性
-                                          </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="pt-4">
-                                          <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.talents}
-                                          </p>
-                                        </CardContent>
-                                      </Card>
-                                    )}
+                                        {/* 使用された言霊（フル幅） */}
+                                        {aiFortune.kotodama && aiFortune.kotodama.length > 0 && (
+                                          <Card className="border-indigo-200 shadow-sm bg-gradient-to-r from-indigo-50 to-purple-50">
+                                            <CardHeader className="pb-3">
+                                              <CardTitle className="flex items-center gap-2 text-indigo-800 text-base">
+                                                <BookOpen className="h-4 w-4 text-indigo-600" />
+                                                参考にした言霊
+                                              </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                              <div className="space-y-3">
+                                                {aiFortune.kotodama.map((k: any, index: number) => (
+                                                  <div key={index} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-indigo-100">
+                                                    <span className="font-semibold text-indigo-700 text-sm">「{k.phrase_jp}」</span>
+                                                    {k.advice_text && (
+                                                      <span className="text-indigo-600 text-sm flex-1">- {k.advice_text}</span>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        )}
 
-                                    {/* 人生における課題と解決策 */}
-                                    {aiFortune.aiFortune.challenges && (
-                                      <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-                                        <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100">
-                                          <CardTitle className="flex items-center gap-2 text-orange-800 text-base">
-                                            <Lightbulb className="h-4 w-4 text-orange-600" />
-                                            人生における課題と解決策
-                                          </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="pt-4">
-                                          <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.challenges}
-                                          </p>
-                                        </CardContent>
-                                      </Card>
-                                    )}
+                                        {/* 再分析ボタン（プレミアムプランのみ） */}
+                                        {currentPlan === "premium" && (
+                                          <div className="text-center pt-2">
+                                            <Button 
+                                              variant="outline"
+                                              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                                              onClick={async () => {
+                                                if (results && advancedResults?.gogyoResult) {
+                                                  await generateAiFortune(
+                                                    results,
+                                                    advancedResults.gogyoResult,
+                                                    birthdate || undefined
+                                                  )
+                                                }
+                                              }}
+                                            >
+                                              <RefreshCw className="h-4 w-4 mr-2" />
+                                              再分析
+                                            </Button>
+                                          </div>
+                                        )}
 
-                                    {/* 具体的なアドバイス */}
-                                    {aiFortune.aiFortune.advice && (
-                                      <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow">
-                                        <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100">
-                                          <CardTitle className="flex items-center gap-2 text-green-800 text-base">
-                                            <Target className="h-4 w-4 text-green-600" />
-                                            今日の開運アドバイス
-                                          </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="pt-4">
-                                          <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
-                                            {aiFortune.aiFortune.advice}
-                                          </p>
-                                        </CardContent>
-                                      </Card>
-                                    )}
-                                  </div>
-
-                                  {/* ラッキー要素（フル幅） */}
-                                  {aiFortune.aiFortune.luckyElement && (
-                                    <Card className="border-blue-200 shadow-sm bg-gradient-to-r from-blue-50 to-cyan-50">
-                                      <CardHeader className="pb-3">
-                                        <CardTitle className="flex items-center gap-2 text-blue-800 text-base">
-                                          <Star className="h-4 w-4 text-blue-600" />
-                                          ラッキー要素
-                                        </CardTitle>
-                                      </CardHeader>
-                                      <CardContent>
-                                        <p className="text-blue-700 font-medium text-base">
-                                          {aiFortune.aiFortune.luckyElement}
-                                        </p>
-                                      </CardContent>
-                                    </Card>
-                                  )}
-
-                                  {/* 使用された言霊（フル幅） */}
-                                  {aiFortune.kotodama && aiFortune.kotodama.length > 0 && (
-                                    <Card className="border-indigo-200 shadow-sm bg-gradient-to-r from-indigo-50 to-purple-50">
-                                      <CardHeader className="pb-3">
-                                        <CardTitle className="flex items-center gap-2 text-indigo-800 text-base">
-                                          <BookOpen className="h-4 w-4 text-indigo-600" />
-                                          参考にした言霊
-                                        </CardTitle>
-                                      </CardHeader>
-                                      <CardContent>
-                                        <div className="space-y-3">
-                                          {aiFortune.kotodama.map((k: any, index: number) => (
-                                            <div key={index} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-indigo-100">
-                                              <span className="font-semibold text-indigo-700 text-sm">「{k.phrase_jp}」</span>
-                                              {k.advice_text && (
-                                                <span className="text-indigo-600 text-sm flex-1">- {k.advice_text}</span>
-                                              )}
-                                            </div>
-                                          ))}
+                                        {/* 希味のイラスト画像 */}
+                                        <div className="flex justify-center pt-6 pb-4">
+                                          <img
+                                            src="/images/Nozomi512x512.png"
+                                            alt="金雨希味"
+                                            className="w-[200px] md:w-[300px] h-auto opacity-80 hover:opacity-100 transition-opacity rounded-lg"
+                                          />
                                         </div>
-                                      </CardContent>
-                                    </Card>
-                                  )}
-
-                                  {/* 再分析ボタン（プレミアムプランのみ） */}
-                                  {currentPlan === "premium" && (
-                                  <div className="text-center pt-2">
-                                  <Button 
-                                      variant="outline"
-                                      className="border-purple-200 text-purple-700 hover:bg-purple-50"
-                                      onClick={async () => {
-                                        if (results && advancedResults?.gogyoResult) {
-                                          await generateAiFortune(
-                                            results,
-                                            advancedResults.gogyoResult,
-                                            birthdate || undefined
-                                          )
-                                        }
-                                      }}
-                                    >
-                                      <RefreshCw className="h-4 w-4 mr-2" />
-                                      再分析
-                                  </Button>
-                                  </div>
-                                  )}
-
-                                  {/* 希味のイラスト画像 */}
-                                  <div className="flex justify-center pt-6 pb-4">
-                                    <img
-                                      src="/images/Nozomi512x512.png"
-                                      alt="金雨希味"
-                                      className="w-[200px] md:w-[300px] h-auto opacity-80 hover:opacity-100 transition-opacity rounded-lg"
-                                    />
-                              </div>
-                                </div>
-                              ) : (
-                                    <div className="text-center py-8">
-                                      <p className="text-muted-foreground mb-4">
-                                        AI深層言霊鑑定を生成するには、姓名判断を実行してください
-                                      </p>
-                                      {aiFortune && !aiFortune.success && (
-                                        <Alert className="mt-4">
-                                          <AlertDescription className="text-red-600">
-                                            エラー: {aiFortune.error || '不明なエラー'}
-                                          </AlertDescription>
-                                        </Alert>
-                                      )}
-                                    </div>
-                                  )}
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-8">
+                                        <p className="text-muted-foreground mb-4">
+                                          AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                        </p>
+                                        {aiFortune && !aiFortune.success && (
+                                          <Alert className="mt-4">
+                                            <AlertDescription className="text-red-600">
+                                              エラー: {aiFortune.error || '不明なエラー'}
+                                            </AlertDescription>
+                                          </Alert>
+                                        )}
+                                      </div>
+                                    )}
                                 </div>
                               )}
                             </CardContent>
