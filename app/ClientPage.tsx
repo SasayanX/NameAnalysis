@@ -723,7 +723,7 @@ export default function ClientPage() {
         })
         return
       }
-      // 龍の息吹を使用
+      // 龍の息吹を使用（プランはサーバー側でデータベースから取得）
       const useResponse = await fetch("/api/dragon-breath/use", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -739,7 +739,11 @@ export default function ClientPage() {
       // 使用成功したらアイテムリストを更新
       setAvailableDragonBreathItems(useResult.remainingItems || [])
       // 使用回数を更新（龍の息吹で追加された回数）
-      setAiFortuneUsage(prev => ({ ...prev, count: prev.count + (useResult.addedCount || 1) }))
+      setAiFortuneUsage(prev => ({ 
+        ...prev, 
+        count: useResult.count || prev.count,
+        limit: useResult.limit || prev.limit
+      }))
     } else {
       // プレミアムプラン: 基本制限1回、龍の息吹で追加可能
       // currentUsage >= currentLimit の場合は、使用回数が制限に達している
@@ -748,7 +752,7 @@ export default function ClientPage() {
       if (currentUsage >= currentLimit) {
         // 龍の息吹アイテムがあるかチェック
         if (availableDragonBreathItems.length > 0) {
-          // アイテムを使用（龍の息吹は使用回数を増やすのではなく、制限を増やす）
+          // アイテムを使用（プランはサーバー側でデータベースから取得）
           const useResponse = await fetch("/api/dragon-breath/use", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -760,12 +764,11 @@ export default function ClientPage() {
             // 使用成功したらアイテムリストを更新
             setAvailableDragonBreathItems(useResult.remainingItems || [])
             // 龍の息吹は使用回数を増やす（制限を増やすのではなく、使用回数を増やす）
-            // API側でcountが増やされるので、ここではlimitを更新する必要はない
-            // ただし、使用回数を更新して、次のチェックで通過できるようにする
+            // API側でcountとlimit_per_dayが更新されるので、最新の値を取得
             setAiFortuneUsage(prev => ({ 
               ...prev, 
-              count: prev.count + (useResult.addedCount || 3),
-              limit: prev.limit + (useResult.addedCount || 3)
+              count: useResult.count || prev.count,
+              limit: useResult.limit || prev.limit
             }))
             // 鑑定を続行（制限を超えたので、使用回数チェックをスキップ）
             // ただし、API側でもチェックするので、ここでは続行
@@ -1552,12 +1555,12 @@ export default function ClientPage() {
                                           <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                                         </div>
                                         <div>
-                                          <p className="text-xs text-muted-foreground dark:text-gray-400 mb-0.5">龍の息吹所持数</p>
+                                          <p className="text-xs text-muted-foreground dark:text-gray-400 mb-0.5">龍の息吹アイテム</p>
                                           <div className="flex items-center gap-2">
                                             <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">
                                               {availableDragonBreathItems.length}
                                             </span>
-                                            <span className="text-sm text-muted-foreground dark:text-gray-400">個</span>
+                                            <span className="text-sm text-muted-foreground dark:text-gray-400">個所持</span>
                                           </div>
                                         </div>
                                       </div>
@@ -1770,35 +1773,33 @@ export default function ClientPage() {
                                   </div>
                                 ) : (
                                   <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                                      <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
-                                          <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                                        </div>
-                                        <div>
-                                          <p className="text-xs text-muted-foreground dark:text-gray-400 mb-0.5">龍の息吹所持数</p>
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                                              {availableDragonBreathItems.length}
-                                            </span>
-                                            <span className="text-sm text-muted-foreground dark:text-gray-400">個</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      {/* 龍の息吹アイテム所持数 */}
+                                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                        <div className="flex items-center gap-2">
+                                          <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                          <div>
+                                            <p className="text-xs text-muted-foreground dark:text-gray-400">龍の息吹</p>
+                                            <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                                              {availableDragonBreathItems.length}個
+                                            </p>
                                           </div>
                                         </div>
                                       </div>
-                                      {availableDragonBreathItems.length > 0 && (
-                                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 border-purple-300 dark:border-purple-700">
-                                          <Sparkles className="h-3 w-3 mr-1" />
-                                          所持中
-                                        </Badge>
-                                      )}
+                                      {/* AI鑑定残り回数 */}
+                                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                        <div className="flex items-center gap-2">
+                                          <Brain className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                          <div>
+                                            <p className="text-xs text-muted-foreground dark:text-gray-400">AI鑑定</p>
+                                            <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                                              残り{Math.max(0, aiFortuneUsage.limit - aiFortuneUsage.count)}回
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                      <p className="text-sm text-muted-foreground">
-                                        今日のAI鑑定使用回数:{" "}
-                                        <span className="font-semibold text-purple-700">
-                                          {aiFortuneUsage.count}/{aiFortuneUsage.limit}
-                                        </span>
-                                      </p>
                                       {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
                                         <Link href="/shop/talisman?tab=yen">
                                           <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50">
@@ -1839,7 +1840,7 @@ export default function ClientPage() {
                                         </Button>
                                         {currentPlan === "premium" && (
                                           <p className="text-xs text-muted-foreground mt-2">
-                                            使用回数: {aiFortuneUsage.count} / {aiFortuneUsage.limit}
+                                            AI鑑定残り回数: {Math.max(0, aiFortuneUsage.limit - aiFortuneUsage.count)}回
                                             {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
                                               <span className="text-red-500 ml-2">（制限に達しています）</span>
                                             )}

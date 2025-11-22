@@ -57,7 +57,8 @@ export async function GET(request: NextRequest) {
 
     const count = data?.count || 0
     const planKey = plan as keyof typeof PLAN_LIMITS
-    const limit = PLAN_LIMITS[planKey] || 1
+    // データベースに保存されているlimit_per_dayを使用、なければプラン別のデフォルト値を使用
+    const limit = data?.limit_per_day ?? PLAN_LIMITS[planKey] ?? 1
 
     return NextResponse.json({
       success: true,
