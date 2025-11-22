@@ -253,8 +253,13 @@ export default function TalismanShopPage() {
 
         const result = await response.json()
 
+        console.log('龍の息吹購入レスポンス:', result)
+
         if (!result.success) {
-          setPurchaseMessage(result.error || "購入処理中にエラーが発生しました")
+          const errorMessage = result.error || "購入処理中にエラーが発生しました"
+          const detailsMessage = result.details ? `\n詳細: ${JSON.stringify(result.details)}` : ""
+          setPurchaseMessage(errorMessage + detailsMessage)
+          console.error('龍の息吹購入エラー:', result)
           return
         }
 

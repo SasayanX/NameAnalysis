@@ -36,7 +36,11 @@ export async function POST(request: NextRequest) {
     const apiEndpoint = getSquareApiEndpoint()
 
     // Payment Linkの状態を確認
-    const paymentLinkResponse = await fetch(`${apiEndpoint}/checkout/payment-links/${paymentLinkId}`, {
+    // デバッグログ
+    console.log('[Dragon Breath Verify] Payment Link ID:', paymentLinkId)
+    console.log('[Dragon Breath Verify] Request URL:', `${apiEndpoint}/online-checkout/payment-links/${paymentLinkId}`)
+    
+    const paymentLinkResponse = await fetch(`${apiEndpoint}/online-checkout/payment-links/${paymentLinkId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${squareAccessToken}`,
@@ -44,10 +48,15 @@ export async function POST(request: NextRequest) {
         'Square-Version': '2023-10-18',
       },
     })
+    
+    console.log('[Dragon Breath Verify] Response Status:', paymentLinkResponse.status)
 
     const paymentLinkResult = await paymentLinkResponse.json()
+    
+    console.log('[Dragon Breath Verify] Response Body:', JSON.stringify(paymentLinkResult, null, 2))
 
     if (!paymentLinkResponse.ok || !paymentLinkResult.payment_link) {
+      console.error('[Dragon Breath Verify] Payment Link取得エラー:', paymentLinkResult)
       return NextResponse.json(
         { error: 'Payment Linkが見つかりません', details: paymentLinkResult.errors },
         { status: paymentLinkResponse.status || 404 }
@@ -55,6 +64,8 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentLink = paymentLinkResult.payment_link
+    console.log('[Dragon Breath Verify] Payment Link State:', paymentLink.status)
+    console.log('[Dragon Breath Verify] Order ID:', paymentLink.order_id)
 
     // 決済が完了しているか確認
     if (paymentLink.order_id) {
