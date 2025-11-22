@@ -144,54 +144,53 @@ export async function POST(request: NextRequest) {
 
     // 決済完了の場合、アイテムを付与
     if (isPaymentCompleted) {
-        // メタデータからプラン情報を取得
-        const metadata = paymentLink.metadata || {}
-        const plan = (metadata.plan as keyof typeof PLAN_USAGE_COUNTS) || 'free'
-        const usageCount = PLAN_USAGE_COUNTS[plan] || 1
+      // メタデータからプラン情報を取得
+      const metadata = paymentLink.metadata || {}
+      const plan = (metadata.plan as keyof typeof PLAN_USAGE_COUNTS) || 'free'
+      const usageCount = PLAN_USAGE_COUNTS[plan] || 1
 
-        const supabase = getSupabaseServerClient()
-        if (!supabase) {
-          return NextResponse.json(
-            { error: 'データベース接続エラー' },
-            { status: 500 }
-          )
-        }
-
-        // special_itemsテーブルに龍の息吹を保存
-        const { data: savedItem, error: saveError } = await supabase
-          .from('special_items')
-          .insert({
-            user_id: userId,
-            name: '龍の息吹',
-            type: 'dragon_breath',
-            effect_type: 'ai_fortune_usage',
-            effect_value: usageCount,
-            usage_count: usageCount,
-            description: `AI深層言霊鑑定を${usageCount}回利用できます`,
-            is_used: false,
-          })
-          .select()
-          .single()
-
-        if (saveError) {
-          console.error('龍の息吹保存エラー:', saveError)
-          return NextResponse.json(
-            { error: '龍の息吹の保存に失敗しました' },
-            { status: 500 }
-          )
-        }
-
-        return NextResponse.json({
-          success: true,
-          item: {
-            id: savedItem.id,
-            name: '龍の息吹',
-            usageCount,
-            plan,
-            obtainedAt: savedItem.obtained_at,
-          },
-        })
+      const supabase = getSupabaseServerClient()
+      if (!supabase) {
+        return NextResponse.json(
+          { error: 'データベース接続エラー' },
+          { status: 500 }
+        )
       }
+
+      // special_itemsテーブルに龍の息吹を保存
+      const { data: savedItem, error: saveError } = await supabase
+        .from('special_items')
+        .insert({
+          user_id: userId,
+          name: '龍の息吹',
+          type: 'dragon_breath',
+          effect_type: 'ai_fortune_usage',
+          effect_value: usageCount,
+          usage_count: usageCount,
+          description: `AI深層言霊鑑定を${usageCount}回利用できます`,
+          is_used: false,
+        })
+        .select()
+        .single()
+
+      if (saveError) {
+        console.error('龍の息吹保存エラー:', saveError)
+        return NextResponse.json(
+          { error: '龍の息吹の保存に失敗しました' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        item: {
+          id: savedItem.id,
+          name: '龍の息吹',
+          usageCount,
+          plan,
+          obtainedAt: savedItem.obtained_at,
+        },
+      })
     }
 
     // 決済が完了していない場合、詳細な情報を含めてエラーを返す
@@ -202,7 +201,7 @@ export async function POST(request: NextRequest) {
         paymentLinkStatus: paymentLink.status,
         orderId: paymentLink.order_id,
         hasOrderId,
-        isStatusPaid,
+        orderState,
       },
     })
   } catch (error: any) {
