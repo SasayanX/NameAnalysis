@@ -34,6 +34,7 @@ strokeCountData.delete("々")
 
 // 直接追加（新データと競合する場合のみ手動上書き）
 strokeCountData.set("槻", 15)
+strokeCountData.set("ョ", 3)
 
 /**
  * 統一された姓名判断計算クラス

@@ -361,80 +361,232 @@ function generateLuckyNumbers(totalScore: number, fortuneLevels: any): number[] 
 
 // キャリアガイダンス生成
 function generateCareerGuidance(jinFortune: string, souFortune: string, dominantElement: string, gender: string): string {
-  let guidance = ""
+  const fortuneLevel = (jinFortune === "大吉" ? 5 : jinFortune === "吉" ? 4 : jinFortune === "中吉" ? 3 : jinFortune === "凶" ? 1 : 2)
+  const souLevel = (souFortune === "大吉" ? 5 : souFortune === "吉" ? 4 : souFortune === "中吉" ? 3 : souFortune === "凶" ? 1 : 2)
+  const combinedLevel = (fortuneLevel + souLevel) / 2
   
-  // 人格の運勢に基づく
-  if (jinFortune === "大吉" || jinFortune === "吉") {
-    guidance += "リーダーシップを発揮できる職業が向いています。"
-  } else if (jinFortune === "凶" || jinFortune === "大凶") {
-    guidance += "協調性を重視する職場環境が適しています。"
+  // 人格と総格の組み合わせに基づくアドバイス
+  const careerPatterns: Array<{ condition: () => boolean, advice: string }> = [
+    {
+      condition: () => jinFortune === "大吉" && souFortune === "大吉",
+      advice: "リーダーシップと総合的な成功運に恵まれています。経営者やプロジェクトリーダーとして活躍できる素質があります。"
+    },
+    {
+      condition: () => jinFortune === "大吉" && souFortune === "吉",
+      advice: "リーダーシップを活かし、管理職や専門職で成功を収められます。"
+    },
+    {
+      condition: () => jinFortune === "吉" && souFortune === "大吉",
+      advice: "協調性と成功運を兼ね備え、チームワークを活かした職場で力を発揮できます。"
+    },
+    {
+      condition: () => jinFortune === "大吉" || jinFortune === "吉",
+      advice: "リーダーシップや創造性を活かせる職業が向いています。"
+    },
+    {
+      condition: () => jinFortune === "凶" || jinFortune === "大凶",
+      advice: "協調性を重視する職場環境や、サポート役として活躍できる職種が適しています。"
+    },
+    {
+      condition: () => combinedLevel >= 4,
+      advice: "積極的に挑戦できる環境で、才能を最大限に発揮できます。"
+    },
+    {
+      condition: () => combinedLevel <= 2,
+      advice: "着実にスキルを積み上げ、安定した職場で経験を重ねることが成功への道です。"
+    },
+    {
+      condition: () => true,
+      advice: "バランスの取れた職場環境で、着実に成長していけます。"
+    }
+  ]
+  
+  // 条件に合う最初のパターンを返す
+  for (const pattern of careerPatterns) {
+    if (pattern.condition()) {
+      return pattern.advice + " " + getCareerAdviceByElement(dominantElement)
+    }
   }
   
-  // 五行要素に基づく職業アドバイス
-  guidance += getCareerAdviceByElement(dominantElement)
-  
-  return guidance
+  return getCareerAdviceByElement(dominantElement)
 }
 
 // 人間関係アドバイス生成
 function generateRelationshipAdvice(gaiFortune: string, chiFortune: string, gender: string): string {
-  let advice = ""
+  const gaiLevel = (gaiFortune === "大吉" ? 5 : gaiFortune === "吉" ? 4 : gaiFortune === "中吉" ? 3 : gaiFortune === "凶" ? 1 : 2)
+  const chiLevel = (chiFortune === "大吉" ? 5 : chiFortune === "吉" ? 4 : chiFortune === "中吉" ? 3 : chiFortune === "凶" ? 1 : 2)
   
-  if (gaiFortune === "大吉" || gaiFortune === "吉") {
-    advice += "社交性に優れ、多くの人との良好な関係を築けます。"
-  } else {
-    advice += "少数の深い関係を大切にすることで、幸せな人間関係を築けます。"
+  const relationshipPatterns: Array<{ condition: () => boolean, advice: string }> = [
+    {
+      condition: () => gaiFortune === "大吉" && chiFortune === "大吉",
+      advice: "社交性と家庭運の両方に恵まれ、広い人脈と深い家族の絆を同時に築けます。"
+    },
+    {
+      condition: () => gaiFortune === "大吉" && chiFortune === "吉",
+      advice: "社交性に優れ、多くの人との良好な関係を築けます。家庭運も良好です。"
+    },
+    {
+      condition: () => gaiFortune === "吉" && chiFortune === "大吉",
+      advice: "家庭運が特に良好で、家族との絆が深まります。外での人間関係も良好です。"
+    },
+    {
+      condition: () => gaiFortune === "大吉" || gaiFortune === "吉",
+      advice: "社交性に優れ、多くの人との良好な関係を築けます。"
+    },
+    {
+      condition: () => chiFortune === "大吉" || chiFortune === "吉",
+      advice: "家庭運が良好で、家族との絆が深まります。"
+    },
+    {
+      condition: () => gaiFortune === "凶" || gaiFortune === "大凶",
+      advice: "少数の深い関係を大切にすることで、幸せな人間関係を築けます。"
+    },
+    {
+      condition: () => chiFortune === "凶" || chiFortune === "大凶",
+      advice: "家族とのコミュニケーションを大切にし、時間をかけて絆を深めましょう。"
+    },
+    {
+      condition: () => gaiLevel >= 3 && chiLevel >= 3,
+      advice: "バランスの取れた人間関係を築き、周囲との調和を大切にしましょう。"
+    },
+    {
+      condition: () => true,
+      advice: "相手の立場を理解し、思いやりを持って接することで、良好な人間関係を築けます。"
+    }
+  ]
+  
+  // 条件に合う最初のパターンを返す
+  for (const pattern of relationshipPatterns) {
+    if (pattern.condition()) {
+      return pattern.advice
+    }
   }
   
-  if (chiFortune === "大吉" || chiFortune === "吉") {
-    advice += "家庭運も良好で、家族との絆が深まります。"
-  }
-  
-  return advice
+  return "相手の立場を理解し、思いやりを持って接することで、良好な人間関係を築けます。"
 }
 
 // 健康アドバイス生成
 function generateHealthTips(dominantElement: string, weakElement: string, fortuneLevel: number): string {
-  let tips = ""
+  const healthPatterns: Array<{ condition: () => boolean, advice: string }> = [
+    {
+      condition: () => fortuneLevel >= 4 && weakElement !== dominantElement,
+      advice: getHealthAdviceByElement(dominantElement) + " また、" + getHealthAdviceByElement(weakElement).replace(/^[^。]+。/, "").replace(/^[^。]+。/, "")
+    },
+    {
+      condition: () => fortuneLevel >= 4,
+      advice: getHealthAdviceByElement(dominantElement) + " 全体的に健康運が良好なので、この調子を維持しましょう。"
+    },
+    {
+      condition: () => fortuneLevel <= 2,
+      advice: getHealthAdviceByElement(dominantElement) + " 体調管理に注意し、規則正しい生活を心がけましょう。"
+    },
+    {
+      condition: () => weakElement !== dominantElement,
+      advice: getHealthAdviceByElement(dominantElement) + " さらに、" + getHealthAdviceByElement(weakElement).replace(/^[^。]+。/, "").replace(/^[^。]+。/, "")
+    },
+    {
+      condition: () => true,
+      advice: getHealthAdviceByElement(dominantElement)
+    }
+  ]
   
-  // 支配要素に基づく健康アドバイス
-  tips += getHealthAdviceByElement(dominantElement)
-  
-  // 弱い要素の補完
-  if (weakElement !== dominantElement) {
-    tips += getHealthAdviceByElement(weakElement)
+  // 条件に合う最初のパターンを返す
+  for (const pattern of healthPatterns) {
+    if (pattern.condition()) {
+      return pattern.advice
+    }
   }
   
-  return tips
+  return getHealthAdviceByElement(dominantElement)
 }
 
-// 日々のアクション生成
+// 日々のアクション生成（ワンポイントアドバイスに変更）
 function generateDailyActions(luckyElements: string[], luckyColors: string[], fortuneLevel: number): string[] {
-  const actions = []
+  const actions: string[] = []
+  const dominantElement = luckyElements[0] || "土"
   
-  // ラッキー要素を活用
-  if (luckyElements.includes("木")) {
-    actions.push("植物を育てる", "自然の中で過ごす")
-  }
-  if (luckyElements.includes("火")) {
-    actions.push("太陽の光を浴びる", "温かい飲み物を飲む")
-  }
-  if (luckyElements.includes("土")) {
-    actions.push("土に触れる", "料理をする")
-  }
-  if (luckyElements.includes("金")) {
-    actions.push("整理整頓する", "金属製品に触れる")
-  }
-  if (luckyElements.includes("水")) {
-    actions.push("水の音を聞く", "入浴を楽しむ")
+  // 運勢レベルとラッキー要素に基づくワンポイントアドバイス
+  const actionPatterns: Array<{ condition: () => boolean, advice: string }> = [
+    {
+      condition: () => fortuneLevel >= 4 && dominantElement === "木",
+      advice: "朝の散歩で自然のエネルギーを取り入れ、新しい一日をスタートしましょう。"
+    },
+    {
+      condition: () => fortuneLevel >= 4 && dominantElement === "火",
+      advice: "太陽の光を浴びながら、温かい飲み物で心身をリフレッシュしましょう。"
+    },
+    {
+      condition: () => fortuneLevel >= 4 && dominantElement === "土",
+      advice: "料理やガーデニングなど、手を動かす活動で運気を高めましょう。"
+    },
+    {
+      condition: () => fortuneLevel >= 4 && dominantElement === "金",
+      advice: "整理整頓や計画を立てることで、運気を整えましょう。"
+    },
+    {
+      condition: () => fortuneLevel >= 4 && dominantElement === "水",
+      advice: "入浴や水の音を聞くことで、心を落ち着かせ運気を整えましょう。"
+    },
+    {
+      condition: () => fortuneLevel <= 2 && dominantElement === "木",
+      advice: "室内に観葉植物を置き、自然のエネルギーを取り入れて運気を改善しましょう。"
+    },
+    {
+      condition: () => fortuneLevel <= 2 && dominantElement === "火",
+      advice: "温かい飲み物を飲み、心を温めることで運気を向上させましょう。"
+    },
+    {
+      condition: () => fortuneLevel <= 2 && dominantElement === "土",
+      advice: "規則正しい食事と生活リズムを心がけ、運気の基盤を整えましょう。"
+    },
+    {
+      condition: () => fortuneLevel <= 2 && dominantElement === "金",
+      advice: "身の回りを整理し、不要なものを手放すことで運気を改善しましょう。"
+    },
+    {
+      condition: () => fortuneLevel <= 2 && dominantElement === "水",
+      advice: "十分な水分補給と休息を心がけ、運気の流れを整えましょう。"
+    },
+    {
+      condition: () => dominantElement === "木",
+      advice: "植物を育てる、自然の中で過ごすなど、木のエネルギーを取り入れましょう。"
+    },
+    {
+      condition: () => dominantElement === "火",
+      advice: "太陽の光を浴びる、温かい飲み物を飲むなど、火のエネルギーを活用しましょう。"
+    },
+    {
+      condition: () => dominantElement === "土",
+      advice: "土に触れる、料理をするなど、土のエネルギーを感じましょう。"
+    },
+    {
+      condition: () => dominantElement === "金",
+      advice: "整理整頓する、金属製品に触れるなど、金のエネルギーを整えましょう。"
+    },
+    {
+      condition: () => dominantElement === "水",
+      advice: "水の音を聞く、入浴を楽しむなど、水のエネルギーでリフレッシュしましょう。"
+    },
+    {
+      condition: () => true,
+      advice: `${luckyColors[0] || "ラッキー"}色のアイテムを身につけ、運気を高めましょう。`
+    }
+  ]
+  
+  // 条件に合う最初のパターンを返す
+  for (const pattern of actionPatterns) {
+    if (pattern.condition()) {
+      actions.push(pattern.advice)
+      break
+    }
   }
   
-  // ラッキーカラーを活用
-  if (luckyColors.length > 0) {
+  // 追加のアクション（最大3個まで）
+  if (luckyColors.length > 0 && actions.length < 3) {
     actions.push(`${luckyColors[0]}色のアイテムを身につける`)
   }
   
-  return actions.slice(0, 5) // 最大5個
+  return actions.slice(0, 3) // 最大3個
 }
 
 // 月間フォーカス生成

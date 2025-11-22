@@ -707,6 +707,7 @@ export default function ClientPage() {
         currentUsage = usageData.count
         currentLimit = usageData.limit
         setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
+        console.log("🔍 AI鑑定使用回数チェック:", { currentUsage, currentLimit, canUse: currentUsage < currentLimit })
       }
     } catch (error) {
       console.error("Failed to fetch latest AI fortune usage:", error)
@@ -741,10 +742,13 @@ export default function ClientPage() {
       setAiFortuneUsage(prev => ({ ...prev, count: prev.count + (useResult.addedCount || 1) }))
     } else {
       // プレミアムプラン: 基本制限1回、龍の息吹で追加可能
+      // currentUsage >= currentLimit の場合は、使用回数が制限に達している
+      // ただし、currentUsage < currentLimit の場合はまだ使える
+      // 注意: countは使用済み回数、limitは制限回数なので、count < limitの時に使える
       if (currentUsage >= currentLimit) {
         // 龍の息吹アイテムがあるかチェック
         if (availableDragonBreathItems.length > 0) {
-          // アイテムを使用
+          // アイテムを使用（龍の息吹は使用回数を増やすのではなく、制限を増やす）
           const useResponse = await fetch("/api/dragon-breath/use", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -755,9 +759,16 @@ export default function ClientPage() {
           if (useResult.success) {
             // 使用成功したらアイテムリストを更新
             setAvailableDragonBreathItems(useResult.remainingItems || [])
-            // 使用回数を更新（龍の息吹で追加された回数）
-            setAiFortuneUsage(prev => ({ ...prev, count: prev.count + (useResult.addedCount || 3) }))
-            // 鑑定を続行
+            // 龍の息吹は使用回数を増やす（制限を増やすのではなく、使用回数を増やす）
+            // API側でcountが増やされるので、ここではlimitを更新する必要はない
+            // ただし、使用回数を更新して、次のチェックで通過できるようにする
+            setAiFortuneUsage(prev => ({ 
+              ...prev, 
+              count: prev.count + (useResult.addedCount || 3),
+              limit: prev.limit + (useResult.addedCount || 3)
+            }))
+            // 鑑定を続行（制限を超えたので、使用回数チェックをスキップ）
+            // ただし、API側でもチェックするので、ここでは続行
           } else {
             setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
             return
@@ -770,6 +781,7 @@ export default function ClientPage() {
           return
         }
       }
+      // currentUsage < currentLimit の場合は、そのまま続行（使用回数チェックはAPI側で行う）
     }
 
     setIsLoadingAiFortune(true)
@@ -1820,14 +1832,17 @@ export default function ClientPage() {
                                         </p>
                                         <Button
                                           onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
-                                          disabled={isLoadingAiFortune}
-                                          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                          disabled={isLoadingAiFortune || (currentPlan === "premium" && aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0)}
+                                          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                           <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を依頼
                                         </Button>
                                         {currentPlan === "premium" && (
                                           <p className="text-xs text-muted-foreground mt-2">
                                             使用回数: {aiFortuneUsage.count} / {aiFortuneUsage.limit}
+                                            {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
+                                              <span className="text-red-500 ml-2">（制限に達しています）</span>
+                                            )}
                                           </p>
                                         )}
                                       </div>

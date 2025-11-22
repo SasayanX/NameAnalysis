@@ -52,6 +52,7 @@ export const strokeCountData: Record<string, number> = {
   証: 12,
   券: 8,
   槻: 15,
+  ョ: 3,
 }
 
 function getDefaultStrokeByCharType(char: string): number {
