@@ -61,6 +61,28 @@ const nextConfig = {
   // experimental: {
   //   optimizeCss: true, // この行を削除
   // },
+  
+  // @resvg/resvg-jsのネイティブバイナリを外部化（webpackがバンドルしないようにする）
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // config.externalsが配列でない場合は配列に変換
+      const externals = Array.isArray(config.externals) 
+        ? config.externals 
+        : [config.externals || []].filter(Boolean);
+
+      // @resvg/resvg-jsとそのプラットフォーム固有パッケージを外部化
+      externals.push(function ({ request }, callback) {
+        // パッケージルートとプラットフォーム固有のバリアントにマッチ
+        if (request && /(^@resvg\/resvg-js$)|(^@resvg\/resvg-js-)/.test(request)) {
+          return callback(null, 'commonjs ' + request);
+        }
+        callback();
+      });
+
+      config.externals = externals;
+    }
+    return config;
+  },
 }
 
 export default nextConfig
