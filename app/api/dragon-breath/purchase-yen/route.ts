@@ -50,44 +50,61 @@ export async function POST(request: NextRequest) {
     const apiEndpoint = getSquareApiEndpoint()
 
     // Square Payment Linkを作成
-    const paymentLinkResponse = await fetch(`${apiEndpoint}/checkout/payment-links`, {
+    // リクエストボディを構築
+    const requestBody = {
+      idempotency_key: `dragon_breath_${userId}_${Date.now()}`,
+      quick_pay: {
+        name: `龍の息吹（${planKey}プラン: ${usageCount}回）`,
+        price_money: {
+          amount: DRAGON_BREATH_PRICE,
+          currency: 'JPY',
+        },
+      },
+      checkout_options: {
+        redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://seimei.app'}/shop/talisman?purchase=dragon-breath&userId=${userId}&plan=${planKey}&paymentLinkId={PAYMENT_LINK_ID}`,
+        ask_for_shipping_address: false,
+      },
+      pre_populated_data: {
+        buyer_email: customerEmail,
+      },
+      metadata: {
+        userId,
+        plan: planKey,
+        usageCount: usageCount.toString(),
+        itemType: 'dragon_breath',
+      },
+    }
+
+    // デバッグ: リクエストボディをログに出力
+    console.log('[Dragon Breath Purchase] Request URL:', `${apiEndpoint}/online-checkout/payment-links`)
+    console.log('[Dragon Breath Purchase] Request Body:', JSON.stringify(requestBody, null, 2))
+
+    const paymentLinkResponse = await fetch(`${apiEndpoint}/online-checkout/payment-links`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${squareAccessToken}`,
         'Content-Type': 'application/json',
         'Square-Version': '2023-10-18',
       },
-      body: JSON.stringify({
-        idempotency_key: `dragon_breath_${userId}_${Date.now()}`,
-        quick_pay: {
-          name: `龍の息吹（${planKey}プラン: ${usageCount}回）`,
-          price_money: {
-            amount: DRAGON_BREATH_PRICE,
-            currency: 'JPY',
-          },
-        },
-        checkout_options: {
-          redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://seimei.app'}/shop/talisman?purchase=dragon-breath&userId=${userId}&plan=${planKey}&paymentLinkId={PAYMENT_LINK_ID}`,
-          ask_for_shipping_address: false,
-        },
-        pre_populated_data: {
-          buyer_email: customerEmail,
-        },
-        metadata: {
-          userId,
-          plan: planKey,
-          usageCount: usageCount.toString(),
-          itemType: 'dragon_breath',
-        },
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     const paymentLinkResult = await paymentLinkResponse.json()
 
+    // デバッグログ（常に出力）
+    console.log('[Dragon Breath Purchase] Square API Response Status:', paymentLinkResponse.status)
+    console.log('[Dragon Breath Purchase] Square API Response Body:', JSON.stringify(paymentLinkResult, null, 2))
+
     if (!paymentLinkResponse.ok || !paymentLinkResult.payment_link) {
-      console.error('Payment Link作成エラー:', paymentLinkResult)
+      console.error('[Dragon Breath Purchase] Payment Link作成エラー:', paymentLinkResult)
+      const errorDetails = paymentLinkResult.errors || paymentLinkResult
       return NextResponse.json(
-        { error: 'Payment Linkの作成に失敗しました', details: paymentLinkResult.errors },
+        { 
+          error: 'Payment Linkの作成に失敗しました', 
+          details: errorDetails,
+          statusCode: paymentLinkResponse.status,
+          fullResponse: paymentLinkResult,
+        },
         { status: paymentLinkResponse.status || 500 }
       )
     }
