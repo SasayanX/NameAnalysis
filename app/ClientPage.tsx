@@ -1373,13 +1373,13 @@ export default function ClientPage() {
                             </CardHeader>
                             <CardContent>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* 格付け */}
+                                {/* 格付け・カード発行 */}
                                 <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ranking")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <h3 className="font-semibold">格付け</h3>
-                                        <p className="text-sm text-muted-foreground">名前の総合評価</p>
+                                        <h3 className="font-semibold">格付け・カード発行</h3>
+                                        <p className="text-sm text-muted-foreground">名前の運勢の強さを数値化・カード発行</p>
                                       </div>
                                       <div className="flex items-center gap-1">
                                         {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}

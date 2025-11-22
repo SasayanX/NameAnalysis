@@ -32,6 +32,9 @@ const strokeCountData = new Map<string, number>([
 // "々"を削除
 strokeCountData.delete("々")
 
+// 直接追加（新データと競合する場合のみ手動上書き）
+strokeCountData.set("槻", 15)
+
 /**
  * 統一された姓名判断計算クラス
  */
