@@ -64,12 +64,29 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentLink = paymentLinkResult.payment_link
-    console.log('[Dragon Breath Verify] Payment Link State:', paymentLink.status)
+    console.log('[Dragon Breath Verify] Payment Link Full Data:', JSON.stringify(paymentLink, null, 2))
+    console.log('[Dragon Breath Verify] Payment Link Status:', paymentLink.status)
     console.log('[Dragon Breath Verify] Order ID:', paymentLink.order_id)
 
+    // Payment Linkの状態で決済完了を判定
+    // statusが'PAID'または'COMPLETED'の場合は決済完了
+    const paymentStatus = paymentLink.status?.toUpperCase()
+    const isStatusPaid = paymentStatus === 'PAID' || paymentStatus === 'COMPLETED'
+    const hasOrderId = paymentLink.order_id && paymentLink.order_id !== null && paymentLink.order_id !== undefined
+
+    console.log('[Dragon Breath Verify] Payment Status:', paymentStatus)
+    console.log('[Dragon Breath Verify] Is Status Paid:', isStatusPaid)
+    console.log('[Dragon Breath Verify] Has Order ID:', hasOrderId)
+
     // 決済が完了しているか確認
-    if (paymentLink.order_id) {
-      // 注文情報を取得
+    // Payment LinkのstatusがPAID/COMPLETED、またはorder_idが存在する場合
+    let isPaymentCompleted = false
+
+    if (isStatusPaid) {
+      // Payment Linkの状態がPAIDまたはCOMPLETED → 決済完了
+      isPaymentCompleted = true
+    } else if (hasOrderId) {
+      // order_idが存在する場合は注文情報を確認
       const orderResponse = await fetch(`${apiEndpoint}/orders/${paymentLink.order_id}`, {
         method: 'GET',
         headers: {
@@ -80,8 +97,37 @@ export async function POST(request: NextRequest) {
       })
 
       const orderResult = await orderResponse.json()
+      console.log('[Dragon Breath Verify] Order Result:', JSON.stringify(orderResult, null, 2))
 
-      if (orderResponse.ok && orderResult.order?.state === 'COMPLETED') {
+      if (orderResponse.ok && orderResult.order) {
+        // 注文が存在する場合、その状態を確認
+        const orderState = orderResult.order.state?.toUpperCase()
+        console.log('[Dragon Breath Verify] Order State:', orderState)
+        
+        if (orderState === 'COMPLETED') {
+          // 注文が完了している → 決済完了
+          isPaymentCompleted = true
+        } else {
+          // 注文は存在するが、まだ完了していない
+          console.log('[Dragon Breath Verify] Order exists but not completed yet. State:', orderState)
+          return NextResponse.json({
+            success: false,
+            error: '決済処理中です。しばらくお待ちください。',
+            paymentLinkStatus: paymentLink.status,
+            orderState: orderResult.order.state,
+          })
+        }
+      } else {
+        // 注文情報が取得できない場合でも、order_idが存在すれば決済済みとみなす
+        console.log('[Dragon Breath Verify] Order ID exists but order not found. Assuming payment completed.')
+        isPaymentCompleted = true
+      }
+    }
+
+    console.log('[Dragon Breath Verify] Final Is Payment Completed:', isPaymentCompleted)
+
+    // 決済完了の場合、アイテムを付与
+    if (isPaymentCompleted) {
         // メタデータからプラン情報を取得
         const metadata = paymentLink.metadata || {}
         const plan = (metadata.plan as keyof typeof PLAN_USAGE_COUNTS) || 'free'
