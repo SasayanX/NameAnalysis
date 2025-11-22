@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 interface RareCardProps {
   lastName: string
@@ -26,8 +26,11 @@ export default function RareCard({
   height = 1536,
 }: RareCardProps) {
   const svgRef = useRef<SVGSVGElement>(null)
-  const fullName = lastName + firstName
-  const nameChars = Array.from(fullName)
+  // スペースを除外した文字配列を作成
+  const lastNameChars = Array.from(lastName)
+  const firstNameChars = Array.from(firstName)
+  const nameChars = [...lastNameChars, ...firstNameChars]
+  const lastNameLength = lastNameChars.length // 姓名の境界を記録
 
   // ランク別ベース画像のデフォルトパス
   const defaultBaseSrc = baseSrc || `/images/rare-cards/card_base_${rank}_v1.png`
@@ -54,9 +57,13 @@ export default function RareCard({
 
   // 縦書きの文字サイズと行間を自動計算
   const charSize = Math.min(200, Math.floor(nameAreaWidth / nameChars.length * 1.2)) // 最大200px
-  const charSpacing = charSize * 1.05
+  const baseCharSpacing = charSize * 1.05
+  const nameSpacing = baseCharSpacing * 0.2 // 姓名の間の追加間隔（通常の20%）
   const nameStartX = width / 2
-  const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
+  
+  // 通常の文字間隔で全体の高さを計算（姓名の間の追加間隔は後で加算）
+  const totalBaseSpacing = (nameChars.length - 1) * baseCharSpacing
+  const nameStartY = safeZone.top + (nameAreaHeight - totalBaseSpacing - nameSpacing) / 2
 
   return (
     <div className="relative inline-block">
@@ -113,36 +120,36 @@ export default function RareCard({
             if (rank === 'SSS') {
               // SSS: 金色系グラデーション（下から上へ）
               return (
-                <>
-                  <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                <React.Fragment key={`gradient-sss-${index}`}>
+                  <linearGradient id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
                     <stop offset="0%" style={{ stopColor: '#B8860B', stopOpacity: 1 }} />
                     <stop offset="30%" style={{ stopColor: '#DAA520', stopOpacity: 1 }} />
                     <stop offset="60%" style={{ stopColor: '#FFD700', stopOpacity: 1 }} />
                     <stop offset="85%" style={{ stopColor: '#FFE55C', stopOpacity: 1 }} />
                     <stop offset="100%" style={{ stopColor: '#FFF8D9', stopOpacity: 1 }} />
                   </linearGradient>
-                  <linearGradient key={`stroke-${index}`} id={`stroke-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <linearGradient id={`stroke-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
                     <stop offset="0%" style={{ stopColor: '#C0C0C0', stopOpacity: 1 }} />
                     <stop offset="100%" style={{ stopColor: '#FFFFFF', stopOpacity: 1 }} />
                   </linearGradient>
-                </>
+                </React.Fragment>
               )
             } else if (rank === 'SS') {
               // SS: 銀色系グラデーション（下から上へ）
               return (
-                <>
-                  <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                <React.Fragment key={`gradient-ss-${index}`}>
+                  <linearGradient id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
                     <stop offset="0%" style={{ stopColor: '#4A5568', stopOpacity: 1 }} />
                     <stop offset="30%" style={{ stopColor: '#718096', stopOpacity: 1 }} />
                     <stop offset="60%" style={{ stopColor: '#A0AEC0', stopOpacity: 1 }} />
                     <stop offset="85%" style={{ stopColor: '#C0CCD4', stopOpacity: 1 }} />
                     <stop offset="100%" style={{ stopColor: '#F2F7FF', stopOpacity: 1 }} />
                   </linearGradient>
-                  <linearGradient key={`stroke-${index}`} id={`stroke-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <linearGradient id={`stroke-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
                     <stop offset="0%" style={{ stopColor: '#C0C0C0', stopOpacity: 1 }} />
                     <stop offset="100%" style={{ stopColor: '#FFFFFF', stopOpacity: 1 }} />
                   </linearGradient>
-                </>
+                </React.Fragment>
               )
             } else if (rank === 'A+') {
               // A+: 紺色系グラデーション（下から上へ）
@@ -177,15 +184,31 @@ export default function RareCard({
                   <stop offset="100%" style={{ stopColor: '#F2F7FF', stopOpacity: 1 }} />
                 </linearGradient>
               )
-            } else {
-              // S以下（B、C、D）: 現状の炎グラデーション（赤→オレンジ→黄色→金色）
+            } else if (rank === 'B') {
+              // B: 下から黒、上に銀のグラデーション
               return (
                 <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" style={{ stopColor: '#FF4500', stopOpacity: 1 }} />
-                  <stop offset="30%" style={{ stopColor: '#FF6347', stopOpacity: 1 }} />
-                  <stop offset="60%" style={{ stopColor: '#FFA500', stopOpacity: 1 }} />
-                  <stop offset="85%" style={{ stopColor: '#FFD700', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#FFFFE0', stopOpacity: 1 }} />
+                  <stop offset="0%" style={{ stopColor: '#000000', stopOpacity: 1 }} />
+                  <stop offset="50%" style={{ stopColor: '#4A4A4A', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#C0C0C0', stopOpacity: 1 }} />
+                </linearGradient>
+              )
+            } else if (rank === 'C') {
+              // C: 下から焦げ茶、上に黄色のグラデーション
+              return (
+                <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: '#5D4037', stopOpacity: 1 }} />
+                  <stop offset="50%" style={{ stopColor: '#8D6E63', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#FFD700', stopOpacity: 1 }} />
+                </linearGradient>
+              )
+            } else {
+              // D: 下から黒、上に白のグラデーション
+              return (
+                <linearGradient key={`flame-${index}`} id={`flame-gradient-front-${index}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: '#000000', stopOpacity: 1 }} />
+                  <stop offset="50%" style={{ stopColor: '#4A4A4A', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#FFFFFF', stopOpacity: 1 }} />
                 </linearGradient>
               )
             }
@@ -204,7 +227,16 @@ export default function RareCard({
 
         {/* 名前（縦書き中央） */}
         {nameChars.map((char, index) => {
-          const y = nameStartY + index * charSpacing
+          // 累積Y位置を計算（姓と名の間だけ追加間隔）
+          let y = nameStartY
+          for (let i = 0; i < index; i++) {
+            y += baseCharSpacing
+            // 姓の最後の文字の後（名の最初の文字の前）に追加間隔を加える
+            if (i === lastNameLength - 1) {
+              y += nameSpacing
+            }
+          }
+          
           const glowFilter = rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'
           const fontFamily = "'KSW闘龍', serif"
 
@@ -252,7 +284,17 @@ export default function RareCard({
                 fontSize={charSize}
                 fontWeight="700"
                 fill={`url(#flame-gradient-front-${index})`}
-                stroke={rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-front-${index})` : '#FFD700'}
+                stroke={
+                  rank === 'SSS' || rank === 'SS' 
+                    ? `url(#stroke-gradient-front-${index})` 
+                    : rank === 'D'
+                    ? '#FFFFFF'
+                    : rank === 'C'
+                    ? '#D7CCC8'
+                    : rank === 'B'
+                    ? '#F5DEB3'
+                    : '#FFD700'
+                }
                 strokeWidth={1.5}
                 strokeLinejoin="miter"
                 strokeLinecap="butt"
@@ -293,6 +335,10 @@ export default function RareCard({
             fontSize="64"
             fontWeight="900"
             fill={`url(#flame-gradient-front-0)`}
+            stroke={rank === 'SSS' ? '#FFFFFF' : 'none'}
+            strokeWidth={rank === 'SSS' ? '0.3' : '0'}
+            strokeLinejoin="round"
+            strokeLinecap="round"
             filter={rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}
           >
             {score}pt

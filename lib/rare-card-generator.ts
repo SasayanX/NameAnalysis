@@ -3,6 +3,8 @@
  * SVGを生成してPNGに変換（sharp使用）
  */
 import sharp from 'sharp'
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 
 export type RankType = 'SSS' | 'SS' | 'S' | 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D'
 
@@ -127,6 +129,62 @@ const RANK_DESIGNS: Record<RankType, RankDesign> = {
 }
 
 /**
+ * フォントをBase64エンコードしてSVGに埋め込む
+ * @param fontName - フォント名（例: 'KSW闘龍'）
+ * @param fontPath - フォントファイルのパス（相対パス、例: 'fonts/KSW闘龍.ttf'）
+ * @returns SVGの<defs>セクションに追加するフォント定義（フォントファイルがない場合は空文字列）
+ */
+function embedFontInSVG(fontName: string, fontPath: string): string {
+  try {
+    // 複数のパスを試行
+    const possiblePaths = [
+      join(process.cwd(), 'public', fontPath),
+      join(process.cwd(), fontPath),
+      join(process.cwd(), 'fonts', fontPath.split('/').pop() || ''),
+    ]
+
+    let fontBuffer: Buffer | null = null
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        fontBuffer = readFileSync(path)
+        console.log(`✅ フォントファイル読み込み成功: ${path}`)
+        break
+      }
+    }
+
+    if (!fontBuffer) {
+      console.warn(`⚠️ フォントファイルが見つかりません: ${fontPath} (試行パス: ${possiblePaths.join(', ')})`)
+      return ''
+    }
+
+    // Base64エンコード
+    const fontBase64 = fontBuffer.toString('base64')
+    
+    // SVGの<defs>セクションに追加するフォント定義
+    // TTF/OTFフォントの場合
+    const fontFormat = fontPath.toLowerCase().endsWith('.otf') ? 'opentype' : 'truetype'
+    const mimeType = fontPath.toLowerCase().endsWith('.otf') ? 'font/opentype' : 'font/truetype'
+    
+    return `
+      <defs>
+        <style>
+          @font-face {
+            font-family: '${fontName}';
+            src: url(data:${mimeType};charset=utf-8;base64,${fontBase64}) format('${fontFormat}');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+          }
+        </style>
+      </defs>
+    `
+  } catch (error: any) {
+    console.warn(`⚠️ フォント埋め込みエラー: ${error.message}`)
+    return ''
+  }
+}
+
+/**
  * レアカード画像を生成
  * @param lastName - 姓
  * @param firstName - 名
@@ -144,8 +202,11 @@ export async function generateRareCardImage(
   baseImagePath?: string
 ): Promise<Buffer> {
   const design = RANK_DESIGNS[rank]
-  const fullName = lastName + firstName
-  const nameChars = Array.from(fullName)
+  // スペースを除外した文字配列を作成
+  const lastNameChars = Array.from(lastName)
+  const firstNameChars = Array.from(firstName)
+  const nameChars = [...lastNameChars, ...firstNameChars]
+  const lastNameLength = lastNameChars.length // 姓名の境界を記録
 
   // カードサイズ（縦向き）
   const width = 1200
@@ -283,8 +344,12 @@ export async function generateRareCardImage(
     `
   }
   
+  // フォント埋め込み（KSW闘龍フォントがあれば使用）
+  const fontEmbed = embedFontInSVG('KSW闘龍', 'fonts/KswTouryu.ttf')
+  
   const gradientDef = `
     <defs>
+      ${fontEmbed}
       <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:${design.bgColors[0]};stop-opacity:1" />
         <stop offset="50%" style="stop-color:${design.bgColors[1]};stop-opacity:1" />
@@ -397,15 +462,31 @@ export async function generateRareCardImage(
           <stop offset="100%" style="stop-color:#F2F7FF;stop-opacity:1" />
         </linearGradient>
       `
-        } else {
-          // S以下（B、C、D）: 現状の炎グラデーション（赤→オレンジ→黄色→金色）
+        } else if (rank === 'B') {
+          // B: 下から黒、上に銀のグラデーション
           return `
         <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
-          <stop offset="0%" style="stop-color:#FF4500;stop-opacity:1" />
-          <stop offset="30%" style="stop-color:#FF6347;stop-opacity:1" />
-          <stop offset="60%" style="stop-color:#FFA500;stop-opacity:1" />
-          <stop offset="85%" style="stop-color:#FFD700;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#FFFFE0;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#4A4A4A;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#C0C0C0;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'C') {
+          // C: 下から焦げ茶、上に黄色のグラデーション
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#5D4037;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#8D6E63;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else {
+          // D: 下から黒、上に白のグラデーション
+          return `
+        <linearGradient id="flame-gradient-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#4A4A4A;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:1" />
         </linearGradient>
       `
         }
@@ -423,16 +504,28 @@ export async function generateRareCardImage(
   
   // 文字サイズと行間を自動計算（RareCard.tsxと同じ）
   const charSize = Math.min(200, Math.floor(nameAreaWidth / nameChars.length * 1.2))
-  const charSpacing = charSize * 1.05
+  const baseCharSpacing = charSize * 1.05
+  const nameSpacing = baseCharSpacing * 0.2 // 姓名の間の追加間隔（通常の20%）
   const nameStartX = width / 2
-  const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
+  
+  // 通常の文字間隔で全体の高さを計算（姓名の間の追加間隔は後で加算）
+  const totalBaseSpacing = (nameChars.length - 1) * baseCharSpacing
+  const nameStartY = safeZone.top + (nameAreaHeight - totalBaseSpacing - nameSpacing) / 2
 
   // 名前の文字要素（RareCard.tsxと同じ実装）
-  // フォント指定: KSW闘龍
-  const fontFamily = "'KSW闘龍', serif"
-  console.log('🎨 カード生成 - フォント指定:', fontFamily)
+  // フォント指定: KSW闘龍（フォントファイルがあれば使用、なければフォールバック）
+  const fontFamily = fontEmbed ? "'KSW闘龍', serif" : "'Noto Sans JP', 'Yu Mincho', serif"
+  console.log('🎨 カード生成 - フォント指定:', fontFamily, fontEmbed ? '(埋め込み済み)' : '(フォールバック)')
   const nameElements = nameChars.map((char, index) => {
-    const y = nameStartY + index * charSpacing
+    // 累積Y位置を計算（姓と名の間だけ追加間隔）
+    let y = nameStartY
+    for (let i = 0; i < index; i++) {
+      y += baseCharSpacing
+      // 姓の最後の文字の後（名の最初の文字の前）に追加間隔を加える
+      if (i === lastNameLength - 1) {
+        y += nameSpacing
+      }
+    }
 
     return `
       <!-- 後光エフェクト（SSSのみ、くっきりしたエッジ） -->
@@ -464,7 +557,7 @@ export async function generateRareCardImage(
             font-size="${charSize}" 
             font-weight="700" 
             fill="url(#flame-gradient-${index})" 
-            stroke="${rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-${index})` : '#FFD700'}"
+            stroke="${rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-${index})` : rank === 'D' ? '#FFFFFF' : rank === 'C' ? '#D7CCC8' : rank === 'B' ? '#F5DEB3' : '#FFD700'}"
             stroke-width="1.5"
             stroke-linejoin="miter"
             stroke-linecap="butt"
@@ -645,7 +738,7 @@ export async function generateRareCardImage(
         <text x="${width - padding - 40}" y="${padding + 80}" 
               text-anchor="end"
               font-family="${design.fontFamily}" font-size="42" font-weight="${design.fontWeight}"
-              fill="#FFFFFF" filter="${rank === 'SSS' ? 'url(#strong-glow)' : `url(#glow-${rank})`}">${design.name}</text>
+              fill="#FFFFFF" filter="url(#glow-${rank})">${design.name}</text>
       `}
       <!-- スターバーストアイコン（右上） -->
       <g transform="translate(${width - padding - 60}, ${padding + 100})">
@@ -669,6 +762,10 @@ export async function generateRareCardImage(
         <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
               font-family="Arial, sans-serif" font-size="64" font-weight="900"
               fill="url(#flame-gradient-0)" 
+              stroke="${rank === 'SSS' ? '#FFFFFF' : 'none'}"
+              stroke-width="${rank === 'SSS' ? '0.3' : '0'}"
+              stroke-linejoin="round"
+              stroke-linecap="round"
               filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}">${totalPoints}pt</text>
         <!-- パワーレベル表示（RareCard.tsxと同じ） -->
         <text x="0" y="65" text-anchor="middle"
@@ -708,8 +805,11 @@ async function generateRareCardWithBaseImage(
   height: number,
   design: RankDesign
 ): Promise<Buffer> {
-  const fullName = lastName + firstName
-  const nameChars = Array.from(fullName)
+  // スペースを除外した文字配列を作成
+  const lastNameChars = Array.from(lastName)
+  const firstNameChars = Array.from(firstName)
+  const nameChars = [...lastNameChars, ...firstNameChars]
+  const lastNameLength = lastNameChars.length // 姓名の境界を記録
   
   // カードサイズ
   const padding = 60
@@ -724,9 +824,13 @@ async function generateRareCardWithBaseImage(
   
   // 文字サイズと行間を自動計算（RareCard.tsxと同じ）
   const charSize = Math.min(200, Math.floor(nameAreaWidth / nameChars.length * 1.2))
-  const charSpacing = charSize * 1.05
+  const baseCharSpacing = charSize * 1.05
+  const nameSpacing = baseCharSpacing * 0.2 // 姓名の間の追加間隔（通常の20%）
   const nameStartX = width / 2
-  const nameStartY = safeZone.top + (nameAreaHeight - (nameChars.length - 1) * charSpacing) / 2
+  
+  // 通常の文字間隔で全体の高さを計算（姓名の間の追加間隔は後で加算）
+  const totalBaseSpacing = (nameChars.length - 1) * baseCharSpacing
+  const nameStartY = safeZone.top + (nameAreaHeight - totalBaseSpacing - nameSpacing) / 2
   
   // ランク別の色設定（RareCard.tsxと同じ）
   const rankColors: Record<RankType, { main: string; glow: string; shadow: string; bg: string }> = {
@@ -743,8 +847,12 @@ async function generateRareCardWithBaseImage(
   const colors = rankColors[rank]
 
   // エフェクト定義（RareCard.tsxと同じ）
+  // フォント埋め込み（KSW闘龍フォントがあれば使用）
+  const fontEmbedBase = embedFontInSVG('KSW闘龍', 'fonts/KswTouryu.ttf')
+  
   const textEffectsDef = `
     <defs>
+      ${fontEmbedBase}
       <!-- 発光フィルター（RareCard.tsxと同じ） -->
       <filter id="glow">
         <feGaussianBlur stdDeviation="6" result="blur"/>
@@ -856,15 +964,31 @@ async function generateRareCardWithBaseImage(
           <stop offset="100%" style="stop-color:#F2F7FF;stop-opacity:1" />
         </linearGradient>
       `
-        } else {
-          // S以下（B、C、D）: 現状の炎グラデーション（赤→オレンジ→黄色→金色）
+        } else if (rank === 'B') {
+          // B: 下から黒、上に銀のグラデーション
           return `
         <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
-          <stop offset="0%" style="stop-color:#FF4500;stop-opacity:1" />
-          <stop offset="30%" style="stop-color:#FF6347;stop-opacity:1" />
-          <stop offset="60%" style="stop-color:#FFA500;stop-opacity:1" />
-          <stop offset="85%" style="stop-color:#FFD700;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#FFFFE0;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#4A4A4A;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#C0C0C0;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else if (rank === 'C') {
+          // C: 下から焦げ茶、上に黄色のグラデーション
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#5D4037;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#8D6E63;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+        </linearGradient>
+      `
+        } else {
+          // D: 下から黒、上に白のグラデーション
+          return `
+        <linearGradient id="flame-gradient-base-${index}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" style="stop-color:#000000;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#4A4A4A;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:1" />
         </linearGradient>
       `
         }
@@ -873,10 +997,19 @@ async function generateRareCardWithBaseImage(
   `
   
   // 名前テキスト要素（RareCard.tsxと同じ実装）
-  // フォント指定: KSW闘龍
-  const fontFamily = "'KSW闘龍', serif"
+  // フォント指定: KSW闘龍（フォントファイルがあれば使用、なければフォールバック）
+  const fontFamily = fontEmbedBase ? "'KSW闘龍', serif" : "'Noto Sans JP', 'Yu Mincho', serif"
+  console.log('🎨 カード生成（ベース画像版） - フォント指定:', fontFamily, fontEmbedBase ? '(埋め込み済み)' : '(フォールバック)')
   const nameElements = nameChars.map((char, index) => {
-    const y = nameStartY + index * charSpacing
+    // 累積Y位置を計算（姓と名の間だけ追加間隔）
+    let y = nameStartY
+    for (let i = 0; i < index; i++) {
+      y += baseCharSpacing
+      // 姓の最後の文字の後（名の最初の文字の前）に追加間隔を加える
+      if (i === lastNameLength - 1) {
+        y += nameSpacing
+      }
+    }
 
     return `
       <!-- 後光エフェクト（SSSのみ、RareCard.tsxと同じ） -->
@@ -907,7 +1040,7 @@ async function generateRareCardWithBaseImage(
             font-size="${charSize}" 
             font-weight="700" 
             fill="url(#flame-gradient-base-${index})" 
-            stroke="${rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-base-${index})` : '#FFD700'}"
+            stroke="${rank === 'SSS' || rank === 'SS' ? `url(#stroke-gradient-base-${index})` : rank === 'D' ? '#FFFFFF' : rank === 'C' ? '#D7CCC8' : rank === 'B' ? '#F5DEB3' : '#FFD700'}"
             stroke-width="1.5"
             stroke-linejoin="miter"
             stroke-linecap="butt"
@@ -939,6 +1072,10 @@ async function generateRareCardWithBaseImage(
         <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
               font-family="Arial, sans-serif" font-size="64" font-weight="900"
               fill="url(#flame-gradient-base-0)" 
+              stroke="${rank === 'SSS' ? '#FFFFFF' : 'none'}"
+              stroke-width="${rank === 'SSS' ? '0.3' : '0'}"
+              stroke-linejoin="round"
+              stroke-linecap="round"
               filter="${rank === 'SSS' ? 'url(#strong-glow)' : 'url(#glow)'}">${totalPoints}pt</text>
         <!-- パワーレベル表示（RareCard.tsxと同じ） -->
         <text x="0" y="65" text-anchor="middle"

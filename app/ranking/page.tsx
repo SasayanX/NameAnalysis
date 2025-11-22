@@ -96,21 +96,43 @@ export default function RankingPage() {
               )}
 
               <ol className="space-y-2">
-                {entries.map((e, i) => (
-                  <li key={e.id} className="p-3 rounded-md border flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline">{e.rank ?? i + 1}</Badge>
-                      <div>
-                        <div className="font-medium text-sm">{e.name}</div>
-                        <div className="text-xs text-muted-foreground">パワースコア {e.power_score} / 季節+{e.seasonal_bonus}% / アイテム+{e.item_bonus}%</div>
+                {entries.map((e, i) => {
+                  // 表示名の決定: 自分のエントリの場合はreal_name、他人の場合はranking_display_name
+                  const displayName = 
+                    user && e.user_id === user.id && e.real_name
+                      ? e.real_name // 自分のエントリ: 本名をマスキングなしで表示
+                      : e.ranking_display_name || e.name // 他人のエントリ: マスキング済みまたはニックネーム（後方互換性のためnameも使用）
+                  
+                  const isOwnEntry = user && e.user_id === user.id
+                  
+                  return (
+                    <li 
+                      key={e.id} 
+                      className={`p-3 rounded-md border flex items-center justify-between ${
+                        isOwnEntry ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline">{e.rank ?? i + 1}</Badge>
+                        <div>
+                          <div className="font-medium text-sm flex items-center gap-2">
+                            {displayName}
+                            {isOwnEntry && (
+                              <Badge variant="secondary" className="text-xs bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                あなた
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">パワースコア {e.power_score} / 季節+{e.seasonal_bonus}% / アイテム+{e.item_bonus}%</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-yellow-600" />
-                      <span className="font-semibold">{e.total_score}</span>
-                    </div>
-                  </li>
-                ))}
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-yellow-600" />
+                        <span className="font-semibold">{e.total_score}</span>
+                      </div>
+                    </li>
+                  )
+                })}
               </ol>
             </div>
           )}

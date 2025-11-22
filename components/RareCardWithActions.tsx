@@ -44,7 +44,12 @@ export default function RareCardWithActions({
 
     setIsGenerating(true)
     try {
-      const blob = await renderCardPNG(svgRef.current)
+      // div要素からSVG要素を取得
+      const svgElement = svgRef.current.querySelector('svg') as SVGSVGElement
+      if (!svgElement) {
+        throw new Error('SVG element not found')
+      }
+      const blob = await renderCardPNG(svgElement)
       const filename = `${lastName}${firstName}_${rank}_RareCard.png`
       downloadCardPNG(blob, filename)
     } catch (error) {
@@ -60,7 +65,12 @@ export default function RareCardWithActions({
 
     setIsGenerating(true)
     try {
-      const blob = await renderCardPNG(svgRef.current)
+      // div要素からSVG要素を取得
+      const svgElement = svgRef.current.querySelector('svg') as SVGSVGElement
+      if (!svgElement) {
+        throw new Error('SVG element not found')
+      }
+      const blob = await renderCardPNG(svgElement)
       const shareText = generateShareText(lastName, firstName, rank, title, score)
 
       // Web Share APIが利用可能な場合
@@ -94,7 +104,12 @@ export default function RareCardWithActions({
 
     setIsGenerating(true)
     try {
-      const blob = await renderCardPNG(svgRef.current)
+      // div要素からSVG要素を取得
+      const svgElement = svgRef.current.querySelector('svg') as SVGSVGElement
+      if (!svgElement) {
+        throw new Error('SVG element not found')
+      }
+      const blob = await renderCardPNG(svgElement)
 
       // Clipboard APIが利用可能な場合
       if (navigator.clipboard && navigator.clipboard.write) {

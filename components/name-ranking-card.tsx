@@ -16,6 +16,7 @@ import { submitRankingEntryFromNameAnalysis } from "@/lib/ranking-repo"
 // クライアントサイドから直接Supabaseアクセスを避けるため、API Route経由で取得
 import Link from "next/link"
 import RankCardIssueSection from "@/components/RankCardIssueSection"
+import { RankingPrivacyModal, type DisplayNameType } from "@/components/ranking-privacy-modal"
 
 // ランク別の色設定
 const rankColors: Record<string, { main: string; glow: string; shadow: string; bg: string }> = {
@@ -197,6 +198,7 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
   const [registerError, setRegisterError] = useState<string>("")
   const [registerSuccess, setRegisterSuccess] = useState(false)
   const [points, setPoints] = useState<number | null>(null)
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
   const { fortuneData } = useFortuneData()
   const { user: authUser } = useAuth()
 
@@ -222,8 +224,8 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
     }
   }, [authUser]) // authUserが変更されたら再実行（セッション復元時も含む）
 
-  // ランキング登録処理
-  const handleRegisterRanking = async () => {
+  // ランキング登録処理（モーダルを開く）
+  const handleRegisterRanking = () => {
     if (!authUser) {
       const shouldRedirect = window.confirm(
         "ランキングに登録するにはログインが必要です。\nログインページに移動しますか？"
@@ -237,12 +239,28 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
       return
     }
 
+    // プライバシー設定モーダルを開く
+    setIsPrivacyModalOpen(true)
+    setRegisterError("")
+    setRegisterSuccess(false)
+  }
+
+  // プライバシー設定モーダルでの確認処理
+  const handlePrivacyConfirm = async (displayNameType: DisplayNameType, nickname?: string) => {
+    if (!authUser) {
+      return
+    }
+
     setRegistering(true)
     setRegisterError("")
     setRegisterSuccess(false)
+    setIsPrivacyModalOpen(false)
 
     try {
-      await submitRankingEntryFromNameAnalysis(authUser.id, lastName, firstName, gender)
+      await submitRankingEntryFromNameAnalysis(authUser.id, lastName, firstName, gender, {
+        displayNameType,
+        nickname,
+      })
       setRegisterSuccess(true)
       // ポイント残高を更新（API Route経由）
       const response = await fetch(`/api/kp/balance?userId=${encodeURIComponent(authUser.id)}`)
@@ -256,6 +274,13 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
       setRegisterError(e.message || "ランキング登録に失敗しました")
     } finally {
       setRegistering(false)
+    }
+  }
+
+  // プライバシー設定モーダルを閉じる
+  const handlePrivacyModalClose = () => {
+    if (!registering) {
+      setIsPrivacyModalOpen(false)
     }
   }
 
@@ -370,7 +395,7 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
         {!isPremium && (
           <div className="mt-6 p-4 bg-gradient-to-r from-amber-100 to-amber-200 rounded-lg text-center">
             <p className="text-sm font-medium text-amber-800">
-              会員登録すると、格付けランク（S、SS、SSSなど）とすべての詳細な分析が見られます
+              会員登録すると、格付けランク（B、A、Sなど）とすべての詳細な分析が見られます
             </p>
             <p className="text-xs text-amber-700 mt-1">ベーシック(330円/月)から詳細機能が使えます</p>
             <Button variant="default" size="sm" className="mt-2 bg-amber-500 hover:bg-amber-600">
@@ -480,7 +505,7 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
                 ) : (
                   <div className="flex items-center gap-2">
                     <Trophy className="h-4 w-4" />
-                    ランキングに登録（5Kp消費）
+                    全国ランキングに登録する（5Kp消費）
                   </div>
                 )}
               </Button>
@@ -494,6 +519,15 @@ export function NameRankingCard({ lastName, firstName, gender, isPremium, premiu
           ※格付けポイントは参考値です。実際の運勢を保証するものではありません。
         </div>
       </CardFooter>
+
+      {/* プライバシー設定モーダル */}
+      <RankingPrivacyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={handlePrivacyModalClose}
+        onConfirm={handlePrivacyConfirm}
+        realName={`${lastName}${firstName}`}
+        isLoading={registering}
+      />
     </Card>
   )
 }

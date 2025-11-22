@@ -291,9 +291,7 @@ function generatePersonalizedAdvice(
   advice += `\n${dominantElement}の要素が強いため、${getElementAdvice(dominantElement)}`
   
   if (weakElement !== dominantElement) {
-    const weakElementName = getElementName(weakElement)
-    const weakElementColor = getElementColorForKotodama(weakElement)
-    advice += `一方、${weakElement}の要素を補うことで、よりバランスの取れた運勢になります。この「${weakElementName}」を象徴する言霊は、今日の「言霊あつめ」で獲得できます。ラッキーカラーの${weakElementColor}を意識して、言霊を探してみましょう。`
+    advice += `一方、${weakElement}の要素を補うことで、よりバランスの取れた運勢になります。`
   }
 
   return advice

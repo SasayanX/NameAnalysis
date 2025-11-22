@@ -312,7 +312,8 @@ export function BabyNamingTool() {
           <div className="grid gap-6">
             {candidates.map((candidate, index) => (
               <Card key={index} className="relative overflow-hidden">
-                <div className="absolute top-4 right-4 flex gap-2">
+                {/* デスクトップ: 右上に配置、モバイル: 非表示 */}
+                <div className="absolute top-4 right-4 hidden md:flex gap-2 flex-wrap">
                   {candidate.hasNoKyousu && (
                     <Badge className="bg-green-500 text-white flex items-center gap-1">
                       <Shield className="h-3 w-3" />
@@ -339,13 +340,40 @@ export function BabyNamingTool() {
                 </div>
 
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
+                  <CardTitle className="flex items-center gap-3 flex-wrap">
                     <span className="text-3xl font-bold text-primary">
                       {lastName} {candidate.kanji}
                     </span>
                     <span className="text-lg text-muted-foreground">({candidate.reading})</span>
                   </CardTitle>
                   <CardDescription className="text-lg">{candidate.meaning}</CardDescription>
+                  
+                  {/* モバイル: 名前の下にバッジを配置 */}
+                  <div className="flex md:hidden gap-2 flex-wrap mt-2">
+                    {candidate.hasNoKyousu && (
+                      <Badge className="bg-green-500 text-white flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        凶数なし
+                      </Badge>
+                    )}
+                    {candidate.isGoodFortune && (
+                      <Badge className="bg-blue-500 text-white flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        最高品質
+                      </Badge>
+                    )}
+                    <Badge
+                      className={`${RANK_COLORS[candidate.powerRank as keyof typeof RANK_COLORS]} flex items-center gap-1`}
+                    >
+                      {RANK_ICONS[candidate.powerRank as keyof typeof RANK_ICONS]}
+                      {candidate.powerRank}ランク
+                    </Badge>
+                    {candidate.searchMode && candidate.searchMode !== "厳格モード" && (
+                      <Badge variant="outline" className="text-xs">
+                        {candidate.searchMode}
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
