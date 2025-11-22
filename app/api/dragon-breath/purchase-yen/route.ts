@@ -21,9 +21,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userId, plan, customerEmail } = body
 
+    // デバッグログ
+    console.log('[Dragon Breath Purchase] Request body:', JSON.stringify(body, null, 2))
+    console.log('[Dragon Breath Purchase] Parsed values:', { userId, plan, customerEmail })
+
     if (!userId || !plan || !customerEmail) {
+      console.error('[Dragon Breath Purchase] Missing required fields:', { userId, plan, customerEmail })
       return NextResponse.json(
-        { error: 'userId、plan、customerEmailが必要です' },
+        { 
+          error: 'userId、plan、customerEmailが必要です',
+          received: { userId: !!userId, plan: !!plan, customerEmail: !!customerEmail },
+          body,
+        },
         { status: 400 }
       )
     }
@@ -50,15 +59,21 @@ export async function POST(request: NextRequest) {
     const apiEndpoint = getSquareApiEndpoint()
 
     // Square Payment Linkを作成
-    // リクエストボディを構築
+    // リクエストボディを構築（正しい形式）
     const requestBody = {
       idempotency_key: `dragon_breath_${userId}_${Date.now()}`,
-      quick_pay: {
-        name: `龍の息吹（${planKey}プラン: ${usageCount}回）`,
-        price_money: {
-          amount: DRAGON_BREATH_PRICE,
-          currency: 'JPY',
-        },
+      order: {
+        location_id: squareLocationId,
+        line_items: [
+          {
+            name: `龍の息吹（${planKey}プラン: ${usageCount}回）`,
+            quantity: '1',
+            base_price_money: {
+              amount: DRAGON_BREATH_PRICE,
+              currency: 'JPY',
+            },
+          },
+        ],
       },
       checkout_options: {
         redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://seimei.app'}/shop/talisman?purchase=dragon-breath&userId=${userId}&plan=${planKey}&paymentLinkId={PAYMENT_LINK_ID}`,
@@ -98,12 +113,20 @@ export async function POST(request: NextRequest) {
     if (!paymentLinkResponse.ok || !paymentLinkResult.payment_link) {
       console.error('[Dragon Breath Purchase] Payment Link作成エラー:', paymentLinkResult)
       const errorDetails = paymentLinkResult.errors || paymentLinkResult
+      const errorMessage = errorDetails?.[0]?.detail || errorDetails?.message || 'Payment Linkの作成に失敗しました'
+      const errorCode = errorDetails?.[0]?.code || errorDetails?.code
+      const errorField = errorDetails?.[0]?.field || errorDetails?.field
+      
       return NextResponse.json(
         { 
-          error: 'Payment Linkの作成に失敗しました', 
+          success: false,
+          error: errorMessage,
+          errorCode,
+          errorField,
           details: errorDetails,
           statusCode: paymentLinkResponse.status,
           fullResponse: paymentLinkResult,
+          requestBody: requestBody, // デバッグ用
         },
         { status: paymentLinkResponse.status || 500 }
       )
