@@ -255,8 +255,19 @@ export default function TalismanShopPage() {
         const currentPlan = subscriptionInfo.plan || "free"
 
         // Google Play Billingが利用可能な場合は、Google Play Billingを使用
-        if (isGooglePlayAvailable && GooglePlayBillingDetector.isTWAEnvironment()) {
+        // TWA環境の場合は、初期化を試みてから購入を実行
+        if (GooglePlayBillingDetector.isTWAEnvironment()) {
           try {
+            // TWA環境の場合は、初期化を試みる（まだ初期化されていない場合）
+            if (!isGooglePlayAvailable) {
+              console.log('[Talisman Shop] Initializing Google Play Billing for purchase...')
+              const initialized = await GooglePlayBillingDetector.initialize()
+              setIsGooglePlayAvailable(initialized)
+              if (!initialized) {
+                throw new Error('Google Play Billingの初期化に失敗しました')
+              }
+            }
+            
             const productId = getGooglePlayProductId('dragonBreath')
             const purchase = await GooglePlayBillingDetector.purchase(productId)
 
@@ -866,7 +877,7 @@ export default function TalismanShopPage() {
               {currentTalisman?.purchaseType === "yen" ? (
                 <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-2">決済方法</p>
-                  {isGooglePlayAvailable && GooglePlayBillingDetector.isTWAEnvironment() ? (
+                  {GooglePlayBillingDetector.isTWAEnvironment() ? (
                     <p className="text-lg font-bold text-blue-600">Google Play Billing</p>
                   ) : (
                     <p className="text-lg font-bold text-green-600">Square決済</p>

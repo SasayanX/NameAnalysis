@@ -73,7 +73,7 @@ export const TALISMAN_DATA: Talisman[] = [
     description:
       "AI深層言霊鑑定を利用できる特別なアイテムです。\n契約プランにより、解放される占い回数が異なります。\n無料プラン: 1回、ベーシックプラン: 2回、プレミアムプラン: 3回",
     effects: ["AI深層言霊鑑定利用可能", "プラン別回数追加"],
-    image: "/images/RyuNoIbuki.png",
+    image: "/images/RyuNoIbuki.webp",
     exchangeRate: "120円 = AI鑑定1-3回",
     addedDate: new Date().toISOString().split('T')[0],
     isAvailable: true,

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { PdfExportButton } from "@/components/pdf-export-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -2050,12 +2051,31 @@ export default function ClientPage() {
                             <div className="space-y-4">
                               <div>
                                 <h3 className="font-semibold mb-2 dark:text-neutral-100">主要機能</h3>
-                                <ul className="space-y-2 text-sm text-muted-foreground dark:text-gray-300">
-                                  <li>✓ <strong>かんたん鑑定</strong>: 基本的な姓名判断結果を表示</li>
-                                  <li>✓ <strong>詳細鑑定</strong>: 天格・人格・地格・外格・総格の詳細分析</li>
-                                  <li>✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</li>
-                                  <li>✓ <strong>相性診断</strong>: パートナーとの相性を診断</li>
-                                  <li>✓ <strong>赤ちゃん名付け</strong>: 最適な名前候補をご提案</li>
+                                <ul className="space-y-2.5 text-sm text-muted-foreground dark:text-gray-300">
+                                  <li className="flex items-start gap-2">
+                                    <span className="flex-1">✓ <strong>かんたん鑑定</strong>: 基本的な姓名判断結果を表示</span>
+                                    <Badge variant="outline" className="text-xs shrink-0">全プラン</Badge>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="flex-1">✓ <strong>詳細鑑定</strong>: 天格・人格・地格・外格・総格の詳細分析</span>
+                                    <Badge variant="outline" className="text-xs shrink-0">全プラン</Badge>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="flex-1">✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</span>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">ベーシック以上</Badge>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="flex-1">✓ <strong>相性診断</strong>: パートナーとの相性を診断</span>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">ベーシック以上</Badge>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="flex-1">✓ <strong>赤ちゃん名付け</strong>: 最適な名前候補をご提案</span>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">ベーシック以上</Badge>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="flex-1">✓ <strong>おなまえ格付けランク表示</strong>: 名前の格付けとランクを表示</span>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">プレミアム</Badge>
+                                  </li>
                                 </ul>
                               </div>
                               <div className="pt-4 border-t">
@@ -2089,14 +2109,20 @@ export default function ClientPage() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <div className="p-3 bg-white/50 rounded-lg dark:bg-white/5">
-                            <h4 className="font-semibold text-sm mb-1 dark:text-neutral-100">🎉 カナウポイントシステム開始！</h4>
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-semibold text-sm dark:text-neutral-100">🎉 カナウポイントシステム開始！</h4>
+                              <Badge variant="outline" className="text-xs">全プラン</Badge>
+                            </div>
                             <p className="text-xs text-muted-foreground dark:text-gray-300">
                               各種分析を実行するとKpを獲得できます。1日最大5Kpまで獲得可能です。
                               ログインボーナスも毎日受け取れます！
                             </p>
                           </div>
                           <div className="p-3 bg-white/50 rounded-lg dark:bg-white/5">
-                            <h4 className="font-semibold text-sm mb-1 dark:text-neutral-100">📊 ランキング機能</h4>
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-semibold text-sm dark:text-neutral-100">📊 ランキング機能</h4>
+                              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">プレミアム</Badge>
+                            </div>
                             <p className="text-xs text-muted-foreground dark:text-gray-300">
                               名前の格付けをランキングに登録して、季節ごとの順位を競いましょう。
                               プレミアム会員は5Kpでランキングに登録できます。
