@@ -48,7 +48,14 @@ export function UsageLimitModal({
             </div>
             利用制限に達しました
           </DialogTitle>
-          <DialogDescription className="text-left">{upgradeMessage}</DialogDescription>
+          <DialogDescription className="text-left">
+            {upgradeMessage.split('<br/>').map((line, index, array) => (
+              <span key={index}>
+                {line}
+                {index < array.length - 1 && <br />}
+              </span>
+            ))}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

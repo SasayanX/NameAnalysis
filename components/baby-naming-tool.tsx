@@ -220,9 +220,9 @@ export function BabyNamingTool() {
               🎯 豊富な候補から厳選！
             </strong>
             <br />
-            姓名判断で凶数を完全に排除した名前のみをご提案します。
+            姓名判断で大凶を完全に排除した名前のみをご提案します。
             <br />
-            <strong>🛡️ 厳格基準：全ての格で凶・大凶なし + 総合65点以上 + Aランク以上</strong>
+            <strong>🛡️ 厳格基準：全ての格で大凶なし + 総合65点以上 + Aランク以上</strong>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -236,7 +236,7 @@ export function BabyNamingTool() {
           <Alert>
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              <strong>豊富な名付けロジック</strong>: 多様な名前候補（伝統的・現代的・自然系・季節系・天体系・色彩系・音楽系・芸術系など）から、姓名判断で天格・人格・地格・外格・総格の全てに「凶」「大凶」が含まれない名前のみを厳選します。
+              <strong>豊富な名付けロジック</strong>: 多様な名前候補（伝統的・現代的・自然系・季節系・天体系・色彩系・音楽系・芸術系など）から、姓名判断で天格・人格・地格・外格・総格の全てに「大凶」が含まれない名前のみを厳選します。
             </AlertDescription>
           </Alert>
 

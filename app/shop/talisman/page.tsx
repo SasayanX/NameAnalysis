@@ -881,7 +881,7 @@ export default function TalismanShopPage() {
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Gift className="h-5 w-5 mx-auto mb-1 text-purple-600" />
               <p className="text-sm text-muted-foreground">特典</p>
-              <p className="text-xs">巫女 金雨 希実のメッセージ</p>
+              <p className="text-xs">特典なし</p>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Star className="h-5 w-5 mx-auto mb-1 text-red-600" />
@@ -958,10 +958,12 @@ export default function TalismanShopPage() {
                 </>
               )}
 
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>交換レート</span>
-                <span>{currentTalisman?.exchangeRate || "特典あり"}</span>
-              </div>
+              {currentTalisman?.exchangeRate && (
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>交換レート</span>
+                  <span>{currentTalisman.exchangeRate}</span>
+                </div>
+              )}
 
               <Button
                 onClick={handlePurchase}

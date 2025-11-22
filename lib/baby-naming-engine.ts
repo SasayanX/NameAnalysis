@@ -209,13 +209,14 @@ export function generateOptimalNames(request: NamingRequest, maxResults = 3): Ba
   }
 }
 
-// 凶数チェック関数
+// 凶数チェック関数（大凶・中凶のみを除外、凶は許容）
 function hasKyousu(analysis: any): boolean {
   if (!analysis.categories) return false
 
   return analysis.categories.some((category: any) => {
     const fortune = category.fortune || ""
-    return fortune.includes("凶") || fortune.includes("大凶")
+    // 大凶と中凶のみを除外（凶は許容）
+    return fortune.includes("大凶") || fortune.includes("中凶")
   })
 }
 
