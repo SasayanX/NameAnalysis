@@ -154,8 +154,10 @@ export class GooglePlayBillingDetector {
 
   /**
    * 商品を購入
+   * @param productId - 商品ID（SKU）
+   * @param purchaseOptionId - 購入オプションID（オプション、サブスクリプションのオファーを指定する場合に使用）
    */
-  static async purchase(productId: string): Promise<Purchase> {
+  static async purchase(productId: string, purchaseOptionId?: string): Promise<Purchase> {
     const initialized = await this.initialize()
     if (!initialized || !this.service) {
       throw new Error("Digital Goods Service is not initialized")
@@ -175,12 +177,18 @@ export class GooglePlayBillingDetector {
         console.warn("[Google Play Billing] Unable to fetch SKU details before purchase:", detailsError)
       }
 
+      // 購入オプションIDがある場合は、それも含める
+      const paymentData: { sku: string; purchaseOptionId?: string } = {
+        sku: productId,
+      }
+      if (purchaseOptionId) {
+        paymentData.purchaseOptionId = purchaseOptionId
+      }
+
       const paymentMethodData = [
         {
           supportedMethods: "https://play.google.com/billing",
-          data: {
-            sku: productId,
-          },
+          data: paymentData,
         },
       ]
 

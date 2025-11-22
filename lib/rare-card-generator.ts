@@ -1,7 +1,8 @@
 /**
  * レアカード画像生成（全ランク対応）
- * SVGを生成してPNGに変換（sharp使用）
+ * SVGを生成してPNGに変換（@resvg/resvg-js使用、フォント対応）
  */
+import { Resvg } from '@resvg/resvg-js'
 import sharp from 'sharp'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
@@ -782,12 +783,41 @@ export async function generateRareCardImage(
     </svg>
   `
 
-  // SVGをPNGに変換
-  const imageBuffer = await sharp(Buffer.from(svg))
-    .png()
-    .toBuffer()
+  // SVGをPNGに変換（@resvg/resvg-js使用、フォント対応）
+  try {
+    // フォントファイルのパスを取得
+    const fontPath = join(process.cwd(), 'public', 'fonts', 'KswTouryu.ttf')
+    let fontConfig: { loadSystemFonts?: boolean; defaultFontFamily?: string; fontFiles?: string[] } | undefined
+    
+    if (existsSync(fontPath)) {
+      fontConfig = {
+        loadSystemFonts: false,
+        defaultFontFamily: 'KSW闘龍',
+        fontFiles: [fontPath], // ファイルパスを指定
+      }
+      console.log('✅ フォントファイル設定成功（resvg）:', fontPath)
+    } else {
+      console.warn('⚠️ フォントファイルが見つかりません（resvg）:', fontPath)
+    }
 
-  return imageBuffer
+    // @resvg/resvg-jsでSVGをレンダリング
+    const resvg = new Resvg(svg, {
+      font: fontConfig,
+    })
+    
+    const pngData = resvg.render()
+    const imageBuffer = pngData.asPng()
+    
+    console.log('✅ SVGレンダリング成功（resvg）')
+    return imageBuffer
+  } catch (resvgError: any) {
+    console.warn('⚠️ @resvg/resvg-jsでのレンダリングに失敗、sharpにフォールバック:', resvgError.message)
+    // フォールバック: sharpを使用（フォントは反映されない）
+    const imageBuffer = await sharp(Buffer.from(svg))
+      .png()
+      .toBuffer()
+    return imageBuffer
+  }
 }
 
 /**
@@ -1147,10 +1177,40 @@ async function generateRareCardWithBaseImage(
     }
   }
   
-  // テキストレイヤーをPNGに変換
-  const textLayerBuffer = await sharp(Buffer.from(textLayerSvg))
-    .png()
-    .toBuffer()
+  // テキストレイヤーをPNGに変換（@resvg/resvg-js使用、フォント対応）
+  let textLayerBuffer: Buffer
+  try {
+    // フォントファイルのパスを取得
+    const fontPath = join(process.cwd(), 'public', 'fonts', 'KswTouryu.ttf')
+    let fontConfig: { loadSystemFonts?: boolean; defaultFontFamily?: string; fontFiles?: string[] } | undefined
+    
+    if (existsSync(fontPath)) {
+      fontConfig = {
+        loadSystemFonts: false,
+        defaultFontFamily: 'KSW闘龍',
+        fontFiles: [fontPath], // ファイルパスを指定
+      }
+      console.log('✅ フォントファイル設定成功（resvg、ベース画像版）:', fontPath)
+    } else {
+      console.warn('⚠️ フォントファイルが見つかりません（resvg、ベース画像版）:', fontPath)
+    }
+
+    // @resvg/resvg-jsでSVGをレンダリング
+    const resvg = new Resvg(textLayerSvg, {
+      font: fontConfig,
+    })
+    
+    const pngData = resvg.render()
+    textLayerBuffer = pngData.asPng()
+    
+    console.log('✅ テキストレイヤーSVGレンダリング成功（resvg）')
+  } catch (resvgError: any) {
+    console.warn('⚠️ @resvg/resvg-jsでのレンダリングに失敗、sharpにフォールバック:', resvgError.message)
+    // フォールバック: sharpを使用（フォントは反映されない）
+    textLayerBuffer = await sharp(Buffer.from(textLayerSvg))
+      .png()
+      .toBuffer()
+  }
   
   // ベース画像の上にテキストレイヤーを合成
   const finalImage = await baseImage

@@ -24,6 +24,8 @@ import { getOrCreatePointsSummary, addPointsSupa, spendPointsSupa } from "@/lib/
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAvailableTalismans, type Talisman } from "@/lib/talisman-data"
 import { SubscriptionManager } from "@/lib/subscription-manager"
+import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
+import { getGooglePlayProductId } from "@/lib/google-play-product-ids"
 import Link from "next/link"
 
 // 巫女 金雨 希実のメッセージ
@@ -48,6 +50,8 @@ export default function TalismanShopPage() {
   const [imageError, setImageError] = useState(false)
   const [hasSharedToday, setHasSharedToday] = useState(false)
   const [hasAcquiredTalisman, setHasAcquiredTalisman] = useState(false)
+  const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(false)
+  const [isInitializingGooglePlay, setIsInitializingGooglePlay] = useState(false)
   
   // 利用可能なお守り一覧（初回計算のみ）
   const availableTalismans = useMemo(() => getAvailableTalismans(), [])
@@ -148,6 +152,25 @@ export default function TalismanShopPage() {
     init()
   }, [authUser])
 
+  // Google Play Billingの初期化
+  useEffect(() => {
+    const initGooglePlay = async () => {
+      if (GooglePlayBillingDetector.isTWAEnvironment()) {
+        setIsInitializingGooglePlay(true)
+        try {
+          const available = await GooglePlayBillingDetector.initialize()
+          setIsGooglePlayAvailable(available)
+        } catch (error) {
+          console.warn('[Talisman Shop] Google Play Billing initialization failed:', error)
+          setIsGooglePlayAvailable(false)
+        } finally {
+          setIsInitializingGooglePlay(false)
+        }
+      }
+    }
+    initGooglePlay()
+  }, [])
+
   // 購入完了後の処理（URLパラメータから検知）
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -231,6 +254,49 @@ export default function TalismanShopPage() {
         const subscriptionInfo = subscriptionManager.getSubscriptionInfo()
         const currentPlan = subscriptionInfo.plan || "free"
 
+        // Google Play Billingが利用可能な場合は、Google Play Billingを使用
+        if (isGooglePlayAvailable && GooglePlayBillingDetector.isTWAEnvironment()) {
+          try {
+            const productId = getGooglePlayProductId('dragonBreath')
+            const purchase = await GooglePlayBillingDetector.purchase(productId)
+
+            // 購入確認APIを呼び出し
+            const response = await fetch("/api/dragon-breath/purchase-google-play", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                userId: authUser.id,
+                plan: currentPlan,
+                purchaseToken: purchase.purchaseToken,
+                productId: purchase.itemId || productId,
+              }),
+            })
+
+            const result = await response.json()
+
+            if (!result.success) {
+              setPurchaseMessage(result.error || "購入処理中にエラーが発生しました")
+              return
+            }
+
+            setPurchaseMessage("購入が完了しました！龍の息吹が付与されました。")
+            setShowPurchaseEffect(true)
+            setTimeout(() => {
+              setShowPurchaseEffect(false)
+              setPurchaseMessage("")
+            }, 5000)
+          } catch (error: any) {
+            console.error("Google Play Billing purchase failed:", error)
+            setPurchaseMessage(error.message || "Google Play Billingでの購入に失敗しました")
+          } finally {
+            setIsPurchasing(false)
+          }
+          return
+        }
+
+        // Square決済を使用（Web版またはGoogle Play Billingが利用できない場合）
         // メールアドレスを取得
         const customerEmail = localStorage.getItem("customerEmail") || authUser.email
         if (!customerEmail) {
@@ -800,7 +866,11 @@ export default function TalismanShopPage() {
               {currentTalisman?.purchaseType === "yen" ? (
                 <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-2">決済方法</p>
-                  <p className="text-lg font-bold text-green-600">Square決済</p>
+                  {isGooglePlayAvailable && GooglePlayBillingDetector.isTWAEnvironment() ? (
+                    <p className="text-lg font-bold text-blue-600">Google Play Billing</p>
+                  ) : (
+                    <p className="text-lg font-bold text-green-600">Square決済</p>
+                  )}
                 </div>
               ) : (
                 <>

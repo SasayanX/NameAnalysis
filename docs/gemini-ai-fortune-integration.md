@@ -105,7 +105,7 @@ Firestoreから言霊マスターデータを取得します。
 #### `app/ClientPage.tsx`
 
 - `handlePersonalAnalysis`関数内で、五行分析の結果から主要な要素（`dominantElement`）を取得
-- `generateAiFortune`関数を呼び出してAI鑑定を生成
+- `generateAiFortune`関数を呼び出してAI鑑定を依頼
 - 結果を`aiFortune`状態に保存
 
 #### `components/name-analysis-result.tsx`

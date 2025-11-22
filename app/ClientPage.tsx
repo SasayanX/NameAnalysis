@@ -610,7 +610,7 @@ export default function ClientPage() {
         }
         setAdvancedResults(advancedData)
 
-        // AI鑑定は自動生成せず、ユーザーが「AI深層言霊鑑定」タブでボタンをクリックした時に生成
+        // AI鑑定は自動生成せず、ユーザーが「AI深層言霊鑑定」タブでボタンをクリックした時に依頼
       } else {
         // 生年月日なしの場合
         // 実際の五行分析を実行（生年月日なし）
@@ -625,7 +625,7 @@ export default function ClientPage() {
         }
         setAdvancedResults(advancedData)
 
-        // AI鑑定は自動生成せず、ユーザーが「AI深層言霊鑑定」タブでボタンをクリックした時に生成
+        // AI鑑定は自動生成せず、ユーザーが「AI深層言霊鑑定」タブでボタンをクリックした時に依頼
       }
 
       if (usageTracker.incrementUsage("personalAnalysis")) {
@@ -684,7 +684,7 @@ export default function ClientPage() {
     }
   }, [currentPlan])
 
-  // AI鑑定を生成する関数
+  // AI鑑定を依頼する関数
   const generateAiFortune = useCallback(async (
     nameAnalysisResult: any,
     gogyoResult?: any,
@@ -1551,7 +1551,7 @@ export default function ClientPage() {
                                     {!results ? (
                                       <div className="text-center py-8">
                                         <p className="text-muted-foreground mb-4">
-                                          AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                          AI深層言霊鑑定を依頼するには、姓名判断を実行してください
                                         </p>
                                       </div>
                                     ) : availableDragonBreathItems.length === 0 ? (
@@ -1570,7 +1570,7 @@ export default function ClientPage() {
                                             disabled
                                             className="bg-gray-400 text-white cursor-not-allowed"
                                           >
-                                            <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を生成（龍の息吹が必要）
+                                            <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を依頼（龍の息吹が必要）
                                           </Button>
                                         </Link>
                                       </div>
@@ -1578,14 +1578,14 @@ export default function ClientPage() {
                                       // 姓名判断済み、龍の息吹あり、結果未生成 → 生成ボタンを表示（確認ダイアログ付き）
                                       <div className="text-center py-8">
                                         <p className="text-muted-foreground mb-4">
-                                          AI深層言霊鑑定を生成しますか？
+                                          AI深層言霊鑑定を依頼しますか？
                                         </p>
                                         <Button
                                           onClick={() => setShowConfirmDialog(true)}
                                           disabled={isLoadingAiFortune}
                                           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                                         >
-                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を生成（龍の息吹使用）
+                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を依頼（龍の息吹使用）
                                         </Button>
                                         <p className="text-xs text-muted-foreground mt-2">
                                           残り: {availableDragonBreathItems.length}個
@@ -1620,7 +1620,7 @@ export default function ClientPage() {
                                     ) : isLoadingAiFortune ? (
                                       <div className="flex items-center justify-center py-8">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を生成中...</span>
+                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を依頼中...</span>
                                       </div>
                                     ) : aiFortune?.success && aiFortune?.aiFortune ? (
                                       // 無料・ベーシックプランでも結果表示（プレミアムと同じ表示）
@@ -1730,7 +1730,7 @@ export default function ClientPage() {
                                     ) : (
                                       <div className="text-center py-8">
                                         <p className="text-muted-foreground mb-4">
-                                          AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                          AI深層言霊鑑定を依頼するには、姓名判断を実行してください
                                         </p>
                                         {aiFortune && !aiFortune.success && (
                                           <Alert className="mt-4">
@@ -1773,21 +1773,21 @@ export default function ClientPage() {
                                     {!results ? (
                                       <div className="text-center py-8">
                                         <p className="text-muted-foreground mb-4">
-                                          AI深層言霊鑑定を生成するには、姓名判断を実行してください
+                                          AI深層言霊鑑定を依頼するには、姓名判断を実行してください
                                         </p>
                                       </div>
                                     ) : !aiFortune || !aiFortune.success ? (
                                       // 姓名判断済み、結果未生成 → 生成ボタンを表示
                                       <div className="text-center py-8">
                                         <p className="text-muted-foreground mb-4">
-                                          AI深層言霊鑑定を生成しますか？
+                                          AI深層言霊鑑定を依頼しますか？
                                         </p>
                                         <Button
                                           onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
                                           disabled={isLoadingAiFortune}
                                           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                                         >
-                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を生成
+                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を依頼
                                         </Button>
                                         {currentPlan === "premium" && (
                                           <p className="text-xs text-muted-foreground mt-2">
@@ -1798,7 +1798,7 @@ export default function ClientPage() {
                                     ) : isLoadingAiFortune ? (
                                       <div className="flex items-center justify-center py-8">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を生成中...</span>
+                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を依頼中...</span>
                                       </div>
                                     ) : aiFortune?.success && aiFortune?.aiFortune ? (
                                 <div className="space-y-6">
