@@ -81,21 +81,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SEOHead />
 
         {/* Google Analytics */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}></script>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
-                `,
-              }}
-            />
-          </>
-        )}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-7NPTN3BVH0"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-7NPTN3BVH0');
+            `,
+          }}
+        />
 
         {/* Microsoft Clarity */}
         {process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID && (
