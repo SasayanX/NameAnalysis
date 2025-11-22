@@ -77,6 +77,38 @@ export async function submitRankingEntry(
   if (!supabase) {
     throw new Error("Supabase環境変数が設定されていません")
   }
+  
+  // 1日1回の制限チェック
+  // 今日の00:00:00（UTC）から23:59:59（UTC）までの範囲でチェック
+  const now = new Date()
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0))
+  const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999))
+  
+  // 今日既に登録されているかチェック
+  const { data: existingEntry, error: checkError } = await supabase
+    .from("ranking_entries")
+    .select("id, created_at")
+    .eq("user_id", userId)
+    .gte("created_at", todayStart.toISOString())
+    .lte("created_at", todayEnd.toISOString())
+    .maybeSingle()
+  
+  if (checkError && checkError.code !== 'PGRST116') { // PGRST116は「行が見つからない」エラー
+    throw new Error(`ランキング登録チェックエラー: ${checkError.message}`)
+  }
+  
+  if (existingEntry) {
+    throw new Error("ランキング登録は1日1回までです。今日は既に登録済みです。")
+  }
+  
+  if (checkError && checkError.code !== 'PGRST116') { // PGRST116は「行が見つからない」エラー
+    throw new Error(`ランキング登録チェックエラー: ${checkError.message}`)
+  }
+  
+  if (existingEntry) {
+    throw new Error("ランキング登録は1日1回までです。今日は既に登録済みです。")
+  }
+  
   // 参加費5Kpを消費
   await spendPointsSupa(userId, 5, "ランキング参加", "ranking_entry")
 

@@ -80,51 +80,41 @@ export default function RareCard({
     console.log('🎴 RareCardコンポーネントがマウントされました（useEffect）')
   }, [])
   
-  // フォントを読み込む
+  // フォントを読み込む（即座に実行して確実に適用）
   useEffect(() => {
     console.log('🔍 [useEffect] フォント読み込み開始（RareCard）', new Date().toISOString())
-    console.log('🔍 [useEffect] svgRef.current:', svgRef.current ? '存在' : 'null')
     
+    // フォント読み込みを即座に実行
     loadFontAsBase64()
       .then((base64) => {
         console.log('📦 [useEffect] フォント読み込み結果:', base64 ? `${base64.length}文字` : '失敗')
-        if (base64) {
-          setFontBase64(base64)
-          console.log('✅ [useEffect] fontBase64を設定しました')
-          
-          // フォントが実際に読み込まれているか確認
-          setTimeout(() => {
-            console.log('⏰ [useEffect] 1秒後、フォント適用確認開始')
-            document.fonts.ready.then(() => {
-              console.log('📚 [useEffect] document.fonts.ready完了')
-              const isLoaded = document.fonts.check('16px "KSW闘龍"')
-              console.log('📝 [useEffect] フォント適用確認:', isLoaded ? '✅ 適用済み' : '❌ 未適用')
-              
-              // 利用可能なフォントを一覧表示
-              const availableFonts = Array.from(document.fonts).map(f => f.family)
-              console.log('📋 [useEffect] 利用可能なフォント:', availableFonts)
-              
-              // SVG内のフォントも確認
-              if (svgRef.current) {
-                const svgElement = svgRef.current
-                const textElements = svgElement.querySelectorAll('text')
-                console.log('📊 [useEffect] SVG内のtext要素数:', textElements.length)
-                if (textElements.length > 0) {
-                  const firstText = textElements[0] as SVGTextElement
-                  const computedStyle = window.getComputedStyle(firstText)
-                  console.log('📝 [useEffect] 最初のtext要素のfont-family:', computedStyle.fontFamily)
-                }
-              } else {
-                console.warn('⚠️ [useEffect] svgRef.currentがnullです')
+        setFontBase64(base64 || '') // 空文字列でも設定して、フォールバックを確実に
+        
+        // フォントが実際に読み込まれているか確認
+        if (typeof window !== 'undefined') {
+          document.fonts.ready.then(() => {
+            console.log('📚 [useEffect] document.fonts.ready完了')
+            const isLoaded = document.fonts.check('16px "KSW闘龍"')
+            console.log('📝 [useEffect] フォント適用確認:', isLoaded ? '✅ 適用済み' : '❌ 未適用（フォールバック使用）')
+            
+            // SVG内のフォントも確認
+            if (svgRef.current) {
+              const svgElement = svgRef.current
+              const textElements = svgElement.querySelectorAll('text')
+              console.log('📊 [useEffect] SVG内のtext要素数:', textElements.length)
+              if (textElements.length > 0) {
+                const firstText = textElements[0] as SVGTextElement
+                const computedStyle = window.getComputedStyle(firstText)
+                console.log('📝 [useEffect] 最初のtext要素のfont-family:', computedStyle.fontFamily)
               }
-            })
-          }, 1000)
-        } else {
-          console.warn('⚠️ [useEffect] fontBase64が空です。globals.cssの@font-faceを使用します。')
+            }
+          })
         }
       })
       .catch((error) => {
         console.error('❌ [useEffect] フォント読み込みエラー:', error)
+        // エラー時もフォールバックを使用
+        setFontBase64('')
       })
   }, [])
   
@@ -178,35 +168,23 @@ export default function RareCard({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          {/* フォント定義（Base64埋め込み + globals.cssのフォールバック） */}
-          {fontBase64 ? (
-            <style>
-              {`@font-face {
-                font-family: 'KSW闘龍';
-                src: url(data:font/truetype;charset=utf-8;base64,${fontBase64}) format('truetype');
-                font-weight: normal;
-                font-style: normal;
-                font-display: swap;
-              }`}
-            </style>
-          ) : (
-            <style>
-              {`/* globals.cssの@font-faceを使用（フォールバック） */
-              @font-face {
-                font-family: 'KSW闘龍';
-                src: url('/fonts/KswTouryu.ttf') format('truetype');
-                font-weight: normal;
-                font-style: normal;
-                font-display: swap;
-              }`}
-            </style>
-          )}
-          {/* デバッグ: フォント状態を確認 */}
-          {process.env.NODE_ENV === 'development' && (
-            <style>
-              {`/* フォントBase64状態: ${fontBase64 ? `${fontBase64.length}文字` : '未設定'} */`}
-            </style>
-          )}
+          {/* フォント定義（Base64埋め込み + 外部URLの両方を指定して確実に適用） */}
+          <style>
+            {`@font-face {
+              font-family: 'KSW闘龍';
+              ${fontBase64 
+                ? `src: url(data:font/truetype;charset=utf-8;base64,${fontBase64}) format('truetype'), url('/fonts/KswTouryu.ttf') format('truetype');`
+                : `src: url('/fonts/KswTouryu.ttf') format('truetype');`
+              }
+              font-weight: normal;
+              font-style: normal;
+              font-display: swap;
+            }
+            /* フォント適用を確実にする */
+            text {
+              font-family: 'KSW闘龍', serif !important;
+            }`}
+          </style>
 
           {/* 発光フィルター */}
           <filter id="glow">

@@ -167,17 +167,19 @@ function embedFontInSVG(fontName: string, fontPath: string): string {
     const mimeType = fontPath.toLowerCase().endsWith('.otf') ? 'font/opentype' : 'font/truetype'
     
     return `
-      <defs>
-        <style>
-          @font-face {
-            font-family: '${fontName}';
-            src: url(data:${mimeType};charset=utf-8;base64,${fontBase64}) format('${fontFormat}');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-          }
-        </style>
-      </defs>
+      <style>
+        @font-face {
+          font-family: '${fontName}';
+          src: url(data:${mimeType};charset=utf-8;base64,${fontBase64}) format('${fontFormat}');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+        /* フォント適用を確実にする */
+        text {
+          font-family: '${fontName}', serif !important;
+        }
+      </style>
     `
   } catch (error: any) {
     console.warn(`⚠️ フォント埋め込みエラー: ${error.message}`)
@@ -786,11 +788,26 @@ export async function generateRareCardImage(
   // SVGをPNGに変換（@resvg/resvg-js使用、フォント対応）
   // 注意: SVG内に@font-faceが含まれている場合、@resvg/resvg-jsはそれを処理できる
   try {
-    // フォントファイルのパスを取得
-    const fontPath = join(process.cwd(), 'public', 'fonts', 'KswTouryu.ttf')
+    // フォントファイルのパスを複数試行
+    const possibleFontPaths = [
+      join(process.cwd(), 'public', 'fonts', 'KswTouryu.ttf'),
+      join(process.cwd(), 'fonts', 'KswTouryu.ttf'),
+      join(__dirname, '..', 'public', 'fonts', 'KswTouryu.ttf'),
+      join(__dirname, '..', '..', 'public', 'fonts', 'KswTouryu.ttf'),
+    ]
+    
+    let fontPath: string | null = null
+    for (const path of possibleFontPaths) {
+      if (existsSync(path)) {
+        fontPath = path
+        console.log('✅ フォントファイル発見（resvg）:', path)
+        break
+      }
+    }
+    
     let fontConfig: { loadSystemFonts?: boolean; defaultFontFamily?: string; fontFiles?: string[] } | undefined
     
-    if (existsSync(fontPath)) {
+    if (fontPath) {
       fontConfig = {
         loadSystemFonts: false,
         defaultFontFamily: 'KSW闘龍',
@@ -798,7 +815,7 @@ export async function generateRareCardImage(
       }
       console.log('✅ フォントファイル設定成功（resvg）:', fontPath)
     } else {
-      console.warn('⚠️ フォントファイルが見つかりません（resvg）:', fontPath)
+      console.warn('⚠️ フォントファイルが見つかりません（resvg）:', possibleFontPaths.join(', '))
       // SVG内に@font-faceが埋め込まれているので、それを使用
       console.log('📝 SVG内の@font-faceを使用します')
     }
@@ -1186,11 +1203,26 @@ async function generateRareCardWithBaseImage(
   // 注意: SVG内に@font-faceが含まれている場合、@resvg/resvg-jsはそれを処理できる
   let textLayerBuffer: Buffer
   try {
-    // フォントファイルのパスを取得
-    const fontPath = join(process.cwd(), 'public', 'fonts', 'KswTouryu.ttf')
+    // フォントファイルのパスを複数試行
+    const possibleFontPaths = [
+      join(process.cwd(), 'public', 'fonts', 'KswTouryu.ttf'),
+      join(process.cwd(), 'fonts', 'KswTouryu.ttf'),
+      join(__dirname, '..', 'public', 'fonts', 'KswTouryu.ttf'),
+      join(__dirname, '..', '..', 'public', 'fonts', 'KswTouryu.ttf'),
+    ]
+    
+    let fontPath: string | null = null
+    for (const path of possibleFontPaths) {
+      if (existsSync(path)) {
+        fontPath = path
+        console.log('✅ フォントファイル発見（resvg、ベース画像版）:', path)
+        break
+      }
+    }
+    
     let fontConfig: { loadSystemFonts?: boolean; defaultFontFamily?: string; fontFiles?: string[] } | undefined
     
-    if (existsSync(fontPath)) {
+    if (fontPath) {
       fontConfig = {
         loadSystemFonts: false,
         defaultFontFamily: 'KSW闘龍',
@@ -1198,7 +1230,7 @@ async function generateRareCardWithBaseImage(
       }
       console.log('✅ フォントファイル設定成功（resvg、ベース画像版）:', fontPath)
     } else {
-      console.warn('⚠️ フォントファイルが見つかりません（resvg、ベース画像版）:', fontPath)
+      console.warn('⚠️ フォントファイルが見つかりません（resvg、ベース画像版）:', possibleFontPaths.join(', '))
       // SVG内に@font-faceが埋め込まれているので、それを使用
       console.log('📝 SVG内の@font-faceを使用します（ベース画像版）')
     }

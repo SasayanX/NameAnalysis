@@ -2044,23 +2044,38 @@ export default function ClientPage() {
                             <span className="dark:text-gray-300">姓名判断・数秘術・六星占術を組み合わせた総合的な名前分析を行います</span>
                           </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div>
-                            <h3 className="font-semibold mb-2 dark:text-neutral-100">主要機能</h3>
-                            <ul className="space-y-2 text-sm text-muted-foreground dark:text-gray-300">
-                              <li>✓ <strong>かんたん鑑定</strong>: 基本的な姓名判断結果を表示</li>
-                              <li>✓ <strong>詳細鑑定</strong>: 天格・人格・地格・外格・総格の詳細分析</li>
-                              <li>✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</li>
-                              <li>✓ <strong>相性診断</strong>: パートナーとの相性を診断</li>
-                              <li>✓ <strong>赤ちゃん名付け</strong>: 最適な名前候補をご提案</li>
-                            </ul>
-                          </div>
-                          <div className="pt-4 border-t">
-                            <h3 className="font-semibold mb-2 dark:text-neutral-100">💡 使い方</h3>
-                            <p className="text-sm text-muted-foreground dark:text-gray-300">
-                              左側のフォームに「姓」と「名」を入力して「姓名判断を実行」ボタンをクリックしてください。
-                              生年月日を入力すると、より詳細な分析結果が表示されます。
-                            </p>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* 左側: テキストコンテンツ */}
+                            <div className="space-y-4">
+                              <div>
+                                <h3 className="font-semibold mb-2 dark:text-neutral-100">主要機能</h3>
+                                <ul className="space-y-2 text-sm text-muted-foreground dark:text-gray-300">
+                                  <li>✓ <strong>かんたん鑑定</strong>: 基本的な姓名判断結果を表示</li>
+                                  <li>✓ <strong>詳細鑑定</strong>: 天格・人格・地格・外格・総格の詳細分析</li>
+                                  <li>✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</li>
+                                  <li>✓ <strong>相性診断</strong>: パートナーとの相性を診断</li>
+                                  <li>✓ <strong>赤ちゃん名付け</strong>: 最適な名前候補をご提案</li>
+                                </ul>
+                              </div>
+                              <div className="pt-4 border-t">
+                                <h3 className="font-semibold mb-2 dark:text-neutral-100">💡 使い方</h3>
+                                <p className="text-sm text-muted-foreground dark:text-gray-300">
+                                  左側のフォームに「姓」と「名」を入力して「姓名判断を実行」ボタンをクリックしてください。
+                                  生年月日を入力すると、より詳細な分析結果が表示されます。
+                                </p>
+                              </div>
+                            </div>
+                            {/* 右側: 希味の画像 */}
+                            <div className="flex items-center justify-center">
+                              <div className="relative w-full max-w-xs aspect-square">
+                                <img
+                                  src="/images/NozomiTop.webp"
+                                  alt="金雨希味"
+                                  className="w-full h-full object-contain rounded-lg opacity-90 hover:opacity-100 transition-opacity"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
