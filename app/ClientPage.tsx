@@ -1534,19 +1534,32 @@ export default function ClientPage() {
                             <CardContent className="pt-6">
                                 {currentPlan === "free" || currentPlan === "basic" ? (
                                   <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                      <p className="text-sm text-muted-foreground">
-                                        龍の息吹所持数:{" "}
-                                        <span className="font-semibold text-purple-700">
-                                          {availableDragonBreathItems.length}個
-                                        </span>
-                                      </p>
-                                      {availableDragonBreathItems.length === 0 && (
+                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                                          <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-muted-foreground dark:text-gray-400 mb-0.5">龍の息吹所持数</p>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                                              {availableDragonBreathItems.length}
+                                            </span>
+                                            <span className="text-sm text-muted-foreground dark:text-gray-400">個</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {availableDragonBreathItems.length === 0 ? (
                                         <Link href="/shop/talisman?tab=yen">
-                                          <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50">
-                                            <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を購入
+                                          <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900/30">
+                                            <Sparkles className="h-4 w-4 mr-1" /> 購入
                                           </Button>
                                         </Link>
+                                      ) : (
+                                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 border-purple-300 dark:border-purple-700">
+                                          <Sparkles className="h-3 w-3 mr-1" />
+                                          所持中
+                                        </Badge>
                                       )}
                                     </div>
                                     {!results ? (
@@ -1745,6 +1758,28 @@ export default function ClientPage() {
                                   </div>
                                 ) : (
                                   <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                                          <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-muted-foreground dark:text-gray-400 mb-0.5">龍の息吹所持数</p>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                                              {availableDragonBreathItems.length}
+                                            </span>
+                                            <span className="text-sm text-muted-foreground dark:text-gray-400">個</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {availableDragonBreathItems.length > 0 && (
+                                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 border-purple-300 dark:border-purple-700">
+                                          <Sparkles className="h-3 w-3 mr-1" />
+                                          所持中
+                                        </Badge>
+                                      )}
+                                    </div>
                                     <div className="flex items-center justify-between">
                                       <p className="text-sm text-muted-foreground">
                                         今日のAI鑑定使用回数:{" "}
@@ -2035,14 +2070,14 @@ export default function ClientPage() {
                   ) : (
                     // 結果がない時の説明・お知らせ表示
                     <div className="space-y-6">
-                      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 dark:bg-neutral-800 dark:border-neutral-700">
+                      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 dark:border-blue-800 dark:bg-gradient-to-r dark:from-blue-900/30 dark:to-purple-900/30">
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 dark:text-neutral-100">
+                          <CardTitle className="flex items-center gap-2 dark:text-blue-100">
                             <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                             このアプリについて
                           </CardTitle>
                           <CardDescription>
-                            <span className="dark:text-gray-300">姓名判断・数秘術・六星占術を組み合わせた総合的な名前分析を行います</span>
+                            <span className="dark:text-blue-200">姓名判断・数秘術・六星占術を組み合わせた総合的な名前分析を行います</span>
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -2050,19 +2085,19 @@ export default function ClientPage() {
                             {/* 左側: テキストコンテンツ */}
                             <div className="space-y-4">
                               <div>
-                                <h3 className="font-semibold mb-2 dark:text-neutral-100">主要機能</h3>
-                                <ul className="space-y-2.5 text-sm text-muted-foreground dark:text-gray-300">
+                                <h3 className="font-semibold mb-2 dark:text-blue-100">主要機能</h3>
+                                <ul className="space-y-2.5 text-sm text-muted-foreground dark:text-blue-200">
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>かんたん鑑定</strong>: 基本的な姓名判断結果を表示</span>
-                                    <Badge variant="outline" className="text-xs shrink-0">全プラン</Badge>
+                                    <Badge variant="outline" className="text-xs shrink-0 dark:border-blue-700 dark:text-blue-200">全プラン</Badge>
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>詳細鑑定</strong>: 天格・人格・地格・外格・総格の詳細分析</span>
-                                    <Badge variant="outline" className="text-xs shrink-0">全プラン</Badge>
+                                    <Badge variant="outline" className="text-xs shrink-0 dark:border-blue-700 dark:text-blue-200">全プラン</Badge>
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</span>
-                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">ベーシック以上</Badge>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">ベーシック以上</Badge>
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>相性診断</strong>: パートナーとの相性を診断</span>
@@ -2082,9 +2117,9 @@ export default function ClientPage() {
                                   </li>
                                 </ul>
                               </div>
-                              <div className="pt-4 border-t">
-                                <h3 className="font-semibold mb-2 dark:text-neutral-100">💡 使い方</h3>
-                                <p className="text-sm text-muted-foreground dark:text-gray-300">
+                              <div className="pt-4 border-t dark:border-blue-800">
+                                <h3 className="font-semibold mb-2 dark:text-blue-100">💡 使い方</h3>
+                                <p className="text-sm text-muted-foreground dark:text-blue-200">
                                   左側のフォームに「姓」と「名」を入力して「姓名判断を実行」ボタンをクリックしてください。
                                   生年月日を入力すると、より詳細な分析結果が表示されます。
                                 </p>
@@ -2104,30 +2139,30 @@ export default function ClientPage() {
                         </CardContent>
                       </Card>
 
-                      <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50 dark:bg-neutral-800 dark:border-neutral-700">
+                      <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50 dark:border-yellow-800 dark:bg-gradient-to-r dark:from-yellow-900/30 dark:to-orange-900/30">
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 dark:text-neutral-100">
+                          <CardTitle className="flex items-center gap-2 dark:text-yellow-100">
                             <Sparkles className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                             お知らせ
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          <div className="p-3 bg-white/50 rounded-lg dark:bg-white/5">
+                          <div className="p-3 bg-white/50 rounded-lg dark:bg-yellow-900/20 dark:border dark:border-yellow-800/50">
                             <div className="flex items-center justify-between mb-1">
-                              <h4 className="font-semibold text-sm dark:text-neutral-100">🎉 カナウポイントシステム開始！</h4>
-                              <Badge variant="outline" className="text-xs">全プラン</Badge>
+                              <h4 className="font-semibold text-sm dark:text-yellow-100">🎉 カナウポイントシステム開始！</h4>
+                              <Badge variant="outline" className="text-xs dark:border-yellow-700 dark:text-yellow-200">全プラン</Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground dark:text-gray-300">
+                            <p className="text-xs text-muted-foreground dark:text-yellow-200">
                               各種分析を実行するとKpを獲得できます。1日最大5Kpまで獲得可能です。
                               ログインボーナスも毎日受け取れます！
                             </p>
                           </div>
-                          <div className="p-3 bg-white/50 rounded-lg dark:bg-white/5">
+                          <div className="p-3 bg-white/50 rounded-lg dark:bg-yellow-900/20 dark:border dark:border-yellow-800/50">
                             <div className="flex items-center justify-between mb-1">
-                              <h4 className="font-semibold text-sm dark:text-neutral-100">📊 ランキング機能</h4>
+                              <h4 className="font-semibold text-sm dark:text-yellow-100">📊 ランキング機能</h4>
                               <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">プレミアム</Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground dark:text-gray-300">
+                            <p className="text-xs text-muted-foreground dark:text-yellow-200">
                               名前の格付けをランキングに登録して、季節ごとの順位を競いましょう。
                               プレミアム会員は5Kpでランキングに登録できます。
                             </p>
