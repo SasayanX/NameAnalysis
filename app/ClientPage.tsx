@@ -2248,27 +2248,27 @@ export default function ClientPage() {
                   <CompanyNameResult result={companyResults} companyName={companyName} />
                 ) : (
                   // 会社名分析の説明
-                  <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                  <Card className="border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Settings className="h-5 w-5 text-blue-600" />
+                      <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         会社名鑑定について
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-gray-600 dark:text-gray-400">
                         会社名・商品名の姓名判断分析を行います
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <h3 className="font-semibold mb-2">機能</h3>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
+                        <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">機能</h3>
+                        <ul className="space-y-2 text-sm text-muted-foreground dark:text-gray-300">
                           <li>✓ 会社名の格数分析</li>
                           <li>✓ 運勢判定（大吉・吉・凶など）</li>
                           <li>✓ 経営運勢の評価</li>
                         </ul>
                       </div>
-                      <div className="pt-4 border-t">
-                        <p className="text-sm text-muted-foreground">
+                      <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-muted-foreground dark:text-gray-300">
                           左側のフォームに会社名を入力して「会社名鑑定を実行」ボタンをクリックしてください。
                           「株式会社」「有限会社」などの法人格は除いて入力してください。
                         </p>
