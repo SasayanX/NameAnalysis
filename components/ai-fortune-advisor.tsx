@@ -49,7 +49,7 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600">AIがあなた専用のアドバイスを生成しています...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">AIがあなた専用のアドバイスを生成しています...</span>
           </div>
         </CardContent>
       </Card>
@@ -60,7 +60,7 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
     return (
       <Card className={`${className}`}>
         <CardContent className="text-center py-8">
-          <p className="text-gray-500">アドバイスを生成できませんでした</p>
+          <p className="text-gray-500 dark:text-gray-400">アドバイスを生成できませんでした</p>
           <Button onClick={generateAdvice} className="mt-4">
             再生成
           </Button>
@@ -83,13 +83,13 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
       case "personalizedAdvice":
         return (
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
-              <p className="text-gray-700 whitespace-pre-line">{aiAdvice.personalizedAdvice}</p>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-gray-700 dark:text-gray-200 whitespace-pre-line">{aiAdvice.personalizedAdvice}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <h4 className="font-semibold text-sm text-gray-600 mb-2">ラッキー要素</h4>
+                <h4 className="font-semibold text-sm text-gray-600 dark:text-gray-400 mb-2">ラッキー要素</h4>
                 <div className="flex flex-wrap gap-1">
                   {aiAdvice.luckyElements.map((element, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
@@ -100,7 +100,7 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
               </div>
               
               <div>
-                <h4 className="font-semibold text-sm text-gray-600 mb-2">ラッキーカラー</h4>
+                <h4 className="font-semibold text-sm text-gray-600 dark:text-gray-400 mb-2">ラッキーカラー</h4>
                 <div className="flex flex-wrap gap-1">
                   {aiAdvice.luckyColors.map((color, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
@@ -111,7 +111,7 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
               </div>
               
               <div>
-                <h4 className="font-semibold text-sm text-gray-600 mb-2">ラッキーナンバー</h4>
+                <h4 className="font-semibold text-sm text-gray-600 dark:text-gray-400 mb-2">ラッキーナンバー</h4>
                 <div className="flex flex-wrap gap-1">
                   {aiAdvice.luckyNumbers.map((number, index) => (
                     <Badge key={index} variant="default" className="text-xs">
@@ -128,10 +128,10 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
         return (
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <Briefcase className="h-5 w-5 text-blue-500 mt-1" />
+              <Briefcase className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-1" />
               <div>
-                <h3 className="font-semibold text-lg mb-2">キャリアガイダンス</h3>
-                <p className="text-gray-700">{aiAdvice.careerGuidance}</p>
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">キャリアガイダンス</h3>
+                <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{aiAdvice.careerGuidance}</p>
               </div>
             </div>
           </div>
@@ -141,10 +141,10 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
         return (
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <Users className="h-5 w-5 text-pink-500 mt-1" />
+              <Users className="h-5 w-5 text-pink-500 dark:text-pink-400 mt-1" />
               <div>
-                <h3 className="font-semibold text-lg mb-2">人間関係アドバイス</h3>
-                <p className="text-gray-700">{aiAdvice.relationshipAdvice}</p>
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">人間関係アドバイス</h3>
+                <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{aiAdvice.relationshipAdvice}</p>
               </div>
             </div>
           </div>
@@ -154,10 +154,10 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
         return (
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <Activity className="h-5 w-5 text-green-500 mt-1" />
+              <Activity className="h-5 w-5 text-green-500 dark:text-green-400 mt-1" />
               <div>
-                <h3 className="font-semibold text-lg mb-2">健康アドバイス</h3>
-                <p className="text-gray-700">{aiAdvice.healthTips}</p>
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">健康アドバイス</h3>
+                <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{aiAdvice.healthTips}</p>
               </div>
             </div>
           </div>
@@ -167,23 +167,23 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
         return (
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-orange-500 mt-1" />
+              <Calendar className="h-5 w-5 text-orange-500 dark:text-orange-400 mt-1" />
               <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-2">日々のアクション</h3>
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">日々のアクション</h3>
                 <div className="space-y-2">
                   {aiAdvice.dailyActions.map((action, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span className="text-gray-700">{action}</span>
+                      <div className="w-2 h-2 bg-orange-500 dark:bg-orange-400 rounded-full"></div>
+                      <span className="text-gray-700 dark:text-gray-200">{action}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
             
-            <div className="bg-yellow-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-sm text-gray-600 mb-2">今月のフォーカス</h4>
-              <p className="text-gray-700">{aiAdvice.monthlyFocus}</p>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <h4 className="font-semibold text-sm text-gray-600 dark:text-gray-400 mb-2">今月のフォーカス</h4>
+              <p className="text-gray-700 dark:text-gray-200">{aiAdvice.monthlyFocus}</p>
             </div>
           </div>
         )
@@ -192,10 +192,10 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
         return (
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <TrendingUp className="h-5 w-5 text-purple-500 mt-1" />
+              <TrendingUp className="h-5 w-5 text-purple-500 dark:text-purple-400 mt-1" />
               <div>
-                <h3 className="font-semibold text-lg mb-2">年間展望</h3>
-                <p className="text-gray-700">{aiAdvice.yearlyOutlook}</p>
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">年間展望</h3>
+                <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{aiAdvice.yearlyOutlook}</p>
               </div>
             </div>
           </div>
@@ -216,7 +216,7 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
             無料
           </Badge>
         </CardTitle>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           あなたの姓名判断結果に基づいて、AIがパーソナライズされた開運アドバイスを生成しました
         </p>
       </CardHeader>
@@ -247,7 +247,7 @@ export function AIFortuneAdvisor({ analysisData, className = "" }: AIFortuneAdvi
         </div>
 
         {/* 再生成ボタン */}
-        <div className="mt-6 pt-4 border-t">
+        <div className="mt-6 pt-4 border-t dark:border-gray-700">
           <Button 
             onClick={generateAdvice} 
             variant="outline" 

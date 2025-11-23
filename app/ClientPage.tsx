@@ -175,6 +175,8 @@ export default function ClientPage() {
         
         if (!userId && !customerEmail) {
           console.warn("[TWA] ⚠️ 認証情報が見つかりません。ログインが必要です。")
+          // 認証情報がない場合は、freeプランのままなので同期完了として扱う
+          setSubscriptionSynced(true)
           return
         }
         
@@ -195,6 +197,7 @@ export default function ClientPage() {
         setCurrentPlan(updatedUsageStatus.plan as "free" | "basic" | "premium")
         setIsInTrial(updatedUsageStatus.isInTrial || false)
         setTrialDaysRemaining(updatedUsageStatus.trialDaysRemaining || 0)
+        setSubscriptionSynced(true) // 同期完了フラグを設定
         
         console.log("✅ usageStatusを更新しました:", {
           plan: updatedUsageStatus.plan,
@@ -220,6 +223,8 @@ export default function ClientPage() {
         }
       } catch (error) {
         console.error("❌ ページ読み込み時: サブスクリプション状態の同期エラー:", error)
+        // エラーが発生した場合でも、同期試行は完了したものとして扱う
+        setSubscriptionSynced(true)
         
         // TWA環境でのエラー詳細
         const isTWA = typeof navigator !== "undefined" && 
@@ -415,6 +420,9 @@ export default function ClientPage() {
       window.location.reload()
     }
   }, [])
+
+  // サブスクリプション同期完了フラグ
+  const [subscriptionSynced, setSubscriptionSynced] = useState(false)
 
   // クライアントサイドでマウント済みフラグを設定
   useEffect(() => {
@@ -1218,8 +1226,8 @@ export default function ClientPage() {
       {/* トライアルバナー */}
       {isInTrial && <TrialBanner daysRemaining={trialDaysRemaining} />}
 
-      {/* アップグレード促進バナー（クライアントサイドでマウント後にのみ表示） */}
-      {mounted && currentPlan === "free" && !isInTrial && (
+      {/* アップグレード促進バナー（クライアントサイドでマウント後、かつサブスクリプション同期完了後にのみ表示） */}
+      {mounted && subscriptionSynced && currentPlan === "free" && !isInTrial && (
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-4 text-center">
           <div className="flex items-center justify-center gap-2">
             <Sparkles className="h-5 w-5" />
