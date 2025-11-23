@@ -108,7 +108,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
               href={`https://twitter.com/i/web/status/${article.tweetId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-blue-500 hover:text-blue-600 transition-colors"
+              className="flex items-center gap-2 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
             >
               <Twitter className="h-4 w-4" />
               <span>Xで共有</span>
@@ -117,7 +117,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
         </div>
 
         {/* 縦書き名前画像 */}
-        <div className="mb-8 bg-gradient-to-br from-amber-50 via-white to-blue-50 rounded-lg border border-gray-200 p-8 shadow-sm">
+        <div className="mb-8 bg-gradient-to-br from-amber-50 via-white to-blue-50 dark:from-amber-900/20 dark:via-gray-800 dark:to-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
           <div className="flex flex-col md:flex-row items-center justify-center gap-8">
             <div className="flex-shrink-0">
               <img
@@ -128,13 +128,13 @@ export default async function BlogArticlePage({ params }: PageProps) {
               />
             </div>
             <div className="text-center md:text-left flex-1">
-              <h2 className="text-2xl font-bold mb-2 text-gray-800">
+              <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">
                 {article.lastName} {article.firstName}さん
               </h2>
               {article.analysisResult?.totalScore !== undefined && (
-                <div className="text-lg text-gray-600 mb-4">
+                <div className="text-lg text-gray-600 dark:text-gray-300 mb-4">
                   <span className="font-semibold">総合評価: </span>
-                  <span className="text-2xl font-bold text-blue-600">
+                  <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {article.analysisResult.totalScore}点
                   </span>
                   <span className="ml-2 text-sm">
@@ -162,37 +162,37 @@ export default async function BlogArticlePage({ params }: PageProps) {
           <ReactMarkdown
             components={{
               h2: ({ children }) => (
-                <h2 className="text-2xl font-bold mt-8 mb-4 pb-2 border-b-2 border-gray-200">
+                <h2 className="text-2xl font-bold mt-8 mb-4 pb-2 border-b-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                   {children}
                 </h2>
               ),
               h3: ({ children }) => (
-                <h3 className="text-xl font-semibold mt-6 mb-3 text-gray-800">
+                <h3 className="text-xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200">
                   {children}
                 </h3>
               ),
               p: ({ children }) => (
-                <p className="mb-4 leading-7 text-gray-700">
+                <p className="mb-4 leading-7 text-gray-700 dark:text-gray-300">
                   {children}
                 </p>
               ),
               ul: ({ children }) => (
-                <ul className="list-disc pl-6 mb-4 space-y-2">
+                <ul className="list-disc pl-6 mb-4 space-y-2 text-gray-700 dark:text-gray-300">
                   {children}
                 </ul>
               ),
               ol: ({ children }) => (
-                <ol className="list-decimal pl-6 mb-4 space-y-2">
+                <ol className="list-decimal pl-6 mb-4 space-y-2 text-gray-700 dark:text-gray-300">
                   {children}
                 </ol>
               ),
               li: ({ children }) => (
-                <li className="leading-7 text-gray-700">
+                <li className="leading-7 text-gray-700 dark:text-gray-300">
                   {children}
                 </li>
               ),
               strong: ({ children }) => (
-                <strong className="font-bold text-gray-900">
+                <strong className="font-bold text-gray-900 dark:text-gray-100">
                   {children}
                 </strong>
               ),
@@ -207,12 +207,12 @@ export default async function BlogArticlePage({ params }: PageProps) {
       <div className="mt-12">
         <Card className="shadow-md">
           <CardContent className="pt-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">関連記事</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">関連記事</h2>
             <ul className="space-y-3">
               <li>
                 <Link 
                   href="/articles/gakusuu-seimeihandan-kihon" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline transition-colors flex items-center gap-2"
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors flex items-center gap-2"
                 >
                   <span>→</span>
                   <span>画数でわかる姓名判断の基本と使い方</span>
@@ -221,7 +221,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
               <li>
                 <Link 
                   href="/articles/kyujitai-seimeihandan" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline transition-colors flex items-center gap-2"
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors flex items-center gap-2"
                 >
                   <span>→</span>
                   <span>旧字体で行う本格姓名判断の理由</span>
@@ -230,7 +230,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
               <li>
                 <Link 
                   href="/articles" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline transition-colors flex items-center gap-2 font-semibold"
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors flex items-center gap-2 font-semibold"
                 >
                   <span>→</span>
                   <span>記事一覧へ戻る</span>

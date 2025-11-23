@@ -144,15 +144,15 @@ export default async function ArticlesPage() {
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           姓名判断コラム・記事一覧
         </h1>
-        <p className="text-xl text-gray-600 mb-6">姓名判断の専門知識と実用的な情報をお届けします</p>
+        <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">姓名判断の専門知識と実用的な情報をお届けします</p>
         <div className="flex justify-center gap-2 flex-wrap">
-          <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+          <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
             専門知識
           </Badge>
-          <Badge variant="secondary" className="bg-green-100 text-green-700">
+          <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
             実用情報
           </Badge>
-          <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+          <Badge variant="secondary" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
             最新トレンド
           </Badge>
         </div>
@@ -169,8 +169,8 @@ export default async function ArticlesPage() {
             const IconComponent = article.icon
             return (
               <Link key={index} href={article.href} className="block group">
-                <Card className={`h-full hover:shadow-xl transition-all duration-300 ${article.borderColor} border-2`}>
-                  <CardHeader className={article.bgColor}>
+                <Card className={`h-full hover:shadow-xl transition-all duration-300 ${article.borderColor} dark:border-gray-700 border-2`}>
+                  <CardHeader className={`${article.bgColor} dark:bg-gray-800/50`}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <IconComponent className={`h-5 w-5 ${article.color}`} />
@@ -180,11 +180,11 @@ export default async function ArticlesPage() {
                         {article.isNew && <Badge className="bg-red-500 text-white text-xs">NEW</Badge>}
                       </div>
                     </div>
-                    <CardTitle className="group-hover:text-blue-600 transition-colors">{article.title}</CardTitle>
-                    <CardDescription className="text-gray-600">{article.description}</CardDescription>
+                    <CardTitle className="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{article.title}</CardTitle>
+                    <CardDescription className="text-gray-600 dark:text-gray-400">{article.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-4">
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -231,8 +231,8 @@ export default async function ArticlesPage() {
 
               return (
                 <Link key={article.id} href={`/articles/${article.slug}`} className="block group">
-                  <Card className="h-full hover:shadow-lg transition-shadow border-purple-200">
-                    <CardHeader className="pb-3 bg-purple-50">
+                  <Card className="h-full hover:shadow-lg transition-shadow border-purple-200 dark:border-gray-700">
+                    <CardHeader className="pb-3 bg-purple-50 dark:bg-purple-900/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="h-4 w-4 text-purple-600" />
                         <Badge variant="secondary" className="text-xs">
@@ -240,15 +240,15 @@ export default async function ArticlesPage() {
                         </Badge>
                         <Badge className="bg-purple-500 text-white text-xs">AUTO</Badge>
                       </div>
-                      <CardTitle className="text-lg group-hover:text-purple-600 transition-colors line-clamp-2">
+                      <CardTitle className="text-lg group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2">
                         {article.title}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <CardDescription className="text-sm text-gray-600 mb-4 line-clamp-3">
+                      <CardDescription className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
                         {article.description}
                       </CardDescription>
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {formattedDate}
@@ -291,15 +291,15 @@ export default async function ArticlesPage() {
                       </Badge>
                       {article.isNew && <Badge className="bg-red-500 text-white text-xs">NEW</Badge>}
                     </div>
-                    <CardTitle className="text-lg group-hover:text-blue-600 transition-colors line-clamp-2">
+                    <CardTitle className="text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                       {article.title}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-sm text-gray-600 mb-4 line-clamp-3">
+                    <CardDescription className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
                       {article.description}
                     </CardDescription>
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {article.date}
