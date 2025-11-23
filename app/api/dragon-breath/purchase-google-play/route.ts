@@ -95,19 +95,49 @@ export async function POST(request: NextRequest) {
             token: purchaseToken,
           })
 
-          if (!purchase.data || purchase.data.purchaseState !== 0) {
-            // 0 = Purchased
-            console.error('[Dragon Breath Google Play] Purchase verification failed:', purchase.data)
+          if (!purchase.data) {
+            console.error('[Dragon Breath Google Play] Purchase verification failed: No purchase data')
             return NextResponse.json(
               { 
                 error: '購入の検証に失敗しました',
-                details: 'Purchase state is not valid'
+                details: 'Purchase data not found'
               },
               { status: 400 }
             )
           }
 
-          console.log('[Dragon Breath Google Play] Purchase verified successfully')
+          const purchaseData = purchase.data
+          const purchaseState = purchaseData.purchaseState
+
+          // 購入状態を確認（0 = Purchased, 1 = Canceled, 2 = Pending）
+          if (purchaseState !== 0) {
+            console.error('[Dragon Breath Google Play] Purchase verification failed:', {
+              purchaseState,
+              purchaseStateText: purchaseState === 1 ? 'Canceled' : purchaseState === 2 ? 'Pending' : 'Unknown',
+              purchaseData
+            })
+            return NextResponse.json(
+              { 
+                error: '購入の検証に失敗しました',
+                details: `Purchase state is not valid (state: ${purchaseState})`
+              },
+              { status: 400 }
+            )
+          }
+
+          // 承認状態を確認（未承認の場合は承認処理を推奨）
+          // 注意: TWA環境では、Digital Goods APIにacknowledgePurchaseメソッドがないため、
+          // サーバー側で購入を検証し、データベースに保存することで「承認」とみなします
+          const isAcknowledged = purchaseData.acknowledgementState === 1 // 1 = Acknowledged
+          if (!isAcknowledged) {
+            console.log('[Dragon Breath Google Play] Purchase is not acknowledged yet, but will be treated as acknowledged after saving to database')
+          }
+
+          console.log('[Dragon Breath Google Play] Purchase verified successfully:', {
+            purchaseState,
+            isAcknowledged,
+            purchaseTime: purchaseData.purchaseTimeMillis
+          })
         } catch (verifyError: any) {
           console.error('[Dragon Breath Google Play] Verification error:', verifyError)
           return NextResponse.json(

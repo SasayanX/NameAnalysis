@@ -280,10 +280,14 @@ export default function TalismanShopPage() {
         // TWA環境の場合は、初期化を試みてから購入を実行
         if (GooglePlayBillingDetector.isTWAEnvironment()) {
           try {
+            console.log('[Talisman Shop] TWA environment detected, using Google Play Billing')
+            console.log('[Talisman Shop] isGooglePlayAvailable:', isGooglePlayAvailable)
+            
             // TWA環境の場合は、初期化を試みる（まだ初期化されていない場合）
             if (!isGooglePlayAvailable) {
               console.log('[Talisman Shop] Initializing Google Play Billing for purchase...')
               const initialized = await GooglePlayBillingDetector.initialize()
+              console.log('[Talisman Shop] Initialization result:', initialized)
               setIsGooglePlayAvailable(initialized)
               if (!initialized) {
                 throw new Error('Google Play Billingの初期化に失敗しました')
@@ -291,7 +295,18 @@ export default function TalismanShopPage() {
             }
             
             const productId = getGooglePlayProductId('dragonBreath')
-            const purchase = await GooglePlayBillingDetector.purchase(productId)
+            console.log('[Talisman Shop] Starting purchase for product:', productId)
+            console.log('[Talisman Shop] About to call GooglePlayBillingDetector.purchase()...')
+            
+            // 購入処理をタイムアウト付きで実行（30秒）
+            const purchasePromise = GooglePlayBillingDetector.purchase(productId)
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('購入処理がタイムアウトしました。もう一度お試しください。')), 30000)
+            })
+            
+            console.log('[Talisman Shop] Waiting for purchase to complete...')
+            const purchase = await Promise.race([purchasePromise, timeoutPromise]) as any
+            console.log('[Talisman Shop] Purchase completed:', purchase)
 
             // 購入確認APIを呼び出し
             const response = await fetch("/api/dragon-breath/purchase-google-play", {
@@ -332,7 +347,16 @@ export default function TalismanShopPage() {
             }, 5000)
           } catch (error: any) {
             console.error("Google Play Billing purchase failed:", error)
-            setPurchaseMessage(error.message || "Google Play Billingでの購入に失敗しました")
+            const errorMessage = error.message || "Google Play Billingでの購入に失敗しました"
+            
+            // ユーザーがキャンセルした場合の特別な処理
+            if (error.message?.includes('cancel') || error.message?.includes('abort') || error.name === 'AbortError') {
+              setPurchaseMessage("購入がキャンセルされました")
+            } else if (error.message?.includes('timeout') || error.message?.includes('タイムアウト')) {
+              setPurchaseMessage("購入処理がタイムアウトしました。もう一度お試しください。")
+            } else {
+              setPurchaseMessage(errorMessage)
+            }
           } finally {
             setIsPurchasing(false)
           }

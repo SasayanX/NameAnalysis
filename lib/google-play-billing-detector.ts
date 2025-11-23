@@ -154,6 +154,8 @@ export class GooglePlayBillingDetector {
 
   /**
    * 商品を購入
+   * TWA環境での正しい実装: PaymentRequest APIを使用
+   * TWAでは「Digital Goods API」と「Payment Request API」を組み合わせて使用します
    * @param productId - 商品ID（SKU）
    * @param purchaseOptionId - 購入オプションID（オプション、サブスクリプションのオファーを指定する場合に使用）
    */
@@ -170,14 +172,23 @@ export class GooglePlayBillingDetector {
     try {
       const service = this.service
 
-      // 商品情報が取得できるか事前に確認し、SKU の存在を検証
+      // 1. 商品情報を取得（Digital Goods APIのgetDetailsを使用）
+      let productDetails: ItemDetails | undefined
       try {
-        await service.getDetails([productId])
-      } catch (detailsError) {
-        console.warn("[Google Play Billing] Unable to fetch SKU details before purchase:", detailsError)
+        const details = await service.getDetails([productId])
+        console.log("[Google Play Billing] Product details:", details)
+        if (details.length === 0) {
+          throw new Error(`商品ID "${productId}" が見つかりません。Google Play Consoleで商品が正しく設定されているか確認してください。`)
+        }
+        productDetails = details[0]
+      } catch (detailsError: any) {
+        console.error("[Google Play Billing] Unable to fetch SKU details before purchase:", detailsError)
+        throw new Error(`商品情報の取得に失敗しました: ${detailsError.message || detailsError}`)
       }
 
-      // 購入オプションIDがある場合は、それも含める
+      console.log("[Google Play Billing] Starting purchase for product:", productId)
+      
+      // 2. PaymentRequest APIを使用して購入フローを開始（TWA環境での正しい方法）
       const paymentData: { sku: string; purchaseOptionId?: string } = {
         sku: productId,
       }
@@ -192,18 +203,65 @@ export class GooglePlayBillingDetector {
         },
       ]
 
+      // 商品情報から価格を取得（あれば使用、なければ0）
+      const priceValue = productDetails?.price ? parseFloat(productDetails.price) : 0
+      const priceCurrency = productDetails?.priceCurrencyCode || "JPY"
+
       const paymentDetails = {
         total: {
-          label: "Total",
-          amount: { currency: "JPY", value: "0" },
+          label: productDetails?.title || "Total",
+          amount: { 
+            currency: priceCurrency, 
+            value: priceValue > 0 ? priceValue.toString() : "0" 
+          },
         },
       }
 
-      console.log("[Google Play Billing] Launching PaymentRequest for SKU:", productId)
-
+      console.log("[Google Play Billing] Creating PaymentRequest for SKU:", productId)
       const request = new PaymentRequest(paymentMethodData, paymentDetails)
-      const response = await request.show()
+      
+      // 決済が可能かどうかを事前にチェック
+      try {
+        const canMakePayment = await request.canMakePayment()
+        console.log("[Google Play Billing] canMakePayment result:", canMakePayment)
+        if (!canMakePayment) {
+          throw new Error("この決済方法は利用できません。Google Play Billingが正しく設定されているか確認してください。")
+        }
+      } catch (canMakePaymentError: any) {
+        console.error("[Google Play Billing] canMakePayment check failed:", canMakePaymentError)
+        // canMakePaymentのチェックが失敗しても、実際には決済できる場合があるため、警告のみ
+        console.warn("[Google Play Billing] Continuing despite canMakePayment check failure")
+      }
+      
+      // 3. PaymentRequest.show()で決済画面を表示
+      let response: PaymentResponse
+      try {
+        console.log("[Google Play Billing] Calling request.show()...")
+        console.log("[Google Play Billing] PaymentRequest state:", {
+          id: request.id,
+          methodData: request.methodData,
+          details: request.details
+        })
+        response = await request.show()
+        console.log("[Google Play Billing] PaymentRequest.show() completed successfully")
+      } catch (showError: any) {
+        console.error("[Google Play Billing] PaymentRequest.show() failed:", showError)
+        console.error("[Google Play Billing] Error details:", {
+          name: showError.name,
+          message: showError.message,
+          stack: showError.stack
+        })
+        // ユーザーがキャンセルした場合
+        if (showError.name === 'AbortError' || 
+            showError.message?.includes('cancel') || 
+            showError.message?.includes('abort')) {
+          throw new Error('購入がキャンセルされました')
+        }
+        // その他のエラー
+        throw new Error(`決済画面の表示に失敗しました: ${showError.message || showError}`)
+      }
 
+      // 4. レスポンスを確認
       if (response.methodName !== "https://play.google.com/billing") {
         await response.complete("fail")
         throw new Error(`Unexpected payment method returned: ${response.methodName}`)
@@ -214,12 +272,13 @@ export class GooglePlayBillingDetector {
         sku?: string
       }
 
+      // 5. 購入を完了としてマーク
       await response.complete("success")
 
       const resolvedSku = paymentDetailsResponse?.sku ?? productId
       const resolvedToken = paymentDetailsResponse?.purchaseToken
 
-      // PaymentRequest のレスポンスにトークンが含まれないケースは listPurchases から取得
+      // 6. purchaseTokenを取得（PaymentRequestのレスポンスから、またはlistPurchases()から）
       let purchase: Purchase | undefined
 
       if (resolvedToken) {
@@ -228,12 +287,21 @@ export class GooglePlayBillingDetector {
           purchaseToken: resolvedToken,
           purchaseTime: Date.now(),
         }
+        console.log("[Google Play Billing] Purchase token from PaymentRequest response:", purchase)
       } else {
+        // PaymentRequestのレスポンスにトークンが含まれない場合、listPurchases()から取得
+        console.log("[Google Play Billing] Purchase token not in response, fetching from listPurchases()...")
         const purchases = await service.listPurchases()
-        purchase = purchases.find((p) => p.itemId === resolvedSku)
+        const foundPurchase = purchases.find((p) => p.itemId === resolvedSku)
+        if (foundPurchase) {
+          purchase = foundPurchase
+          console.log("[Google Play Billing] Purchase found in listPurchases():", purchase)
+        } else {
+          throw new Error("購入トークンを取得できませんでした。購入が完了していない可能性があります。")
+        }
       }
 
-      if (!purchase) {
+      if (!purchase || !purchase.purchaseToken) {
         throw new Error("Purchase token could not be retrieved after PaymentRequest")
       }
 
