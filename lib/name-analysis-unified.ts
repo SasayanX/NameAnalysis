@@ -35,6 +35,8 @@ strokeCountData.delete("々")
 // 直接追加（新データと競合する場合のみ手動上書き）
 strokeCountData.set("槻", 15)
 strokeCountData.set("ョ", 3)
+strokeCountData.set("整", 16)
+strokeCountData.set("院", 15) // 院: 15画（csv-imported-manus.tsとcommon-kanji.tsでは10画だが、15画が正しい）
 
 /**
  * 統一された姓名判断計算クラス

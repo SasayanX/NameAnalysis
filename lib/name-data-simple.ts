@@ -49,6 +49,8 @@ export const strokeCountData: Record<string, number> = {
   瀬: 20,
   証: 12,
   券: 8,
+  整: 16, // 整: 16画（csv-imported-manus.tsでは15画だが、16画が正しい）
+  院: 15, // 院: 15画（csv-imported-manus.tsとcommon-kanji.tsでは10画だが、15画が正しい）
   槻: 15,
   ョ: 3,
 }

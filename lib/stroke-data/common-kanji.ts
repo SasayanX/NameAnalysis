@@ -116,7 +116,7 @@ export const commonKanjiData: Record<string, number> = {
   園: 13,
   公: 4,
   校: 10,
-  院: 10,
+  院: 15,
   病: 10,
   寺: 6,
   神: 9,
