@@ -14,15 +14,42 @@ export function analyzeCompanyName(companyName: string): any {
   const analysisResult = analyzeNameFortune(companyName, "", "male", customFortuneData)
   
   // 社名の総画数を計算（カスタムデータから直接取得）
-  const totalStrokes = analysisResult.tenFormat
+  // 会社名全体の画数は総格（totalFormat）を使用
+  const totalStrokes = analysisResult.totalFormat || analysisResult.tenFormat || 0
   const fortuneData = customFortuneData[totalStrokes?.toString()] || { 運勢: "吉", 説明: "良好な運勢です。" }
   
   console.log("社名鑑定デバッグ:", {
     companyName,
     totalStrokes,
     fortuneData,
+    analysisResultTotalFormat: analysisResult.totalFormat,
+    analysisResultTenFormat: analysisResult.tenFormat,
     customFortuneData32: customFortuneData["32"]
   })
+  
+  // スコア計算関数（運勢からスコアを計算）
+  // 同じ運勢なら同じ点数にする（他の姓名判断機能と統一）
+  const calculateScore = (fortune: string): number => {
+    switch (fortune) {
+      case "大吉":
+        return 100
+      case "中吉":
+        return 80
+      case "吉":
+        return 60
+      case "凶":
+        return 40
+      case "中凶":
+        return 20
+      case "大凶":
+        return 0
+      default:
+        return 50
+    }
+  }
+  
+  // 運勢に基づいてスコアを計算
+  const calculatedScore = calculateScore(fortuneData.運勢 || "吉")
   
   // 画数に応じたポジティブなビジネスアドバイスを生成
   const generateBusinessAdvice = (strokes: number, fortune: string): string => {
@@ -44,9 +71,9 @@ export function analyzeCompanyName(companyName: string): any {
   // 社名鑑定用に結果を調整
   const companyResult = {
     ...analysisResult,
-    // 総格を社名の全画数に調整（天格と同じ）
+    // 総格を社名の全画数に調整
     totalFormat: totalStrokes, // 社名の全画数
-    totalScore: analysisResult.tenScore || 50,
+    totalScore: calculatedScore, // 運勢に基づいて計算したスコア
     // 画数に応じた詳細なビジネスアドバイス
     advice: generateBusinessAdvice(totalStrokes, fortuneData.運勢 || "吉"),
     // 会社名用の説明
@@ -56,6 +83,14 @@ export function analyzeCompanyName(companyName: string): any {
     // 運勢（カスタムデータから直接取得）
     fortune: fortuneData.運勢 || "吉"
   }
+  
+  console.log("社名鑑定結果:", {
+    companyName,
+    totalStrokes,
+    fortune: fortuneData.運勢,
+    calculatedScore,
+    companyResultTotalScore: companyResult.totalScore
+  })
   
   return companyResult
 }

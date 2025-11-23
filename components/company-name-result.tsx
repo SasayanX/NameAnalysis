@@ -27,19 +27,19 @@ export function CompanyNameResult({ result, companyName, useCustomData = false }
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold">{companyName}の会社名分析結果</h2>
-        {useCustomData && <p className="text-sm text-muted-foreground mt-1">(カスタム吉凶データを使用)</p>}
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{companyName}の会社名分析結果</h2>
+        {useCustomData && <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">(カスタム吉凶データを使用)</p>}
       </div>
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>「{companyName}」の画数占い結果</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-gray-900 dark:text-gray-100">「{companyName}」の画数占い結果</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
             社名・商品名の総格による鑑定結果 当占いは、全て旧字体での鑑定となっております。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="text-center p-4 bg-muted rounded-lg">
-            <div className="text-4xl font-bold mb-2">
+          <div className="text-center p-4 bg-muted dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">
               {(() => {
                 const count = result?.companyNameCount || result?.totalStrokes || "0"
                 // [object Object]が含まれている場合は数値部分だけを抽出
@@ -53,12 +53,12 @@ export function CompanyNameResult({ result, companyName, useCustomData = false }
             {result?.fortune && typeof result.fortune === "string" && result.fortune !== "[object Object]" && (
               <Badge
                 className={`text-lg px-3 py-1 
-    ${getBadgeVariant(result.fortune) === "destructive" ? "bg-red-600 hover:bg-red-700 text-white" : ""}
-    ${getBadgeVariant(result.fortune) === "dark-pink" ? "bg-pink-700 hover:bg-pink-800 text-white" : ""}
-    ${getBadgeVariant(result.fortune) === "light-pink" ? "bg-pink-200 hover:bg-pink-300 text-pink-800" : ""}
-    ${getBadgeVariant(result.fortune) === "white" ? "bg-white hover:bg-gray-50 text-gray-800 border border-gray-300" : ""}
-    ${getBadgeVariant(result.fortune) === "gray" ? "bg-gray-400 hover:bg-gray-500 text-white" : ""}
-    ${getBadgeVariant(result.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray-800 text-white" : ""}
+    ${getBadgeVariant(result.fortune) === "destructive" ? "bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800" : ""}
+    ${getBadgeVariant(result.fortune) === "dark-pink" ? "bg-pink-700 hover:bg-pink-800 text-white dark:bg-pink-800 dark:hover:bg-pink-900" : ""}
+    ${getBadgeVariant(result.fortune) === "light-pink" ? "bg-pink-200 hover:bg-pink-300 text-pink-800 dark:bg-pink-900/50 dark:hover:bg-pink-900/70 dark:text-pink-200" : ""}
+    ${getBadgeVariant(result.fortune) === "white" ? "bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 dark:border-gray-600" : ""}
+    ${getBadgeVariant(result.fortune) === "gray" ? "bg-gray-400 hover:bg-gray-500 text-white dark:bg-gray-600 dark:hover:bg-gray-700" : ""}
+    ${getBadgeVariant(result.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray-800 text-white dark:bg-gray-800 dark:hover:bg-gray-900" : ""}
   `}
                 variant={getBadgeVariant(result.fortune)}
               >
@@ -70,8 +70,8 @@ export function CompanyNameResult({ result, companyName, useCustomData = false }
           {result?.totalScore !== undefined && (
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="font-medium">運勢スコア</span>
-                <span className="font-bold">{result.totalScore}点</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">運勢スコア</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">{result.totalScore}点</span>
               </div>
               <Progress value={Math.min(100, (result.totalScore / 100) * 100)} className="h-2" />
             </div>
@@ -79,8 +79,8 @@ export function CompanyNameResult({ result, companyName, useCustomData = false }
 
           {result?.explanation && (
             <div className="space-y-2">
-              <h3 className="font-medium">総格の意味</h3>
-              <p className="text-sm">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100">総格の意味</h3>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 {typeof result?.explanation === "string" && result.explanation !== "[object Object]"
                   ? result.explanation
                   : "この画数の詳細な説明はありません。"}
@@ -88,9 +88,9 @@ export function CompanyNameResult({ result, companyName, useCustomData = false }
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t">
-            <h3 className="font-medium mb-2">ビジネスアドバイス</h3>
-            <p className="text-sm">
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="font-medium mb-2 text-gray-900 dark:text-gray-100">ビジネスアドバイス</h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               {(() => {
                 const advice = result?.advice || "ビジネスでの成功を祈願しています。"
                 if (typeof advice === "string") {
@@ -106,10 +106,10 @@ export function CompanyNameResult({ result, companyName, useCustomData = false }
           </div>
 
           {result?.kanjiInfo?.hasChanged && (
-            <div className="mt-4 pt-4 border-t">
-              <Alert>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Alert className="dark:bg-gray-800 dark:border-gray-700">
                 <InfoIcon className="h-4 w-4" />
-                <AlertDescription>
+                <AlertDescription className="text-gray-700 dark:text-gray-300">
                   <p className="text-sm font-medium">入力された名前には新字体が含まれています。旧字体で占いました。</p>
                   {result.kanjiInfo.oldLastName && <p className="text-sm">旧字体: {result.kanjiInfo.oldLastName}</p>}
                 </AlertDescription>
