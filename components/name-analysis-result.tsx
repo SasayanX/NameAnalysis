@@ -595,11 +595,11 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
 
         {/* 詳細アドバイス */}
         {results.advice && canViewDetailedAnalysis && (
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 pt-4 border-t dark:border-gray-700">
             <Button
               variant="ghost"
               onClick={() => setIsAdviceOpen(!isAdviceOpen)}
-              className="w-full flex items-center justify-between p-2 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <h3 className="font-medium">詳細アドバイス</h3>
               <div className="flex items-center gap-2">
@@ -608,7 +608,7 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
               </div>
             </Button>
             {isAdviceOpen && (
-              <div className="text-sm whitespace-pre-line leading-relaxed bg-gray-50 p-4 rounded-lg mt-2 animate-in slide-in-from-top-2 duration-200">
+              <div className="text-sm whitespace-pre-line leading-relaxed bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-lg mt-2 animate-in slide-in-from-top-2 duration-200">
                 {generateDetailedAdvice(results, name, gender)}
               </div>
             )}
@@ -617,16 +617,16 @@ ${getBadgeVariant(category.fortune) === "dark-gray" ? "bg-gray-700 hover:bg-gray
 
         {/* 無料プランでのアドバイス制限表示 */}
         {!canViewDetailedAnalysis && (
-          <div className="mt-4 pt-4 border-t">
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mt-4 pt-4 border-t dark:border-gray-700">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2 mb-3">
-                <Lock className="h-5 w-5 text-gray-400" />
-                <h3 className="font-semibold text-gray-700">詳細アドバイス</h3>
-                <Badge variant="outline" className="border-blue-200 text-blue-600">
+                <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                <h3 className="font-semibold text-gray-700 dark:text-gray-300">詳細アドバイス</h3>
+                <Badge variant="outline" className="border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400">
                   ベーシック以上
                 </Badge>
               </div>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
                 あなたの名前に込められた深い意味と、人生における開運のアドバイスをお読みいただけます。
               </p>
               <Link href="/pricing">

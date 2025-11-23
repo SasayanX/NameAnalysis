@@ -470,7 +470,7 @@ function generateHealthTips(dominantElement: string, weakElement: string, fortun
   const healthPatterns: Array<{ condition: () => boolean, advice: string }> = [
     {
       condition: () => fortuneLevel >= 4 && weakElement !== dominantElement,
-      advice: getHealthAdviceByElement(dominantElement) + " また、" + getHealthAdviceByElement(weakElement).replace(/^[^。]+。/, "").replace(/^[^。]+。/, "")
+      advice: getHealthAdviceByElement(dominantElement) + " また、" + getHealthAdviceByElement(weakElement).replace(/^[^。]+。/, "")
     },
     {
       condition: () => fortuneLevel >= 4,
@@ -482,7 +482,7 @@ function generateHealthTips(dominantElement: string, weakElement: string, fortun
     },
     {
       condition: () => weakElement !== dominantElement,
-      advice: getHealthAdviceByElement(dominantElement) + " さらに、" + getHealthAdviceByElement(weakElement).replace(/^[^。]+。/, "").replace(/^[^。]+。/, "")
+      advice: getHealthAdviceByElement(dominantElement) + " さらに、" + getHealthAdviceByElement(weakElement).replace(/^[^。]+。/, "")
     },
     {
       condition: () => true,

@@ -1656,7 +1656,7 @@ export default function ClientPage() {
                                           disabled={isLoadingAiFortune}
                                           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                                         >
-                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を依頼（龍の息吹使用）
+                                          <Sparkles className="h-4 w-4 mr-2" /> {isLoadingAiFortune ? "ただいま鑑定中です..." : "AI深層言霊鑑定を依頼（龍の息吹使用）"}
                                         </Button>
                                         <p className="text-xs text-muted-foreground mt-2">
                                           残り: {availableDragonBreathItems.length}個
@@ -1680,9 +1680,10 @@ export default function ClientPage() {
                                                   setShowConfirmDialog(false)
                                                   generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)
                                                 }}
+                                                disabled={isLoadingAiFortune}
                                                 className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                                               >
-                                                使用する
+                                                {isLoadingAiFortune ? "ただいま鑑定中です..." : "使用する"}
                                               </AlertDialogAction>
                                             </AlertDialogFooter>
                                           </AlertDialogContent>
@@ -1704,7 +1705,7 @@ export default function ClientPage() {
                                               disabled={isLoadingAiFortune}
                                               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                                             >
-                                              <Sparkles className="h-4 w-4 mr-2" /> 龍の息吹を使用して再生成 ({availableDragonBreathItems.length}個)
+                                              <Sparkles className="h-4 w-4 mr-2" /> {isLoadingAiFortune ? "ただいま鑑定中です..." : `龍の息吹を使用して再生成 (${availableDragonBreathItems.length}個)`}
                                             </Button>
                                           </div>
                                         )}
@@ -1878,7 +1879,7 @@ export default function ClientPage() {
                                           disabled={isLoadingAiFortune || (currentPlan === "premium" && aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0)}
                                           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                          <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を依頼
+                                          <Sparkles className="h-4 w-4 mr-2" /> {isLoadingAiFortune ? "ただいま鑑定中です..." : "AI深層言霊鑑定を依頼"}
                                         </Button>
                                         {currentPlan === "premium" && (
                                           <p className="text-xs text-muted-foreground mt-2">

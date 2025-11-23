@@ -121,19 +121,19 @@ export function SimpleAnalysisResult({ results, name, gender }: SimpleAnalysisRe
   const getBadgeColor = (fortuneType: string): string => {
     switch (fortuneType) {
       case "大吉":
-        return "bg-red-500 text-white"
+        return "bg-red-500 dark:bg-red-600 text-white"
       case "中吉":
-        return "bg-pink-400 text-white"
+        return "bg-pink-400 dark:bg-pink-500 text-white"
       case "吉":
-        return "bg-pink-200 text-gray-800"
+        return "bg-pink-200 dark:bg-pink-300 text-gray-800 dark:text-gray-900"
       case "凶":
-        return "bg-white text-gray-800 border border-gray-300"
+        return "bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600"
       case "中凶":
-        return "bg-gray-200 text-gray-800"
+        return "bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200"
       case "大凶":
-        return "bg-gray-600 text-white"
+        return "bg-gray-600 dark:bg-gray-700 text-white"
       default:
-        return "bg-gray-400 text-white"
+        return "bg-gray-400 dark:bg-gray-600 text-white"
     }
   }
 
@@ -160,8 +160,8 @@ export function SimpleAnalysisResult({ results, name, gender }: SimpleAnalysisRe
   // エラーの場合
   if (analysisData.error) {
     return (
-      <div className="bg-white p-6">
-        <div className="text-center text-red-500">
+      <div className="bg-white dark:bg-gray-900 p-6">
+        <div className="text-center text-red-500 dark:text-red-400">
           <h2 className="text-xl font-bold mb-2">計算エラー</h2>
           <p>{analysisData.error}</p>
           <p className="text-sm mt-2">デバッグ情報: {JSON.stringify({ results: !!results, name })}</p>
@@ -173,8 +173,8 @@ export function SimpleAnalysisResult({ results, name, gender }: SimpleAnalysisRe
   // 総格が0の場合のエラー表示
   if (analysisData.totalStrokes === 0) {
     return (
-      <div className="bg-white p-6">
-        <div className="text-center text-red-500">
+      <div className="bg-white dark:bg-gray-900 p-6">
+        <div className="text-center text-red-500 dark:text-red-400">
           <h2 className="text-xl font-bold mb-2">計算エラー</h2>
           <p>総格の計算ができませんでした。名前を確認してください。</p>
           <p className="text-sm mt-2">デバッグ情報: {JSON.stringify({ results: !!results, name })}</p>
@@ -187,12 +187,12 @@ export function SimpleAnalysisResult({ results, name, gender }: SimpleAnalysisRe
   const genderText = gender === "male" ? "男性" : gender === "female" ? "女性" : ""
 
   return (
-    <div className="bg-white">
+    <div className="bg-white dark:bg-gray-900">
       {/* ヘッダー部分 */}
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">「{name}」さんのかんたん鑑定結果</h1>
-        <h2 className="text-lg text-gray-600 mb-2">「{name}」の画数占い結果</h2>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">「{name}」さんのかんたん鑑定結果</h1>
+        <h2 className="text-lg text-gray-600 dark:text-gray-400 mb-2">「{name}」の画数占い結果</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           かんたん鑑定（総格のみ）{genderText && ` - ${genderText}`} -
           当姓名判断は、全て旧字体での鑑定となっております。
         </p>
@@ -201,8 +201,8 @@ export function SimpleAnalysisResult({ results, name, gender }: SimpleAnalysisRe
       {/* メイン結果表示エリア */}
       <div className="mb-8">
         {/* 総格数字と吉凶バッジ - 薄いグレー背景 */}
-        <div className="bg-gray-100 p-6 rounded-lg text-center mb-4">
-          <div className="text-4xl font-bold text-gray-900 mb-3">{analysisData.totalStrokes}</div>
+        <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg text-center mb-4">
+          <div className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">{analysisData.totalStrokes}</div>
           <span
             className={`inline-block px-3 py-1 text-lg font-bold rounded-full ${getBadgeColor(analysisData.fortune)}`}
           >
@@ -213,12 +213,12 @@ export function SimpleAnalysisResult({ results, name, gender }: SimpleAnalysisRe
         {/* スコア表示部分 */}
         <div className="mb-2">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-base font-medium text-gray-900">運勢スコア</span>
-            <span className="text-base font-medium text-gray-900">{analysisData.score}点</span>
+            <span className="text-base font-medium text-gray-900 dark:text-gray-100">運勢スコア</span>
+            <span className="text-base font-medium text-gray-900 dark:text-gray-100">{analysisData.score}点</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
-              className="h-2 bg-black rounded-full transition-all duration-300"
+              className="h-2 bg-black dark:bg-white rounded-full transition-all duration-300"
               style={{ width: `${Math.min(analysisData.score, 100)}%` }}
             />
           </div>
@@ -227,18 +227,18 @@ export function SimpleAnalysisResult({ results, name, gender }: SimpleAnalysisRe
 
       {/* 総格の意味セクション */}
       <div className="mb-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-3">総格の意味</h3>
-        <p className="text-sm text-gray-700 leading-relaxed mb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">総格の意味</h3>
+        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
           {analysisData.explanation ||
             "「総格」は、姓名全体の画数を表し、その人の人生全体の運勢や性格の基調を示します。人生における総合的な運気や、晩年期の運勢に大きく影響するとされています。"}
         </p>
 
         {/* ヘアライン */}
-        <div className="border-t border-gray-200 my-4"></div>
+        <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
 
         {/* 基本的なアドバイス */}
-        <h4 className="text-base font-bold text-gray-900 mb-3">アドバイス</h4>
-        <p className="text-sm text-gray-700 leading-relaxed">{simpleAdvice}</p>
+        <h4 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-3">アドバイス</h4>
+        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{simpleAdvice}</p>
       </div>
     </div>
   )
