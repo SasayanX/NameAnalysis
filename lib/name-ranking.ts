@@ -159,8 +159,12 @@ export function calculateNameRankingPoints(
     sansaiPoints.points +
     rarityPoints.points
 
-  // パワーランクを決定（上限を調整）
-  const powerRank = determinePowerRank(totalPoints)
+  // 凶数チェック（大凶・中凶のペナルティ適用）
+  const hasDaikyou = basicResult.categories?.some((cat: any) => cat.fortune?.includes("大凶")) || false
+  const chukyouCount = basicResult.categories?.filter((cat: any) => cat.fortune?.includes("中凶")).length || 0
+  
+  // パワーランクを決定（凶数ペナルティを考慮）
+  const powerRank = determinePowerRank(totalPoints, hasDaikyou, chukyouCount)
   const powerLevel = determinePowerLevel(totalPoints)
 
   return {
@@ -459,8 +463,41 @@ function calculateRarityPoints(lastName: string, firstName: string) {
   return Math.max(0, Math.min(100, points))
 }
 
-// パワーランクを決定する関数（適正な閾値に調整）
-function determinePowerRank(totalPoints: number): string {
+// パワーランクを決定する関数（適正な閾値に調整、凶数ペナルティを考慮）
+function determinePowerRank(totalPoints: number, hasDaikyou: boolean = false, chukyouCount: number = 0): string {
+  // 大凶が含まれている場合：Sランク以上にならない（最大A+まで）
+  if (hasDaikyou) {
+    if (totalPoints >= 300) return "A+"
+    if (totalPoints >= 250) return "A"
+    if (totalPoints >= 200) return "B+"
+    if (totalPoints >= 150) return "B"
+    if (totalPoints >= 100) return "C"
+    return "D"
+  }
+  
+  // 中凶が2つ以上含まれている場合：Sランク以上にならない（最大A+まで）
+  if (chukyouCount >= 2) {
+    if (totalPoints >= 300) return "A+"
+    if (totalPoints >= 250) return "A"
+    if (totalPoints >= 200) return "B+"
+    if (totalPoints >= 150) return "B"
+    if (totalPoints >= 100) return "C"
+    return "D"
+  }
+  
+  // 中凶が1つ含まれている場合：SSSランクにならない（最大SSまで）
+  if (chukyouCount >= 1) {
+    if (totalPoints >= 400) return "SS"
+    if (totalPoints >= 350) return "S"
+    if (totalPoints >= 300) return "A+"
+    if (totalPoints >= 250) return "A"
+    if (totalPoints >= 200) return "B+"
+    if (totalPoints >= 150) return "B"
+    if (totalPoints >= 100) return "C"
+    return "D"
+  }
+  
+  // 凶数がない場合：通常の判定
   if (totalPoints >= 450) return "SSS" // 閾値を下げて適正に調整
   if (totalPoints >= 400) return "SS"
   if (totalPoints >= 350) return "S"
