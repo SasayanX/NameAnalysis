@@ -1586,13 +1586,13 @@ export default function ClientPage() {
 
                         {/* AI機能のTabsContent */}
                         <TabsContent value="ai-personality" style={{ display: activeTab === "ai-personality" ? "block" : "none" }}>
-                          <Card className="border-purple-200 shadow-lg bg-gradient-to-b from-[#D7C4F3] to-[#F8F5FB]">
-                            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
-                              <CardTitle className="flex items-center gap-2 text-purple-800">
-                                <Sparkles className="h-5 w-5 text-purple-600" />
+                          <Card className="border-purple-200 shadow-lg bg-gradient-to-b from-[#D7C4F3] to-[#F8F5FB] dark:border-purple-900 dark:from-[#1B102A] dark:via-[#120A1C] dark:to-[#08050D]">
+                            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b dark:from-purple-950/40 dark:to-pink-950/30 dark:border-purple-900">
+                              <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-100">
+                                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
                                 AI深層言霊鑑定
                               </CardTitle>
-                              <CardDescription className="text-purple-600">
+                              <CardDescription className="text-purple-600 dark:text-purple-200">
                                 AIがあなたの名前に宿る宿命と言霊を鑑定します
                               </CardDescription>
                             </CardHeader>
@@ -1636,18 +1636,18 @@ export default function ClientPage() {
                                     ) : availableDragonBreathItems.length === 0 ? (
                                       // 姓名判断済み、龍の息吹なし → ボタン無効化、メッセージ表示
                                       <div className="text-center py-8">
-                                        <div className="p-4 bg-purple-50 rounded-lg mb-4">
-                                          <p className="text-purple-800 mb-2 font-semibold">
+                                        <div className="p-4 bg-purple-50 rounded-lg mb-4 border border-purple-200 dark:bg-purple-950/20 dark:border-purple-800">
+                                          <p className="text-purple-800 mb-2 font-semibold dark:text-purple-100">
                                             龍の息吹で{PLAN_USAGE_COUNTS[currentPlan as keyof typeof PLAN_USAGE_COUNTS] || 1}回AI鑑定が可能です
                                           </p>
-                                          <p className="text-sm text-purple-600 mb-3">
+                                          <p className="text-sm text-purple-600 mb-3 dark:text-purple-200">
                                             龍の息吹を所持していません。ショップで購入が可能です。
                                           </p>
                                         </div>
                                         <Link href="/shop/talisman?tab=yen">
                                           <Button 
                                             disabled
-                                            className="bg-gray-400 text-white cursor-not-allowed"
+                                            className="bg-gray-400 text-white cursor-not-allowed dark:bg-gray-600"
                                           >
                                             <Sparkles className="h-4 w-4 mr-2" /> AI深層言霊鑑定を依頼（龍の息吹が必要）
                                           </Button>
@@ -1700,7 +1700,7 @@ export default function ClientPage() {
                                     ) : isLoadingAiFortune ? (
                                       <div className="flex items-center justify-center py-8">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を依頼中...</span>
+                                        <span className="ml-3 text-purple-600 dark:text-purple-200">AI深層言霊鑑定を依頼中...</span>
                                       </div>
                                     ) : aiFortune?.success && aiFortune?.aiFortune ? (
                                       // 無料・ベーシックプランでも結果表示（プレミアムと同じ表示）
@@ -1719,15 +1719,15 @@ export default function ClientPage() {
                                         )}
                                         {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
                                         {aiFortune.aiFortune.fortune && (
-                                          <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50">
+                                          <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50 dark:border-purple-900 dark:from-purple-950/40 dark:to-pink-950/20">
                                             <CardHeader className="pb-3">
-                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-lg">
-                                                <Sparkles className="h-5 w-5 text-purple-600" />
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-lg dark:text-purple-100">
+                                                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
                                                 AI深層言霊鑑定
                                               </CardTitle>
                                             </CardHeader>
-                                            <CardContent>
-                                              <div className="text-purple-900 text-base leading-relaxed">
+                                            <CardContent className="border-t border-purple-100 dark:border-purple-900 pt-4">
+                                              <div className="text-purple-900 text-base leading-relaxed dark:text-purple-50">
                                                 {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
                                                   <p key={index} className={index > 0 ? 'mt-2' : ''}>
                                                     {paragraph}
@@ -1741,15 +1741,15 @@ export default function ClientPage() {
                                         {/* グリッドレイアウトでカードを表示 */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           {/* 深層心理的特徴 */}
-                                          <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-                                            <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100">
-                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-base">
-                                                <Brain className="h-4 w-4 text-purple-600" />
+                                          <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow dark:border-purple-900 dark:bg-purple-950/30">
+                                            <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30">
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-base dark:text-purple-100">
+                                                <Brain className="h-4 w-4 text-purple-600 dark:text-purple-300" />
                                                 深層心理的特徴
                                               </CardTitle>
                                             </CardHeader>
                                             <CardContent className="pt-4">
-                                              <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                              <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-purple-100">
                                                 {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
                                               </p>
                                             </CardContent>
@@ -1757,15 +1757,15 @@ export default function ClientPage() {
 
                                           {/* 潜在的な才能・適性 */}
                                           {aiFortune.aiFortune.talents && (
-                                            <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
-                                              <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100">
-                                                <CardTitle className="flex items-center gap-2 text-yellow-800 text-base">
-                                                  <Sparkles className="h-4 w-4 text-yellow-600" />
+                                            <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow dark:border-yellow-900 dark:bg-yellow-950/30">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-950/40 dark:to-amber-900/30">
+                                                <CardTitle className="flex items-center gap-2 text-yellow-800 text-base dark:text-yellow-100">
+                                                  <Sparkles className="h-4 w-4 text-yellow-600 dark:text-yellow-300" />
                                                   潜在的な才能・適性
                                                 </CardTitle>
                                               </CardHeader>
                                               <CardContent className="pt-4">
-                                                <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-yellow-50">
                                                   {aiFortune.aiFortune.talents}
                                                 </p>
                                               </CardContent>
@@ -1774,15 +1774,15 @@ export default function ClientPage() {
 
                                           {/* 人生における課題と解決策 */}
                                           {aiFortune.aiFortune.challenges && (
-                                            <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-                                              <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100">
-                                                <CardTitle className="flex items-center gap-2 text-orange-800 text-base">
-                                                  <Lightbulb className="h-4 w-4 text-orange-600" />
+                                            <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow dark:border-orange-900 dark:bg-orange-950/30">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-amber-950/20">
+                                                <CardTitle className="flex items-center gap-2 text-orange-800 text-base dark:text-orange-100">
+                                                  <Lightbulb className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                                                   人生における課題と解決策
                                                 </CardTitle>
                                               </CardHeader>
                                               <CardContent className="pt-4">
-                                                <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-orange-50">
                                                   {aiFortune.aiFortune.challenges}
                                                 </p>
                                               </CardContent>
@@ -1791,15 +1791,15 @@ export default function ClientPage() {
 
                                           {/* 具体的なアドバイス */}
                                           {aiFortune.aiFortune.advice && (
-                                            <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow">
-                                              <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100">
-                                                <CardTitle className="flex items-center gap-2 text-green-800 text-base">
-                                                  <Target className="h-4 w-4 text-green-600" />
+                                            <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow dark:border-green-900 dark:bg-emerald-950/30">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100 dark:from-emerald-950/40 dark:to-green-900/20">
+                                                <CardTitle className="flex items-center gap-2 text-green-800 text-base dark:text-green-100">
+                                                  <Target className="h-4 w-4 text-green-600 dark:text-green-300" />
                                                   今日の開運アドバイス
                                                 </CardTitle>
                                               </CardHeader>
                                               <CardContent className="pt-4">
-                                                <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-green-50">
                                                   {aiFortune.aiFortune.advice}
                                                 </p>
                                               </CardContent>
@@ -1853,7 +1853,7 @@ export default function ClientPage() {
                                     <div className="flex items-center justify-between">
                                       {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
                                         <Link href="/shop/talisman?tab=yen">
-                                          <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50">
+                                          <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-200 dark:border-purple-700 dark:hover:bg-purple-950/40">
                                             <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を購入
                                           </Button>
                                         </Link>
@@ -1864,7 +1864,7 @@ export default function ClientPage() {
                                           size="sm"
                                           onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
                                           disabled={isLoadingAiFortune}
-                                          className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                                          className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-200 dark:border-purple-700 dark:hover:bg-purple-950/40"
                                         >
                                           <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を使用 ({availableDragonBreathItems.length}個)
                                         </Button>
@@ -1890,7 +1890,7 @@ export default function ClientPage() {
                                           <Sparkles className="h-4 w-4 mr-2" /> {isLoadingAiFortune ? "ただいま鑑定中です..." : "AI深層言霊鑑定を依頼"}
                                         </Button>
                                         {currentPlan === "premium" && (
-                                          <p className="text-xs text-muted-foreground mt-2">
+                                          <p className="text-xs text-muted-foreground mt-2 dark:text-gray-400">
                                             AI鑑定残り回数: {Math.max(0, aiFortuneUsage.limit - aiFortuneUsage.count)}回
                                             {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
                                               <span className="text-red-500 ml-2">（制限に達しています）</span>
@@ -1901,21 +1901,21 @@ export default function ClientPage() {
                                     ) : isLoadingAiFortune ? (
                                       <div className="flex items-center justify-center py-8">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                                        <span className="ml-3 text-purple-600">AI深層言霊鑑定を依頼中...</span>
+                                        <span className="ml-3 text-purple-600 dark:text-purple-200">AI深層言霊鑑定を依頼中...</span>
                                       </div>
                                     ) : aiFortune?.success && aiFortune?.aiFortune ? (
                                       <div className="space-y-6">
                                         {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
                                         {aiFortune.aiFortune.fortune && (
-                                          <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50">
+                                          <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50 dark:border-purple-900 dark:from-purple-950/40 dark:to-pink-950/20">
                                             <CardHeader className="pb-3">
-                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-lg">
-                                                <Sparkles className="h-5 w-5 text-purple-600" />
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-lg dark:text-purple-100">
+                                                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
                                                 AI深層言霊鑑定
                                               </CardTitle>
                                             </CardHeader>
-                                            <CardContent>
-                                              <div className="text-purple-900 text-base leading-relaxed">
+                                            <CardContent className="border-t border-purple-100 dark:border-purple-900 pt-4">
+                                              <div className="text-purple-900 text-base leading-relaxed dark:text-purple-50">
                                                 {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
                                                   <p key={index} className={index > 0 ? 'mt-2' : ''}>
                                                     {paragraph}
@@ -1929,15 +1929,15 @@ export default function ClientPage() {
                                         {/* グリッドレイアウトでカードを表示 */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           {/* 深層心理的特徴 */}
-                                          <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-                                            <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100">
-                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-base">
-                                                <Brain className="h-4 w-4 text-purple-600" />
+                                          <Card className="border-purple-200 shadow-sm hover:shadow-md transition-shadow dark:border-purple-900 dark:bg-purple-950/30">
+                                            <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30">
+                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-base dark:text-purple-100">
+                                                <Brain className="h-4 w-4 text-purple-600 dark:text-purple-300" />
                                                 深層心理的特徴
                                               </CardTitle>
                                             </CardHeader>
                                             <CardContent className="pt-4">
-                                              <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                              <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-purple-100">
                                                 {aiFortune.aiFortune.personality || aiFortune.aiFortune.fortune || '分析結果を生成中です'}
                                               </p>
                                             </CardContent>
@@ -1945,15 +1945,15 @@ export default function ClientPage() {
 
                                           {/* 潜在的な才能・適性 */}
                                           {aiFortune.aiFortune.talents && (
-                                            <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
-                                              <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100">
-                                                <CardTitle className="flex items-center gap-2 text-yellow-800 text-base">
-                                                  <Sparkles className="h-4 w-4 text-yellow-600" />
+                                            <Card className="border-yellow-200 shadow-sm hover:shadow-md transition-shadow dark:border-yellow-900 dark:bg-yellow-950/30">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-950/40 dark:to-amber-900/30">
+                                                <CardTitle className="flex items-center gap-2 text-yellow-800 text-base dark:text-yellow-100">
+                                                  <Sparkles className="h-4 w-4 text-yellow-600 dark:text-yellow-300" />
                                                   潜在的な才能・適性
                                                 </CardTitle>
                                               </CardHeader>
                                               <CardContent className="pt-4">
-                                                <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                <p className="text-yellow-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-yellow-50">
                                                   {aiFortune.aiFortune.talents}
                                                 </p>
                                               </CardContent>
@@ -1962,15 +1962,15 @@ export default function ClientPage() {
 
                                           {/* 人生における課題と解決策 */}
                                           {aiFortune.aiFortune.challenges && (
-                                            <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-                                              <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100">
-                                                <CardTitle className="flex items-center gap-2 text-orange-800 text-base">
-                                                  <Lightbulb className="h-4 w-4 text-orange-600" />
+                                            <Card className="border-orange-200 shadow-sm hover:shadow-md transition-shadow dark:border-orange-900 dark:bg-orange-950/30">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-amber-950/20">
+                                                <CardTitle className="flex items-center gap-2 text-orange-800 text-base dark:text-orange-100">
+                                                  <Lightbulb className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                                                   人生における課題と解決策
                                                 </CardTitle>
                                               </CardHeader>
                                               <CardContent className="pt-4">
-                                                <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                <p className="text-orange-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-orange-50">
                                                   {aiFortune.aiFortune.challenges}
                                                 </p>
                                               </CardContent>
@@ -1979,15 +1979,15 @@ export default function ClientPage() {
 
                                           {/* 具体的なアドバイス */}
                                           {aiFortune.aiFortune.advice && (
-                                            <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow">
-                                              <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100">
-                                                <CardTitle className="flex items-center gap-2 text-green-800 text-base">
-                                                  <Target className="h-4 w-4 text-green-600" />
+                                            <Card className="border-green-200 shadow-sm hover:shadow-md transition-shadow dark:border-green-900 dark:bg-emerald-950/30">
+                                              <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-green-100 dark:from-emerald-950/40 dark:to-green-900/20">
+                                                <CardTitle className="flex items-center gap-2 text-green-800 text-base dark:text-green-100">
+                                                  <Target className="h-4 w-4 text-green-600 dark:text-green-300" />
                                                   今日の開運アドバイス
                                                 </CardTitle>
                                               </CardHeader>
                                               <CardContent className="pt-4">
-                                                <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                                <p className="text-green-700 whitespace-pre-wrap leading-relaxed text-sm dark:text-green-50">
                                                   {aiFortune.aiFortune.advice}
                                                 </p>
                                               </CardContent>
@@ -1997,15 +1997,15 @@ export default function ClientPage() {
 
                                         {/* ラッキー要素（フル幅） */}
                                         {aiFortune.aiFortune.luckyElement && (
-                                          <Card className="border-blue-200 shadow-sm bg-gradient-to-r from-blue-50 to-cyan-50">
-                                            <CardHeader className="pb-3">
-                                              <CardTitle className="flex items-center gap-2 text-blue-800 text-base">
-                                                <Star className="h-4 w-4 text-blue-600" />
+                                          <Card className="border-blue-200 shadow-sm bg-gradient-to-r from-blue-50 to-cyan-50 dark:border-blue-900 dark:from-blue-950/40 dark:to-cyan-950/20">
+                                            <CardHeader className="pb-3 border-b border-blue-100 dark:border-blue-900">
+                                              <CardTitle className="flex items-center gap-2 text-blue-800 text-base dark:text-blue-100">
+                                                <Star className="h-4 w-4 text-blue-600 dark:text-blue-300" />
                                                 ラッキー要素
                                               </CardTitle>
                                             </CardHeader>
                                             <CardContent>
-                                              <p className="text-blue-700 font-medium text-base">
+                                              <p className="text-blue-700 font-medium text-base dark:text-blue-100">
                                                 {aiFortune.aiFortune.luckyElement}
                                               </p>
                                             </CardContent>
@@ -2014,20 +2014,20 @@ export default function ClientPage() {
 
                                         {/* 使用された言霊（フル幅） */}
                                         {aiFortune.kotodama && aiFortune.kotodama.length > 0 && (
-                                          <Card className="border-indigo-200 shadow-sm bg-gradient-to-r from-indigo-50 to-purple-50">
-                                            <CardHeader className="pb-3">
-                                              <CardTitle className="flex items-center gap-2 text-indigo-800 text-base">
-                                                <BookOpen className="h-4 w-4 text-indigo-600" />
+                                          <Card className="border-indigo-200 shadow-sm bg-gradient-to-r from-indigo-50 to-purple-50 dark:border-indigo-900 dark:from-indigo-950/40 dark:to-purple-950/30">
+                                            <CardHeader className="pb-3 border-b border-indigo-100 dark:border-indigo-900">
+                                              <CardTitle className="flex items-center gap-2 text-indigo-800 text-base dark:text-indigo-100">
+                                                <BookOpen className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
                                                 参考にした言霊
                                               </CardTitle>
                                             </CardHeader>
                                             <CardContent>
                                               <div className="space-y-3">
                                                 {aiFortune.kotodama.map((k: any, index: number) => (
-                                                  <div key={index} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-indigo-100">
-                                                    <span className="font-semibold text-indigo-700 text-sm">「{k.phrase_jp}」</span>
+                                                  <div key={index} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-800">
+                                                    <span className="font-semibold text-indigo-700 text-sm dark:text-indigo-100">「{k.phrase_jp}」</span>
                                                     {k.advice_text && (
-                                                      <span className="text-indigo-600 text-sm flex-1">- {k.advice_text}</span>
+                                                      <span className="text-indigo-600 text-sm flex-1 dark:text-indigo-200">- {k.advice_text}</span>
                                                     )}
                                                   </div>
                                                 ))}
@@ -2041,7 +2041,7 @@ export default function ClientPage() {
                                           <div className="text-center pt-2">
                                             <Button 
                                               variant="outline"
-                                              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                                              className="border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-200 dark:hover:bg-purple-950/40"
                                               onClick={async () => {
                                                 if (results && advancedResults?.gogyoResult) {
                                                   await generateAiFortune(

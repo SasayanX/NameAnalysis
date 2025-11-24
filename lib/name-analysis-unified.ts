@@ -37,6 +37,7 @@ strokeCountData.set("槻", 15)
 strokeCountData.set("ョ", 3)
 strokeCountData.set("整", 16)
 strokeCountData.set("院", 15) // 院: 15画（csv-imported-manus.tsとcommon-kanji.tsでは10画だが、15画が正しい）
+strokeCountData.set("徳", 15) // 徳: 15画（旧字体の德と同じ画数に合わせる）
 
 /**
  * 統一された姓名判断計算クラス
