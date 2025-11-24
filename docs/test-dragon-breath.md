@@ -23,7 +23,8 @@ fetch('/api/dragon-breath/add-test', {
   body: JSON.stringify({
     userId: userId,
     count: 5,        // 追加する個数（デフォルト: 1）
-    plan: 'premium'  // プラン: 'free', 'basic', 'premium'（デフォルト: 'premium'）
+    plan: 'premium',  // プラン: 'free', 'basic', 'premium'（デフォルト: 'premium'）
+    testKey: 'test-key-12345'  // テスト用キー（必須）
   })
 })
 .then(res => res.json())
@@ -45,13 +46,16 @@ curl -X POST http://localhost:3000/api/dragon-breath/add-test \
   -d '{
     "userId": "YOUR_USER_ID",
     "count": 5,
-    "plan": "premium"
+    "plan": "premium",
+    "testKey": "test-key-12345"
   }'
 ```
 
 ### 3. パラメータ
 
 - `userId` (必須): ユーザーID
+- `testKey` (必須): テスト用キー（デフォルト: 'test-key-12345'）
+  - 環境変数 `TEST_DRAGON_BREATH_KEY` が設定されている場合は、その値を使用
 - `count` (オプション): 追加する個数（デフォルト: 1）
 - `plan` (オプション): プラン（'free', 'basic', 'premium'、デフォルト: 'premium'）
   - `free`: 1回分
@@ -75,7 +79,8 @@ fetch('/api/dragon-breath/add-test', {
   body: JSON.stringify({
     userId: localStorage.getItem('userId'),
     count: 10,
-    plan: 'premium'
+    plan: 'premium',
+    testKey: 'test-key-12345'
   })
 })
 .then(res => res.json())
@@ -94,7 +99,8 @@ fetch('/api/dragon-breath/add-test', {
   body: JSON.stringify({
     userId: localStorage.getItem('userId'),
     count: 3,
-    plan: 'free'
+    plan: 'free',
+    testKey: 'test-key-12345'
   })
 })
 .then(res => res.json())
