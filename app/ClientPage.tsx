@@ -1183,7 +1183,7 @@ export default function ClientPage() {
     } catch (e) {
       window.location.href = "/pricing"
     }
-  }, [subscription])
+  }, [subscription]);
 
   // DailyFortuneCardに渡すpropsを安定化
   const dailyFortuneProps = useMemo(() => {
