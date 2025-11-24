@@ -2137,6 +2137,18 @@ export default function ClientPage() {
                                           </Card>
                                         )}
 
+                                        {/* シェアボタン */}
+                                        {aiFortune && aiFortune.success && aiFortune.aiFortune && (
+                                          <div className="mt-6">
+                                            <ShareButtons
+                                              shareContent={generateAiFortuneShareContent(aiFortune)}
+                                              onShare={(platform) => {
+                                                console.log(`AI鑑定結果を${platform}にシェアしました`)
+                                              }}
+                                            />
+                                          </div>
+                                        )}
+
                                         {/* 再分析ボタン（プレミアムプランのみ） */}
                                         {currentPlan === "premium" && (
                                           <div className="text-center pt-2">
