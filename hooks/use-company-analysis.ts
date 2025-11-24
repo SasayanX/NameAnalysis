@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { analyzeCompanyName } from "@/lib/company-name-analyzer"
-import { useFortuneData } from "@/contexts/fortune-data-context"
-import { simpleCache } from "@/lib/simple-cache"
+import { analyzeCompanyName as analyzeCompanyNameFromAnalysis } from "@/lib/company-name-analysis"
+import type { UsageTracker } from "@/lib/usage-tracker"
 
 export interface CompanyAnalysisState {
   companyName: string
@@ -12,7 +11,14 @@ export interface CompanyAnalysisState {
   error: string | null
 }
 
-export function useCompanyAnalysis() {
+export interface UseCompanyAnalysisOptions {
+  usageTracker?: UsageTracker
+  onUsageUpdate?: (usageStatus: any) => void
+}
+
+export function useCompanyAnalysis(options?: UseCompanyAnalysisOptions) {
+  const { usageTracker, onUsageUpdate } = options || {}
+  
   const [state, setState] = useState<CompanyAnalysisState>({
     companyName: "",
     results: null,
@@ -20,47 +26,36 @@ export function useCompanyAnalysis() {
     error: null,
   })
 
-  const { fortuneData } = useFortuneData()
-
   // メモ化された更新関数
   const updateCompanyName = useCallback((name: string) => {
     setState((prev) => ({ ...prev, companyName: name, error: null }))
   }, [])
 
-  // キャッシュキーの生成をメモ化
-  const cacheKey = useMemo(() => {
-    return `company-${state.companyName}`
-  }, [state.companyName])
-
-  // メモ化された分析関数
-  const analyzeCompany = useCallback(async () => {
-    if (!state.companyName.trim()) {
-      setState((prev) => ({ ...prev, error: "社名・商品名を入力してください" }))
-      return
-    }
-
-    // キャッシュから結果を取得
-    const cachedResult = simpleCache.get(cacheKey)
-    if (cachedResult) {
-      setState((prev) => ({ ...prev, results: cachedResult }))
-      return
-    }
-
-    setState((prev) => ({ ...prev, isLoading: true, error: null }))
-
+  // メモ化された分析関数（ClientPage.tsxの実装に合わせる）
+  const analyzeCompany = useCallback(() => {
     try {
-      const analysisResults = analyzeCompanyName(state.companyName, fortuneData)
-      setState((prev) => ({ ...prev, results: analysisResults }))
+      if (!state.companyName.trim()) {
+        setState((prev) => ({ ...prev, error: "社名・商品名を入力してください" }))
+        return
+      }
 
-      // 結果をキャッシュに保存
-      simpleCache.set(cacheKey, analysisResults)
+      // 社名鑑定専用の計算を実行（company-name-analysisを使用）
+      const companyResult = analyzeCompanyNameFromAnalysis(state.companyName)
+      
+      console.log("社名分析結果:", companyResult)
+      setState((prev) => ({ ...prev, results: companyResult, error: null }))
+
+      // usageTrackerとの統合
+      if (usageTracker && usageTracker.incrementUsage("companyAnalysis")) {
+        if (onUsageUpdate) {
+          onUsageUpdate(usageTracker.getUsageStatus())
+        }
+      }
     } catch (error) {
-      console.error("Error during company analysis:", error)
+      console.error("Error in company analysis:", error)
       setState((prev) => ({ ...prev, error: "分析中にエラーが発生しました" }))
-    } finally {
-      setState((prev) => ({ ...prev, isLoading: false }))
     }
-  }, [state.companyName, fortuneData, cacheKey])
+  }, [state.companyName, usageTracker, onUsageUpdate])
 
   // メモ化された計算値
   const hasValidInput = useMemo(() => {

@@ -17,7 +17,7 @@ export interface UIState {
   showPremiumMessage: boolean
   showDetailedMessage: boolean
   selectedStarType: StarPersonType
-  calculatedStarType: string
+  calculatedStarType: StarPersonType | null
   tabsKey: number
   forceUpdateKey: number
 }
@@ -31,8 +31,8 @@ export function useUIState() {
     showBirthdateInput: false,
     showPremiumMessage: false,
     showDetailedMessage: false,
-    selectedStarType: "木星人-",
-    calculatedStarType: "",
+    selectedStarType: "水星人+",
+    calculatedStarType: null,
     tabsKey: Date.now(),
     forceUpdateKey: 0,
   })

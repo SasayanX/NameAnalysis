@@ -28,12 +28,12 @@ export function SixStarChart({ birthStar, isPremium = false }: SixStarChartProps
           </div>
           <Badge
             className={`
-            ${birthStar.star === "水星" ? "bg-blue-100 text-blue-800" : ""}
-            ${birthStar.star === "金星" ? "bg-yellow-100 text-yellow-800" : ""}
-            ${birthStar.star === "木星" ? "bg-green-100 text-green-800" : ""}
-            ${birthStar.star === "火星" ? "bg-red-100 text-red-800" : ""}
-            ${birthStar.star === "土星" ? "bg-amber-100 text-amber-800" : ""}
-            ${birthStar.star === "月星" ? "bg-purple-100 text-purple-800" : ""}
+            ${birthStar.star === "水星" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" : ""}
+            ${birthStar.star === "金星" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" : ""}
+            ${birthStar.star === "木星" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : ""}
+            ${birthStar.star === "火星" ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" : ""}
+            ${birthStar.star === "土星" ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" : ""}
+            ${birthStar.star === "月星" ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" : ""}
           `}
           >
             {starData.element}の気
@@ -49,9 +49,9 @@ export function SixStarChart({ birthStar, isPremium = false }: SixStarChartProps
           </TabsList>
 
           <TabsContent value="personality" className="space-y-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p>{starData.personality}</p>
-              <p className="mt-2 text-sm text-gray-600">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-gray-900 dark:text-gray-100">{starData.personality}</p>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 {birthStar.type === "+"
                   ? "プラスタイプは、より外向的で積極的な傾向があります。"
                   : "マイナスタイプは、より内向的で慎重な傾向があります。"}
@@ -59,23 +59,23 @@ export function SixStarChart({ birthStar, isPremium = false }: SixStarChartProps
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="p-3 bg-green-50 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-1">強み</h4>
-                <p className="text-sm">{starData.strength}</p>
+              <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
+                <h4 className="font-medium text-green-800 dark:text-green-200 mb-1">強み</h4>
+                <p className="text-sm text-gray-900 dark:text-gray-100">{starData.strength}</p>
               </div>
-              <div className="p-3 bg-amber-50 rounded-lg">
-                <h4 className="font-medium text-amber-800 mb-1">弱み</h4>
-                <p className="text-sm">{starData.weakness}</p>
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-1">弱み</h4>
+                <p className="text-sm text-gray-900 dark:text-gray-100">{starData.weakness}</p>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="strengths">
             <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">あなたの強み</h4>
-                <p>{starData.strength}</p>
-                <p className="mt-2 text-sm text-gray-600">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <h4 className="font-medium mb-2 text-gray-900 dark:text-gray-100">あなたの強み</h4>
+                <p className="text-gray-900 dark:text-gray-100">{starData.strength}</p>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                   {birthStar.star}人{birthStar.type}の特徴:
                   {birthStar.type === "+"
                     ? " 行動力があり、自分の意見をはっきり表現できます。"
@@ -84,9 +84,9 @@ export function SixStarChart({ birthStar, isPremium = false }: SixStarChartProps
               </div>
 
               {isPremium ? (
-                <div className="p-4 bg-indigo-50 rounded-lg">
-                  <h4 className="font-medium text-indigo-800 mb-2">強みを活かすアドバイス</h4>
-                  <p className="text-sm">
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                  <h4 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2">強みを活かすアドバイス</h4>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
                     {birthStar.star}人{birthStar.type}の特性を活かすには、{starData.element}
                     の気を高める活動が効果的です。
                     {birthStar.star === "水星" && "知的好奇心を満たす学びの時間を作りましょう。"}
@@ -101,8 +101,8 @@ export function SixStarChart({ birthStar, isPremium = false }: SixStarChartProps
                   </p>
                 </div>
               ) : (
-                <div className="p-4 bg-amber-50 rounded-lg text-center">
-                  <p className="text-sm font-medium text-amber-800">
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-lg text-center border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                     プレミアム会員になると、強みを活かすための詳細なアドバイスが見られます
                   </p>
                 </div>
@@ -112,21 +112,21 @@ export function SixStarChart({ birthStar, isPremium = false }: SixStarChartProps
 
           <TabsContent value="health">
             <div className="space-y-4">
-              <div className="p-4 bg-red-50 rounded-lg">
-                <h4 className="font-medium text-red-800 mb-2">健康リスク</h4>
-                <p>{starData.healthRisk}</p>
-                <p className="mt-2 text-sm text-gray-600">
+              <div className="p-4 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-200 dark:border-red-800">
+                <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">健康リスク</h4>
+                <p className="text-gray-900 dark:text-gray-100">{starData.healthRisk}</p>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                   {birthStar.type === "+"
                     ? "プラスタイプは過労に注意が必要です。"
                     : "マイナスタイプはストレスの蓄積に注意が必要です。"}
                 </p>
               </div>
 
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-2">ラッキーカラー</h4>
+              <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
+                <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">ラッキーカラー</h4>
                 <div className="flex gap-2">
                   {starData.luckyColor.split("、").map((color, index) => (
-                    <Badge key={index} variant="outline" className="bg-white">
+                    <Badge key={index} variant="outline" className="bg-white dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
                       {color}
                     </Badge>
                   ))}
@@ -134,8 +134,8 @@ export function SixStarChart({ birthStar, isPremium = false }: SixStarChartProps
               </div>
 
               {!isPremium && (
-                <div className="p-4 bg-amber-50 rounded-lg text-center">
-                  <p className="text-sm font-medium text-amber-800">
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-lg text-center border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                     プレミアム会員になると、週間健康予報や体調管理アドバイスが見られます
                   </p>
                 </div>

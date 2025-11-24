@@ -48,6 +48,8 @@ import { normalizeStarPersonType, calculateStarPersonFromBirthdate } from "@/lib
 import { UsageTracker } from "@/lib/usage-tracker"
 import { calculateNumerology } from "@/lib/numerology"
 import { calculateGogyo } from "@/lib/advanced-gogyo"
+import { useUIState } from "@/hooks/use-ui-state"
+import { useCompanyAnalysis } from "@/hooks/use-company-analysis"
 
 // メモ化されたコンポーネント
 const MemoizedVerticalNameDisplay = React.memo(VerticalNameDisplay)
@@ -81,16 +83,21 @@ export default function ClientPage() {
   const [aiFortuneUsage, setAiFortuneUsage] = useState<{ count: number; limit: number }>({ count: 0, limit: 1 })
   const [availableDragonBreathItems, setAvailableDragonBreathItems] = useState<any[]>([])
 
-  const [companyName, setCompanyName] = useState("")
-  const [companyResults, setCompanyResults] = useState<any>(null)
-
-  const [activeSection, setActiveSection] = useState<"fortune" | "compatibility" | "baby-naming">("fortune")
-  const [nameType, setNameType] = useState<"person" | "company">("person")
-  const [activeTab, setActiveTab] = useState("simple")
-  const [selectedStarType, setSelectedStarType] = useState<StarPersonType>("水星人+")
-  const [calculatedStarType, setCalculatedStarType] = useState<StarPersonType | null>(null)
-  const [forceUpdateKey, setForceUpdateKey] = useState(0)
-  const [tabsKey, setTabsKey] = useState(0)
+  // UI状態管理（useUIStateフックを使用）
+  const uiState = useUIState()
+  const {
+    activeSection,
+    nameType,
+    activeTab,
+    selectedStarType,
+    calculatedStarType,
+    forceUpdateKey,
+    tabsKey,
+    updateState,
+    handleStarTypeChange,
+    forceUpdate,
+    getButtonClass,
+  } = uiState
 
   const resultsRef = useRef<HTMLDivElement>(null)
 
@@ -118,6 +125,12 @@ export default function ClientPage() {
         canUseFeature: () => ({ allowed: true, remaining: -1 }),
       }
     }
+  })
+
+  // 会社名分析（useCompanyAnalysisフックを使用）
+  const companyAnalysis = useCompanyAnalysis({
+    usageTracker,
+    onUsageUpdate: setUsageStatus,
   })
 
   // プラン状態をusageStatusから取得（確実に初期値を設定）
@@ -951,23 +964,6 @@ export default function ClientPage() {
     }
   }, [results, aiFortune])
 
-  const handleCompanyAnalysis = useCallback(() => {
-    try {
-      // 社名鑑定専用の計算を実行
-      const { analyzeCompanyName } = require("@/lib/company-name-analysis")
-      
-      const companyResult = analyzeCompanyName(companyName)
-      
-      console.log("社名分析結果:", companyResult)
-      setCompanyResults(companyResult)
-
-      if (usageTracker.incrementUsage("companyAnalysis")) {
-        setUsageStatus(usageTracker.getUsageStatus())
-      }
-    } catch (error) {
-      console.error("Error in company analysis:", error)
-    }
-  }, [companyName, usageTracker])
 
   const handlePdfExport = useCallback(
     (contentId: string, fileName: string) => {
@@ -1001,9 +997,6 @@ export default function ClientPage() {
     setTrialDaysRemaining(3)
   }, [])
 
-  const getButtonClass = useCallback((isActive: boolean) => {
-    return isActive ? "bg-primary text-primary-foreground" : "bg-background text-foreground hover:bg-muted"
-  }, [])
 
   // 使用状況の状態管理（Hydrationエラー対策）
   const [todayUsage, setTodayUsage] = useState(DEFAULT_USAGE)
@@ -1039,10 +1032,9 @@ export default function ClientPage() {
           return
         }
 
-        setSelectedStarType(starType)
-        setCalculatedStarType(starType)
-        setForceUpdateKey((prev) => prev + 1)
-        setTabsKey((prev) => prev + 1)
+        updateState("selectedStarType", starType)
+        updateState("calculatedStarType", starType)
+        forceUpdate()
       }
     } catch (error) {
       console.error("Error processing sixStar data:", error)
@@ -1056,10 +1048,9 @@ export default function ClientPage() {
         const dateObject = new Date(birthdate)
         if (!isNaN(dateObject.getTime())) {
           const calculatedStarType = calculateStarPersonFromBirthdate(dateObject)
-          setSelectedStarType(calculatedStarType)
-          setCalculatedStarType(calculatedStarType)
-          setForceUpdateKey((prev) => prev + 1)
-          setTabsKey((prev) => prev + 1)
+          updateState("selectedStarType", calculatedStarType)
+          updateState("calculatedStarType", calculatedStarType)
+          forceUpdate()
         }
       }
     } catch (error) {
@@ -1126,7 +1117,7 @@ export default function ClientPage() {
     (tabValue: string) => {
       // 詳細鑑定タブは無料プランでもアクセス可能（プレビュー版表示）
       // その他のタブは通常通り切り替え
-      setActiveTab(tabValue)
+      updateState("activeTab", tabValue)
     },
     [],
   )
@@ -1318,22 +1309,22 @@ export default function ClientPage() {
             <Button
               variant="ghost"
               className={getButtonClass(activeSection === "fortune")}
-              onClick={() => setActiveSection("fortune")}
+              onClick={() => updateState("activeSection", "fortune")}
             >
               姓名判断
             </Button>
             <Button
               variant="ghost"
-              className={getButtonClass(activeSection === "compatibility")}
-              onClick={() => setActiveSection("compatibility")}
+              className={getButtonClass(activeSection === "compatibility", "px-6 py-2 rounded-none")}
+              onClick={() => updateState("activeSection", "compatibility")}
             >
               相性診断
               {currentPlan === "free" && <LockIcon className="h-3 w-3 ml-1" />}
             </Button>
             <Button
               variant="ghost"
-              className={getButtonClass(activeSection === "baby-naming")}
-              onClick={() => setActiveSection("baby-naming")}
+              className={getButtonClass(activeSection === "baby-naming", "px-6 py-2 rounded-none")}
+              onClick={() => updateState("activeSection", "baby-naming")}
             >
               <Baby className="h-4 w-4 mr-2" />
               赤ちゃん名付け
@@ -1487,7 +1478,7 @@ export default function ClientPage() {
                             <CardContent>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* 格付け・カード発行 */}
-                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ranking")}>
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateState("activeTab", "ranking")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
@@ -1504,7 +1495,7 @@ export default function ClientPage() {
                                 </Card>
 
                                 {/* AI深層言霊鑑定 */}
-                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ai-personality")}>
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateState("activeTab", "ai-personality")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
@@ -1521,7 +1512,7 @@ export default function ClientPage() {
                                 </Card>
 
                                 {/* 運気運行表 */}
-                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("fortune-flow")}>
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateState("activeTab", "fortune-flow")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
@@ -1537,7 +1528,7 @@ export default function ClientPage() {
                                 </Card>
 
                                 {/* 数秘術 */}
-                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("numerology")}>
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateState("activeTab", "numerology")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
@@ -1553,7 +1544,7 @@ export default function ClientPage() {
                                 </Card>
 
                                 {/* AI相性診断 */}
-                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("ai-compatibility")}>
+                                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateState("activeTab", "ai-compatibility")}>
                                   <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                       <div>
@@ -2357,8 +2348,8 @@ export default function ClientPage() {
                       </Card>
                     </div>
                   )
-                ) : companyResults ? (
-                  <CompanyNameResult result={companyResults} companyName={companyName} />
+                ) : companyAnalysis.results ? (
+                  <CompanyNameResult result={companyAnalysis.results} companyName={companyAnalysis.companyName} />
                 ) : (
                   // 会社名分析の説明
                   <Card className="border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
@@ -2402,16 +2393,16 @@ export default function ClientPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={getButtonClass(nameType === "person")}
-                        onClick={() => setNameType("person")}
+                        className={getButtonClass(nameType === "person", "px-6 py-2 rounded-none")}
+                        onClick={() => updateState("nameType", "person")}
                       >
                         個人名
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={getButtonClass(nameType === "company")}
-                        onClick={() => setNameType("company")}
+                        className={getButtonClass(nameType === "company", "px-6 py-2 rounded-none")}
+                        onClick={() => updateState("nameType", "company")}
                       >
                         会社名
                       </Button>
@@ -2485,15 +2476,15 @@ export default function ClientPage() {
                         <Input
                           id="companyName"
                           placeholder="例：トヨタ自動車"
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
+                          value={companyAnalysis.companyName}
+                          onChange={(e) => companyAnalysis.updateCompanyName(e.target.value)}
                         />
                         <p className="text-xs text-muted-foreground mt-1">
                           「株式会社」「有限会社」などの法人格は除いて入力してください
                         </p>
                       </div>
 
-                      <Button onClick={handleCompanyAnalysis} className="w-full" disabled={!companyName}>
+                      <Button onClick={companyAnalysis.analyzeCompany} className="w-full" disabled={!companyAnalysis.hasValidInput}>
                         会社名鑑定を実行
                       </Button>
                     </>
@@ -2514,13 +2505,13 @@ export default function ClientPage() {
               )}
 
               {/* 社名鑑定の縦書き表示 */}
-              {companyName && nameType === "company" && (
+              {companyAnalysis.companyName && nameType === "company" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>縦書き表示</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <MemoizedVerticalNameDisplay name={companyName} />
+                    <MemoizedVerticalNameDisplay name={companyAnalysis.companyName} />
                   </CardContent>
                 </Card>
               )}

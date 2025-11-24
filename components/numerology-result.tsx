@@ -20,7 +20,7 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
       description: "人生のテーマや方向性",
       interpretation: result.interpretations.lifePath,
       icon: Star,
-      color: "bg-purple-100 text-purple-800",
+      color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
       available: true, // 無料プランでも利用可能
     },
     {
@@ -29,7 +29,7 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
       description: "社会的役割や使命",
       interpretation: result.interpretations.destiny,
       icon: Calculator,
-      color: "bg-blue-100 text-blue-800",
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
       available: premiumLevel >= 1, // ベーシック以上
     },
     {
@@ -38,7 +38,7 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
       description: "内面的な欲求や本質",
       interpretation: result.interpretations.soul,
       icon: Heart,
-      color: "bg-red-100 text-red-800",
+      color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       available: premiumLevel >= 1, // ベーシック以上
     },
     {
@@ -47,7 +47,7 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
       description: "外面的な印象や第一印象",
       interpretation: result.interpretations.personality,
       icon: Eye,
-      color: "bg-green-100 text-green-800",
+      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       available: premiumLevel >= 1, // ベーシック以上
     },
     {
@@ -56,7 +56,7 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
       description: "成熟期の特徴",
       interpretation: result.interpretations.maturity,
       icon: Users,
-      color: "bg-amber-100 text-amber-800",
+      color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
       available: premiumLevel >= 1, // ベーシック以上
     },
     {
@@ -65,7 +65,7 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
       description: "生まれ持った得意分野",
       interpretation: result.interpretations.birthday,
       icon: Calendar,
-      color: "bg-indigo-100 text-indigo-800",
+      color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
       available: premiumLevel >= 1, // ベーシック以上
     },
   ]
@@ -90,23 +90,23 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
 
           if (!item.available) {
             return (
-              <Card key={index} className="opacity-60 bg-gray-50">
+              <Card key={index} className="opacity-60 bg-gray-50 dark:bg-gray-800">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Icon className="h-5 w-5 text-gray-400" />
-                      <CardTitle className="text-lg text-gray-500">{item.title}</CardTitle>
+                      <Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <CardTitle className="text-lg text-gray-500 dark:text-gray-400">{item.title}</CardTitle>
                     </div>
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                       {premiumLevel === 0 ? "ベーシック限定" : "プレミアム限定"}
                     </Badge>
                   </div>
-                  <CardDescription className="text-gray-400">{item.description}</CardDescription>
+                  <CardDescription className="text-gray-400 dark:text-gray-500">{item.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-8">
-                    <div className="text-4xl font-bold text-gray-300 mb-2">?</div>
-                    <p className="text-sm text-gray-500">
+                    <div className="text-4xl font-bold text-gray-300 dark:text-gray-600 mb-2">?</div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {premiumLevel === 0
                         ? "ベーシックプラン以上で6つのマストナンバーすべてをご利用いただけます"
                         : "プレミアムプランで全ての数秘術分析をご利用いただけます"}
@@ -132,15 +132,15 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
               <CardContent>
                 <div className="space-y-4">
                   <div className="text-center">
-                    <div className="text-6xl font-bold text-gray-800 mb-2">{item.number}</div>
+                    <div className="text-6xl font-bold text-gray-800 dark:text-white mb-2">{item.number}</div>
                     {(item.number === 11 || item.number === 22 || item.number === 33) && (
-                      <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700">
                         マスターナンバー
                       </Badge>
                     )}
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm leading-relaxed">{item.interpretation}</p>
+                  <div className="bg-gray-50 dark:bg-gray-700/90 border border-gray-200 dark:border-gray-500 p-4 rounded-lg">
+                    <p className="text-sm leading-relaxed text-gray-900 dark:text-gray-50 font-semibold">{item.interpretation}</p>
                   </div>
                 </div>
               </CardContent>
@@ -150,39 +150,39 @@ export function NumerologyResultComponent({ result, name, isPremium, premiumLeve
       </div>
 
       {premiumLevel === 0 && (
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 dark:from-amber-900 dark:to-orange-900 dark:border-amber-700">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <h3 className="text-lg font-bold text-amber-800">数秘術の全機能を解放</h3>
-              <p className="text-amber-700">
+              <h3 className="text-lg font-bold text-amber-800 dark:text-amber-200">数秘術の全機能を解放</h3>
+              <p className="text-amber-700 dark:text-amber-300">
                 ベーシックプラン以上で、6つのマストナンバーすべてを詳細に分析できます。
                 あなたの使命、内面の欲求、外面的印象、成熟期の特徴、生まれ持った才能まで完全解析！
               </p>
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-amber-200 mt-4">
-                <h4 className="font-bold text-amber-800 mb-2">6つのマストナンバー</h4>
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-amber-200 dark:border-amber-700 mt-4">
+                <h4 className="font-bold text-amber-800 dark:text-amber-200 mb-2">6つのマストナンバー</h4>
                 <ul className="text-left text-sm space-y-1">
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-2">✓</span> ライフパス数：人生のテーマ（無料）
+                  <li className="flex items-start text-gray-900 dark:text-gray-100">
+                    <span className="text-amber-500 dark:text-amber-400 mr-2">✓</span> ライフパス数：人生のテーマ（無料）
                   </li>
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-2">✓</span> ディスティニー数：社会的使命（有料）
+                  <li className="flex items-start text-gray-900 dark:text-gray-100">
+                    <span className="text-amber-500 dark:text-amber-400 mr-2">✓</span> ディスティニー数：社会的使命（有料）
                   </li>
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-2">✓</span> ソウル数：内面的欲求（有料）
+                  <li className="flex items-start text-gray-900 dark:text-gray-100">
+                    <span className="text-amber-500 dark:text-amber-400 mr-2">✓</span> ソウル数：内面的欲求（有料）
                   </li>
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-2">✓</span> パーソナリティ数：外面的印象（有料）
+                  <li className="flex items-start text-gray-900 dark:text-gray-100">
+                    <span className="text-amber-500 dark:text-amber-400 mr-2">✓</span> パーソナリティ数：外面的印象（有料）
                   </li>
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-2">✓</span> マチュリティ数：成熟期の特徴（有料）
+                  <li className="flex items-start text-gray-900 dark:text-gray-100">
+                    <span className="text-amber-500 dark:text-amber-400 mr-2">✓</span> マチュリティ数：成熟期の特徴（有料）
                   </li>
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-2">✓</span> バースデー数：生まれ持った才能（有料）
+                  <li className="flex items-start text-gray-900 dark:text-gray-100">
+                    <span className="text-amber-500 dark:text-amber-400 mr-2">✓</span> バースデー数：生まれ持った才能（有料）
                   </li>
                 </ul>
               </div>
               <div className="flex justify-center">
-                <Badge className="bg-amber-600 text-white px-4 py-2">ベーシックプラン 330円/月〜</Badge>
+                <Badge className="bg-amber-600 text-white px-4 py-2 dark:bg-amber-700">ベーシックプラン 330円/月〜</Badge>
               </div>
             </div>
           </CardContent>
