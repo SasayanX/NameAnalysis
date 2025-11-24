@@ -52,6 +52,7 @@ import { useUIState } from "@/hooks/use-ui-state"
 import { useCompanyAnalysis } from "@/hooks/use-company-analysis"
 import { useAiFortune } from "@/hooks/use-ai-fortune"
 import { useDragonBreath } from "@/hooks/use-dragon-breath"
+import { useSubscriptionSync } from "@/hooks/use-subscription-sync"
 
 // メモ化されたコンポーネント
 const MemoizedVerticalNameDisplay = React.memo(VerticalNameDisplay)
@@ -147,117 +148,16 @@ export default function ClientPage() {
   // クライアントサイドでマウントされたかどうか（ハイドレーションエラー回避用）
   const [mounted, setMounted] = useState(false)
 
-  // ページ読み込み時にサブスクリプション状態を同期
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    
-    const syncSubscription = async () => {
-      try {
-        // TWA環境の検出
-        const isTWA = typeof navigator !== "undefined" && 
-          (navigator.userAgent?.includes("twa") || 
-           navigator.userAgent?.includes("androidbrowserhelper") ||
-           (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
-        
-        if (isTWA) {
-          console.log("[TWA] 🔄 サブスクリプション同期を開始します...")
-          console.log("[TWA] localStorage確認:", {
-            customerEmail: localStorage.getItem("customerEmail"),
-            userId: localStorage.getItem("userId"),
-          })
-        }
-        
-        const subscriptionManager = SubscriptionManager.getInstance()
-        
-        // 同期前に少し待機（localStorageの保存が完了するのを待つ）
-        // TWA環境ではより長く待機（認証情報の保存が完了するのを待つ）
-        const waitTime = isTWA ? 800 : 300
-        await new Promise(resolve => setTimeout(resolve, waitTime))
-        
-        // 認証情報を再確認（localStorageから直接取得）
-        const customerEmail = localStorage.getItem("customerEmail")
-        const userId = localStorage.getItem("userId")
-        if (isTWA) {
-          console.log("[TWA] 同期前の認証情報確認:", {
-            customerEmail: customerEmail ? `${customerEmail.substring(0, 3)}***` : null,
-            userId: userId ? `${userId.substring(0, 8)}***` : null,
-          })
-        }
-        
-        if (!userId && !customerEmail) {
-          console.warn("[TWA] ⚠️ 認証情報が見つかりません。ログインが必要です。")
-          // 認証情報がない場合は、freeプランのままなので同期完了として扱う
-          setSubscriptionSynced(true)
-          return
-        }
-        
-        await subscriptionManager.syncSubscriptionFromServer()
-        
-        // 同期後の状態を確認
-        const currentPlan = subscriptionManager.getCurrentPlan()
-        const isActive = subscriptionManager.isSubscriptionActive()
-        
-        console.log("✅ ページ読み込み時: サブスクリプション状態を同期しました", {
-          plan: currentPlan.id,
-          isActive,
-        })
-        
-        // usageStatusを再取得して更新（プラン変更を反映）
-        const updatedUsageStatus = usageTracker.getUsageStatus()
-        setUsageStatus(updatedUsageStatus)
-        setCurrentPlan(updatedUsageStatus.plan as "free" | "basic" | "premium")
-        setIsInTrial(updatedUsageStatus.isInTrial || false)
-        setTrialDaysRemaining(updatedUsageStatus.trialDaysRemaining || 0)
-        setSubscriptionSynced(true) // 同期完了フラグを設定
-        
-        console.log("✅ usageStatusを更新しました:", {
-          plan: updatedUsageStatus.plan,
-          isInTrial: updatedUsageStatus.isInTrial,
-        })
-        
-        if (isTWA) {
-          console.log("[TWA] ✅ 同期完了:", {
-            plan: currentPlan.id,
-            isActive,
-            subscription: subscriptionManager.getSubscriptionInfo(),
-            updatedPlan: updatedUsageStatus.plan,
-          })
-          
-          // プランが有効になっていない場合の警告
-          if (!isActive && currentPlan.id !== "free") {
-            console.warn("[TWA] ⚠️ プランが有効になっていません:", {
-              plan: currentPlan.id,
-              isActive,
-              subscription: subscriptionManager.getSubscriptionInfo(),
-            })
-          }
-        }
-      } catch (error) {
-        console.error("❌ ページ読み込み時: サブスクリプション状態の同期エラー:", error)
-        // エラーが発生した場合でも、同期試行は完了したものとして扱う
-        setSubscriptionSynced(true)
-        
-        // TWA環境でのエラー詳細
-        const isTWA = typeof navigator !== "undefined" && 
-          (navigator.userAgent?.includes("twa") || 
-           navigator.userAgent?.includes("androidbrowserhelper") ||
-           (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches))
-        
-        if (isTWA && error instanceof Error) {
-          console.error("[TWA] ❌ 同期エラー詳細:", {
-            message: error.message,
-            stack: error.stack,
-            localStorage: {
-              customerEmail: localStorage.getItem("customerEmail"),
-              userId: localStorage.getItem("userId"),
-            },
-          })
-        }
-      }
-    }
-    
-    syncSubscription()
-  }, [])
+  // サブスクリプション同期（useSubscriptionSyncフックを使用）
+  const { isSynced: subscriptionSynced } = useSubscriptionSync({
+    usageTracker,
+    onUsageStatusUpdate: setUsageStatus,
+    onPlanUpdate: setCurrentPlan,
+    onTrialUpdate: (isInTrial, trialDaysRemaining) => {
+      setIsInTrial(isInTrial)
+      setTrialDaysRemaining(trialDaysRemaining)
+    },
+  })
 
   // URLパラメータでプレミアムモードを強制（開発環境・スクリーンショット用）
   // 本番環境では無効化（セキュリティのため）
@@ -431,9 +331,6 @@ export default function ClientPage() {
       window.location.reload()
     }
   }, [])
-
-  // サブスクリプション同期完了フラグ
-  const [subscriptionSynced, setSubscriptionSynced] = useState(false)
 
   // クライアントサイドでマウント済みフラグを設定
   useEffect(() => {
