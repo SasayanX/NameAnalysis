@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     title: "天格が吉数にならない苗字のとき、どう考える？",
     description: "姓名判断で天格が凶数になってしまう苗字の場合の対処法を詳しく解説します。",
     type: "article",
-    url: "https://nameanalysis216.vercel.app/articles/tengaku-kyousuu-myouji",
+    url: "https://seimei.app/articles/tengaku-kyousuu-myouji",
     siteName: "まいにち姓名判断",
     locale: "ja_JP",
     publishedTime: "2025-06-26T00:00:00.000Z",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   alternates: {
-    canonical: "https://nameanalysis216.vercel.app/articles/tengaku-kyousuu-myouji",
+    canonical: "https://seimei.app/articles/tengaku-kyousuu-myouji",
   },
 }
 
@@ -48,10 +48,10 @@ const structuredData = {
     name: "まいにち姓名判断",
     logo: {
       "@type": "ImageObject",
-      url: "https://nameanalysis216.vercel.app/images/logo.png",
+      url: "https://seimei.app/images/logo.png",
     },
   },
-  image: "https://nameanalysis216.vercel.app/images/og-tengaku.png",
+  image: "https://seimei.app/images/og-tengaku.png",
   mainEntityOfPage: {
     "@type": "WebPage",
     "@id": "https://nameanalysis216.vercel.app/articles/tengaku-kyousuu-myouji",

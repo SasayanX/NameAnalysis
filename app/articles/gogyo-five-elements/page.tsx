@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "五行思想と姓名判断の深い関係",
     description: "木火土金水の五行がどのように姓名判断に影響するのか詳しく解説。",
     type: "article",
-    url: "https://nameanalysis216.vercel.app/articles/gogyo-five-elements",
+    url: "https://seimei.app/articles/gogyo-five-elements",
     siteName: "まいにち姓名判断",
     locale: "ja_JP",
   },

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "六星占術で読み解く運気の流れ",
     description: "生年月日から導き出される六星占術の運気パターンと、日々の運勢の活用法をご紹介。",
     type: "article",
-    url: "https://nameanalysis216.vercel.app/articles/rokuseisensei-fortune",
+    url: "https://seimei.app/articles/rokuseisensei-fortune",
     siteName: "まいにち姓名判断",
     locale: "ja_JP",
   },

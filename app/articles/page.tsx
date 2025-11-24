@@ -5,16 +5,22 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Star, TrendingUp, Heart, Users, Baby, Sparkles, Calculator } from "lucide-react"
 import { getLatestBlogArticles } from "@/lib/blog-article-generator"
+import { generateBreadcrumbStructuredData } from "@/lib/structured-data"
+import { seoConfig } from "@/lib/seo-config"
 
 export const metadata: Metadata = {
   title: "姓名判断コラム・記事一覧 | まいにち姓名判断",
   description:
     "姓名判断に関する専門記事やコラムを掲載。旧字体の重要性、五行相性診断、赤ちゃんの名前ランキングなど、実用的な情報をお届けします。",
   keywords: "姓名判断,コラム,記事,旧字体,五行,相性診断,赤ちゃん名前,ランキング",
+  alternates: {
+    canonical: `${seoConfig.siteUrl}/articles`,
+  },
   openGraph: {
     title: "姓名判断コラム・記事一覧 | まいにち姓名判断",
     description: "姓名判断の専門知識や実用的な情報を分かりやすく解説した記事一覧です。",
     type: "website",
+    url: `${seoConfig.siteUrl}/articles`,
   },
 }
 
@@ -137,8 +143,22 @@ export default async function ArticlesPage() {
     },
   ]
 
+  // パンくずリストの構造化データ
+  const breadcrumbItems = [
+    { name: "ホーム", url: `${seoConfig.siteUrl}/` },
+    { name: "記事一覧", url: `${seoConfig.siteUrl}/articles` },
+  ]
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData(breadcrumbItems)
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <>
+      {/* 構造化データ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbStructuredData) }}
+      />
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* ヘッダー */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -340,5 +360,6 @@ export default async function ArticlesPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   )
 }

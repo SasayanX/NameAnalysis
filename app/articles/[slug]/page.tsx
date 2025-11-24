@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, Twitter } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import Link from "next/link"
+import { generateBreadcrumbStructuredData, generateArticleStructuredData } from "@/lib/structured-data"
+import { seoConfig } from "@/lib/seo-config"
 
 function getScoreRank(score: number): string {
   if (score >= 90) return "S"
@@ -37,14 +39,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
+  const articleUrl = `${seoConfig.siteUrl}/articles/${encodeURIComponent(slug)}`
+
   return {
     title: `${article.title} | まいにち姓名判断`,
     description: article.description,
     keywords: article.keywords.join(", "),
+    alternates: {
+      canonical: articleUrl,
+    },
     openGraph: {
       title: article.title,
       description: article.description,
       type: "article",
+      url: articleUrl,
       publishedTime: article.publishedAt.toISOString(),
     },
     twitter: {
@@ -74,8 +82,37 @@ export default async function BlogArticlePage({ params }: PageProps) {
     day: "numeric",
   })
 
+  // パンくずリストの構造化データ
+  const breadcrumbItems = [
+    { name: "ホーム", url: `${seoConfig.siteUrl}/` },
+    { name: "記事一覧", url: `${seoConfig.siteUrl}/articles` },
+    { name: article.title, url: `${seoConfig.siteUrl}/articles/${encodeURIComponent(slug)}` },
+  ]
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData(breadcrumbItems)
+
+  // 記事の構造化データ
+  const articleUrl = `${seoConfig.siteUrl}/articles/${encodeURIComponent(slug)}`
+  const articleStructuredData = generateArticleStructuredData({
+    title: article.title,
+    description: article.description,
+    url: articleUrl,
+    publishedTime: article.publishedAt.toISOString(),
+    image: `/api/blog-articles/image?slug=${encodeURIComponent(slug)}`,
+  })
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <>
+      {/* 構造化データ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbStructuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleStructuredData) }}
+      />
+
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
       {/* パンくずリスト */}
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">ホーム</Link>
@@ -241,6 +278,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
         </Card>
       </div>
     </div>
+    </>
   )
 }
 

@@ -16,12 +16,12 @@ export const metadata: Metadata = {
     description:
       "2025年最新の赤ちゃん名前ランキングを姓名判断の視点で徹底解説。男の子・女の子別TOP10と画数・運勢分析で最適な名前選びをサポート。",
     type: "article",
-    url: "https://nameanalysis216.vercel.app/articles/2025-baby-names-ranking",
+    url: "https://seimei.app/articles/2025-baby-names-ranking",
     siteName: "まいにち姓名判断",
     locale: "ja_JP",
     images: [
       {
-        url: "https://nameanalysis216.vercel.app/images/2025-baby-names-og.png",
+        url: "https://seimei.app/images/2025-baby-names-og.png",
         width: 1200,
         height: 630,
         alt: "2025年赤ちゃん名前ランキング",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   alternates: {
-    canonical: "https://nameanalysis216.vercel.app/articles/2025-baby-names-ranking",
+    canonical: "https://seimei.app/articles/2025-baby-names-ranking",
   },
 }
 
