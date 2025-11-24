@@ -1191,8 +1191,8 @@ export default function ClientPage() {
       birthStar: sixStar || { star: "水星" as const, type: "+" as const },
       isPremium: currentPlan !== "free",
       premiumLevel: currentPlan === "premium" ? 3 : currentPlan === "basic" ? 1 : 0,
-    }
-  }, [currentPlan, sixStar])
+    };
+  }, [currentPlan, sixStar]);
 
   return (
     <>
@@ -1670,7 +1670,6 @@ export default function ClientPage() {
                                           </AlertDialogContent>
                                         </AlertDialog>
                                       </div>
-                                      {/* プレミアムプラン用の龍の息吹使用確認モーダル */}
                                       <AlertDialog open={showPremiumDragonBreathDialog} onOpenChange={setShowPremiumDragonBreathDialog}>
                                         <AlertDialogContent>
                                           <AlertDialogHeader>
