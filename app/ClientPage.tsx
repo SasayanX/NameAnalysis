@@ -567,7 +567,7 @@ export default function ClientPage() {
           .filter((detail: any) => detail.isDefault === true)
           .map((detail: any) => detail.character)
         
-        if (unknownKanji.length > 0) {
+        if (unknownKanji && unknownKanji.length > 0) {
           console.log(`📧 推測マーク検出: ${unknownKanji.length}文字 (${unknownKanji.join(', ')})`)
           // メール通知を送信（非同期、エラーは無視）
           fetch('/api/notify-unknown-strokes', {
@@ -653,6 +653,7 @@ export default function ClientPage() {
 
   // 確認ダイアログの状態
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showPremiumDragonBreathDialog, setShowPremiumDragonBreathDialog] = useState(false)
 
   // AI鑑定の使用回数と龍の息吹アイテムを取得
   useEffect(() => {
@@ -692,8 +693,8 @@ export default function ClientPage() {
     }
   }, [currentPlan])
 
-  // AI鑑定を依頼する関数
-  const generateAiFortune = useCallback(async (
+  // 実際のAI鑑定生成処理（使用回数チェックなし）
+  const executeAiFortuneGeneration = useCallback(async (
     nameAnalysisResult: any,
     gogyoResult?: any,
     birthdate?: string
@@ -704,103 +705,13 @@ export default function ClientPage() {
       return
     }
 
-    // 【重要】最新の使用回数を取得（姓名判断を繰り返す場合に備えて）
-    let currentUsage = aiFortuneUsage.count
-    let currentLimit = aiFortuneUsage.limit
-    try {
-      const usageResponse = await fetch(`/api/ai-fortune/usage?userId=${userId}&plan=${currentPlan}`)
-      const usageData = await usageResponse.json()
-      if (usageData.success) {
-        currentUsage = usageData.count
-        currentLimit = usageData.limit
-        setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
-        console.log("🔍 AI鑑定使用回数チェック:", { currentUsage, currentLimit, canUse: currentUsage < currentLimit })
-      }
-    } catch (error) {
-      console.error("Failed to fetch latest AI fortune usage:", error)
-      // エラー時は既存の状態を使用
-    }
-
-    // 無料・ベーシックプランは龍の息吹がないと使えない
-    if (currentPlan !== "premium") {
-      if (availableDragonBreathItems.length === 0) {
-        setAiFortune({
-          success: false,
-          error: "AI深層言霊鑑定はプレミアムプラン、または龍の息吹が必要です。",
-        })
-        return
-      }
-      // 龍の息吹を使用（プランはサーバー側でデータベースから取得）
-      const useResponse = await fetch("/api/dragon-breath/use", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0].id }),
-      })
-      const useResult = await useResponse.json()
-
-      if (!useResult.success) {
-        setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
-        return
-      }
-
-      // 使用成功したらアイテムリストを更新
-      setAvailableDragonBreathItems(useResult.remainingItems || [])
-      // 使用回数を更新（龍の息吹で追加された回数）
-      setAiFortuneUsage(prev => ({ 
-        ...prev, 
-        count: useResult.count || prev.count,
-        limit: useResult.limit || prev.limit
-      }))
-    } else {
-      // プレミアムプラン: 基本制限1回、龍の息吹で追加可能
-      // currentUsage >= currentLimit の場合は、使用回数が制限に達している
-      // ただし、currentUsage < currentLimit の場合はまだ使える
-      // 注意: countは使用済み回数、limitは制限回数なので、count < limitの時に使える
-      if (currentUsage >= currentLimit) {
-        // 龍の息吹アイテムがあるかチェック
-        if (availableDragonBreathItems.length > 0) {
-          // アイテムを使用（プランはサーバー側でデータベースから取得）
-          const useResponse = await fetch("/api/dragon-breath/use", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0].id }),
-          })
-          const useResult = await useResponse.json()
-
-          if (useResult.success) {
-            // 使用成功したらアイテムリストを更新
-            setAvailableDragonBreathItems(useResult.remainingItems || [])
-            // 龍の息吹は使用回数を増やす（制限を増やすのではなく、使用回数を増やす）
-            // API側でcountとlimit_per_dayが更新されるので、最新の値を取得
-            setAiFortuneUsage(prev => ({ 
-              ...prev, 
-              count: useResult.count || prev.count,
-              limit: useResult.limit || prev.limit
-            }))
-            // 鑑定を続行（制限を超えたので、使用回数チェックをスキップ）
-            // ただし、API側でもチェックするので、ここでは続行
-          } else {
-            setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
-            return
-          }
-        } else {
-          setAiFortune({
-            success: false,
-            error: `AI深層言霊鑑定は1日${aiFortuneUsage.limit}回までです。龍の息吹を購入して回数を回復できます。`,
-          })
-          return
-        }
-      }
-      // currentUsage < currentLimit の場合は、そのまま続行（使用回数チェックはAPI側で行う）
-    }
-
     setIsLoadingAiFortune(true)
     setAiFortune(null)
 
     try {
       console.log("🤖 AI鑑定生成開始:", { 
         name: nameAnalysisResult?.name,
-        categories: nameAnalysisResult?.categories?.length,
+        categories: nameAnalysisResult?.categories?.length || 0,
         gogyoResult: !!gogyoResult,
         birthdate 
       })
@@ -866,7 +777,127 @@ export default function ClientPage() {
     } finally {
       setIsLoadingAiFortune(false)
     }
-  }, [currentPlan, aiFortuneUsage, availableDragonBreathItems])
+  }, [currentPlan, setAiFortuneUsage])
+
+  // AI鑑定を依頼する関数（使用回数チェックあり）
+  const generateAiFortune = useCallback(async (
+    nameAnalysisResult: any,
+    gogyoResult?: any,
+    birthdate?: string
+  ) => {
+    const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+    if (!userId) {
+      setAiFortune({ success: false, error: "ログインが必要です" })
+      return
+    }
+
+    // 【重要】最新の使用回数を取得（姓名判断を繰り返す場合に備えて）
+    let currentUsage = aiFortuneUsage.count
+    let currentLimit = aiFortuneUsage.limit
+    try {
+      const usageResponse = await fetch(`/api/ai-fortune/usage?userId=${userId}&plan=${currentPlan}`)
+      const usageData = await usageResponse.json()
+      if (usageData.success) {
+        currentUsage = usageData.count
+        currentLimit = usageData.limit
+        setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
+        console.log("🔍 AI鑑定使用回数チェック:", { currentUsage, currentLimit, canUse: currentUsage < currentLimit })
+      }
+    } catch (error) {
+      console.error("Failed to fetch latest AI fortune usage:", error)
+      // エラー時は既存の状態を使用
+    }
+
+      // 使用回数チェック：使用可能回数（limit - count）が0以上の場合のみ鑑定可能
+    const remainingCount = currentLimit - currentUsage
+    if (remainingCount <= 0) {
+      // 使用回数が0の場合
+      if (currentPlan === "premium") {
+        // プレミアムプラン：龍の息吹があれば使用を促す
+        if (availableDragonBreathItems && availableDragonBreathItems.length > 0) {
+          setShowPremiumDragonBreathDialog(true)
+        } else {
+          setAiFortune({
+            success: false,
+            error: `AI深層言霊鑑定は1日${currentLimit}回までです。龍の息吹を購入して回数を回復できます。`,
+          })
+        }
+      } else {
+        // 無料・ベーシックプラン：龍の息吹があれば使用を促す
+        if (availableDragonBreathItems && availableDragonBreathItems.length > 0) {
+          setShowConfirmDialog(true)
+        } else {
+          setAiFortune({
+            success: false,
+            error: "AI深層言霊鑑定はプレミアムプラン、または龍の息吹が必要です。",
+          })
+        }
+      }
+      return
+    }
+
+    // 実際の鑑定処理を実行
+    await executeAiFortuneGeneration(nameAnalysisResult, gogyoResult, birthdate)
+  }, [currentPlan, aiFortuneUsage, availableDragonBreathItems, executeAiFortuneGeneration])
+
+  // 龍の息吹を使用してから鑑定を実行する関数
+  const useDragonBreathAndGenerateFortune = useCallback(async (
+    nameAnalysisResult: any,
+    gogyoResult?: any,
+    birthdate?: string
+  ) => {
+    const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+    if (!userId) {
+      setAiFortune({ success: false, error: "ログインが必要です" })
+      return
+    }
+
+    if (!availableDragonBreathItems || availableDragonBreathItems.length === 0) {
+      setAiFortune({ success: false, error: "龍の息吹がありません。" })
+      setIsLoadingAiFortune(false)
+      return
+    }
+
+    if (!availableDragonBreathItems[0] || !availableDragonBreathItems[0].id) {
+      setAiFortune({ success: false, error: "龍の息吹の情報が不正です。" })
+      setIsLoadingAiFortune(false)
+      return
+    }
+
+    setIsLoadingAiFortune(true)
+
+    try {
+      // 龍の息吹を使用（プランはサーバー側でデータベースから取得）
+      const useResponse = await fetch("/api/dragon-breath/use", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0]?.id }),
+      })
+      const useResult = await useResponse.json()
+
+      if (!useResult.success) {
+        setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
+        setIsLoadingAiFortune(false)
+        return
+      }
+
+      // 使用成功したらアイテムリストを更新
+      setAvailableDragonBreathItems(useResult.remainingItems || [])
+      // 使用回数を更新（limit_per_dayが増える）
+      setAiFortuneUsage(prev => ({ 
+        ...prev, 
+        count: useResult.count || prev.count,
+        limit: useResult.limit || prev.limit
+      }))
+
+      // 龍の息吹使用後、鑑定を実行（使用回数チェックなしの関数を呼び出す）
+      await executeAiFortuneGeneration(nameAnalysisResult, gogyoResult, birthdate)
+    } catch (error: any) {
+      console.error("❌ 龍の息吹使用エラー:", error)
+      setAiFortune({ success: false, error: error.message || "龍の息吹の使用に失敗しました" })
+      setIsLoadingAiFortune(false)
+    }
+  }, [availableDragonBreathItems, executeAiFortuneGeneration, setAvailableDragonBreathItems, setAiFortuneUsage, setAiFortune, setIsLoadingAiFortune])
 
   // 姓名判断結果が変更されたら、AI深層鑑定結果をリセット
   useEffect(() => {
@@ -1607,13 +1638,13 @@ export default function ClientPage() {
                                           <p className="text-xs text-muted-foreground dark:text-gray-400 mb-0.5">龍の息吹アイテム</p>
                                           <div className="flex items-center gap-2">
                                             <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                                              {availableDragonBreathItems.length}
+                                              {availableDragonBreathItems?.length || 0}
                                             </span>
                                             <span className="text-sm text-muted-foreground dark:text-gray-400">個所持</span>
                                           </div>
                                         </div>
                                       </div>
-                                      {availableDragonBreathItems.length === 0 ? (
+                                      {(availableDragonBreathItems?.length || 0) === 0 ? (
                                         <Link href="/shop/talisman?tab=yen">
                                           <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900/30">
                                             <Sparkles className="h-4 w-4 mr-1" /> 購入
@@ -1632,7 +1663,7 @@ export default function ClientPage() {
                                           AI深層言霊鑑定を依頼するには、姓名判断を実行してください
                                         </p>
                                       </div>
-                                    ) : availableDragonBreathItems.length === 0 ? (
+                                    ) : (availableDragonBreathItems?.length || 0) === 0 ? (
                                       // 姓名判断済み、龍の息吹なし → ボタン無効化、メッセージ表示
                                       <div className="text-center py-8">
                                         <div className="p-4 bg-purple-50 rounded-lg mb-4 border border-purple-200 dark:bg-purple-950/20 dark:border-purple-800">
@@ -1666,14 +1697,14 @@ export default function ClientPage() {
                                           <Sparkles className="h-4 w-4 mr-2" /> {isLoadingAiFortune ? "ただいま鑑定中です..." : "AI深層言霊鑑定を依頼（龍の息吹使用）"}
                                         </Button>
                                         <p className="text-xs text-muted-foreground mt-2">
-                                          残り: {availableDragonBreathItems.length}個
+                                          残り: {availableDragonBreathItems?.length || 0}個
                                         </p>
                                         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
                                           <AlertDialogContent>
                                             <AlertDialogHeader>
                                               <AlertDialogTitle>龍の息吹を使用しますか？</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                {availableDragonBreathItems.length}個所持しています。1個使用しますか？
+                                                {availableDragonBreathItems?.length || 0}個所持しています。1個使用しますか？
                                                 <br />
                                                 <span className="text-purple-600 font-semibold">
                                                   龍の息吹で{PLAN_USAGE_COUNTS[currentPlan as keyof typeof PLAN_USAGE_COUNTS] || 1}回AI鑑定が可能です。
@@ -1683,9 +1714,9 @@ export default function ClientPage() {
                                             <AlertDialogFooter>
                                               <AlertDialogCancel>キャンセル</AlertDialogCancel>
                                               <AlertDialogAction
-                                                onClick={() => {
+                                                onClick={async () => {
                                                   setShowConfirmDialog(false)
-                                                  generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)
+                                                  await useDragonBreathAndGenerateFortune(results, advancedResults.gogyoResult, birthdate || undefined)
                                                 }}
                                                 disabled={isLoadingAiFortune}
                                                 className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
@@ -1705,10 +1736,10 @@ export default function ClientPage() {
                                       // 無料・ベーシックプランでも結果表示（プレミアムと同じ表示）
                                       <div className="space-y-6">
                                         {/* 生成ボタン（龍の息吹がある場合、再生成用） */}
-                                        {availableDragonBreathItems.length > 0 && (
+                                        {(availableDragonBreathItems?.length || 0) > 0 && (
                                           <div className="text-center py-4">
                                             <Button
-                                              onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
+                                              onClick={() => setShowConfirmDialog(true)}
                                               disabled={isLoadingAiFortune}
                                               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                                             >
@@ -1727,7 +1758,7 @@ export default function ClientPage() {
                                             </CardHeader>
                                             <CardContent className="border-t border-purple-100 dark:border-purple-900 pt-4">
                                               <div className="text-purple-900 text-base leading-relaxed dark:text-purple-50">
-                                                {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
+                                                {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph: string, index: number) => (
                                                   <p key={index} className={index > 0 ? 'mt-2' : ''}>
                                                     {paragraph}
                                                   </p>
@@ -1831,7 +1862,7 @@ export default function ClientPage() {
                                           <div>
                                             <p className="text-xs text-muted-foreground dark:text-gray-400">龍の息吹</p>
                                             <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
-                                              {availableDragonBreathItems.length}個
+                                              {availableDragonBreathItems?.length || 0}個
                                             </p>
                                           </div>
                                         </div>
@@ -1850,14 +1881,14 @@ export default function ClientPage() {
                                       </div>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                      {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
+                                      {aiFortuneUsage.count >= aiFortuneUsage.limit && (availableDragonBreathItems?.length || 0) === 0 && (
                                         <Link href="/shop/talisman?tab=yen">
                                           <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-200 dark:border-purple-700 dark:hover:bg-purple-950/40">
                                             <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を購入
                                           </Button>
                                         </Link>
                                       )}
-                                      {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length > 0 && (
+                                      {aiFortuneUsage.count >= aiFortuneUsage.limit && (availableDragonBreathItems?.length || 0) > 0 && (
                                         <Button
                                           variant="outline"
                                           size="sm"
@@ -1881,21 +1912,62 @@ export default function ClientPage() {
                                         <p className="text-muted-foreground mb-4">
                                           AI深層言霊鑑定を依頼しますか？
                                         </p>
+                                        {/* 使用回数が0の場合、ボタンを無効化 */}
                                         <Button
                                           onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
-                                          disabled={isLoadingAiFortune || (currentPlan === "premium" && aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0)}
+                                          disabled={isLoadingAiFortune || (aiFortuneUsage.limit - aiFortuneUsage.count <= 0)}
                                           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                           <Sparkles className="h-4 w-4 mr-2" /> {isLoadingAiFortune ? "ただいま鑑定中です..." : "AI深層言霊鑑定を依頼"}
                                         </Button>
                                         {currentPlan === "premium" && (
-                                          <p className="text-xs text-muted-foreground mt-2 dark:text-gray-400">
-                                            AI鑑定残り回数: {Math.max(0, aiFortuneUsage.limit - aiFortuneUsage.count)}回
-                                            {aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0 && (
-                                              <span className="text-red-500 ml-2">（制限に達しています）</span>
+                                          <div className="mt-4 space-y-2">
+                                            <p className="text-xs text-muted-foreground dark:text-gray-400">
+                                              AI鑑定残り回数: {Math.max(0, aiFortuneUsage.limit - aiFortuneUsage.count)}回
+                                              {aiFortuneUsage.count >= aiFortuneUsage.limit && (availableDragonBreathItems?.length || 0) === 0 && (
+                                                <span className="text-red-500 ml-2">（制限に達しています）</span>
+                                              )}
+                                            </p>
+                                            {/* プレミアムプラン用の龍の息吹使用ボタン */}
+                                            {aiFortuneUsage.count >= aiFortuneUsage.limit && (availableDragonBreathItems?.length || 0) > 0 && (
+                                              <Button
+                                                onClick={() => setShowPremiumDragonBreathDialog(true)}
+                                                disabled={isLoadingAiFortune}
+                                                className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-200 dark:border-purple-700 dark:hover:bg-purple-950/40"
+                                              >
+                                                <Sparkles className="h-4 w-4 mr-1" /> 龍の息吹を使用 ({availableDragonBreathItems?.length || 0}個)
+                                              </Button>
                                             )}
-                                          </p>
+                                          </div>
                                         )}
+                                        {/* プレミアムプラン用の龍の息吹使用確認モーダル */}
+                                        <AlertDialog open={showPremiumDragonBreathDialog} onOpenChange={setShowPremiumDragonBreathDialog}>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>龍の息吹を使用しますか？</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                {availableDragonBreathItems?.length || 0}個所持しています。1個使用しますか？
+                                                <br />
+                                                <span className="text-purple-600 font-semibold">
+                                                  龍の息吹で{PLAN_USAGE_COUNTS[currentPlan as keyof typeof PLAN_USAGE_COUNTS] || 1}回AI鑑定が可能です。
+                                                </span>
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={async () => {
+                                                  setShowPremiumDragonBreathDialog(false)
+                                                  await useDragonBreathAndGenerateFortune(results, advancedResults.gogyoResult, birthdate || undefined)
+                                                }}
+                                                disabled={isLoadingAiFortune}
+                                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                              >
+                                                {isLoadingAiFortune ? "処理中..." : "使用する"}
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
                                       </div>
                                     ) : isLoadingAiFortune ? (
                                       <div className="flex items-center justify-center py-8">
@@ -1915,7 +1987,7 @@ export default function ClientPage() {
                                             </CardHeader>
                                             <CardContent className="border-t border-purple-100 dark:border-purple-900 pt-4">
                                               <div className="text-purple-900 text-base leading-relaxed dark:text-purple-50">
-                                                {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph, index) => (
+                                                {aiFortune.aiFortune.fortune?.split('\n\n').map((paragraph: string, index: number) => (
                                                   <p key={index} className={index > 0 ? 'mt-2' : ''}>
                                                     {paragraph}
                                                   </p>
