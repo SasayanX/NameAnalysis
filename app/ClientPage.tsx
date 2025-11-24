@@ -53,59 +53,6 @@ import { calculateGogyo } from "@/lib/advanced-gogyo"
 const MemoizedVerticalNameDisplay = React.memo(VerticalNameDisplay)
 const MemoizedDailyFortuneCard = React.memo(DailyFortuneCard)
 
-// ErrorBoundary component defined inline
-interface ErrorBoundaryState {
-  hasError: boolean
-  error?: Error
-}
-
-interface ErrorBoundaryProps {
-  children: React.ReactNode
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false }
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo)
-  }
-
-  resetError = () => {
-    this.setState({ hasError: false, error: undefined })
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="max-w-md mx-auto mt-8 p-4 border border-red-200 rounded-lg bg-red-50">
-          <h2 className="text-lg font-semibold text-red-800 mb-2">エラーが発生しました</h2>
-          <p className="text-sm text-red-600 mb-4">
-            申し訳ございません。予期しないエラーが発生しました。
-            ページを再読み込みするか、しばらく時間をおいてから再度お試しください。
-          </p>
-          <div className="flex gap-2">
-            <Button onClick={this.resetError} variant="outline" size="sm">
-              再試行
-            </Button>
-            <Button onClick={() => window.location.reload()} size="sm">
-              ページを再読み込み
-            </Button>
-          </div>
-        </div>
-      )
-    }
-
-    return this.props.children
-  }
-}
-
 // デフォルトの使用状況オブジェクト
 const DEFAULT_USAGE = {
   personalAnalysis: 0,
@@ -1248,7 +1195,7 @@ export default function ClientPage() {
   }, [currentPlan, sixStar])
 
   return (
-    <ErrorBoundary>
+    <>
       {/* トライアルバナー */}
       {isInTrial && <TrialBanner daysRemaining={trialDaysRemaining} />}
 
@@ -2621,6 +2568,6 @@ export default function ClientPage() {
           </div>
         )}
       </main>
-    </ErrorBoundary>
+    </>
   )
 }
