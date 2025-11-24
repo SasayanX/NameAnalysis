@@ -37,6 +37,7 @@ import { CompanyNameResult } from "@/components/company-name-result"
 import { TrialBanner } from "@/components/trial-banner"
 import { KanauPointsHeader } from "@/components/kanau-points-header"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { ShareButtons, generateAiFortuneShareContent } from "@/components/share-buttons"
 import { useSubscription, SubscriptionManager } from "@/lib/subscription-manager"
 import { NumerologyResultComponent } from "@/components/numerology-result"
 import { BabyNamingTool } from "@/components/baby-naming-tool"
@@ -1853,6 +1854,18 @@ export default function ClientPage() {
                                             </Card>
                                           )}
                                         </div>
+                                        
+                                        {/* シェアボタン */}
+                                        {aiFortune && aiFortune.success && aiFortune.aiFortune && (
+                                          <div className="mt-6">
+                                            <ShareButtons
+                                              shareContent={generateAiFortuneShareContent(aiFortune)}
+                                              onShare={(platform) => {
+                                                console.log(`AI鑑定結果を${platform}にシェアしました`)
+                                              }}
+                                            />
+                                          </div>
+                                        )}
                                       </div>
                                     ) : (
                                       <div className="text-center py-8">

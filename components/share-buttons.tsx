@@ -178,3 +178,71 @@ export function generateOmamoriShareContent(omamori: any) {
     hashtags: ['お守り', '開運', 'まいにちAI姓名判断', '運気向上']
   }
 }
+
+// AI深層言霊鑑定結果用のシェアコンテンツ生成
+export function generateAiFortuneShareContent(aiFortune: any) {
+  const name = aiFortune.name || 'あなた'
+  const fortune = aiFortune.aiFortune?.fortune || ''
+  const personality = aiFortune.aiFortune?.personality || ''
+  const talents = aiFortune.aiFortune?.talents || ''
+  
+  // 鑑定文（fortune）から最初の段落を取得（金雨希味の挨拶と名前・漢字の説明部分）
+  // fortuneが改行で区切られている場合、最初の2段落を取得
+  let fortunePreview = ''
+  if (fortune) {
+    const paragraphs = fortune.split('\n\n').filter((p: string) => p.trim())
+    // 最初の段落（挨拶）と2段落目（名前と漢字の説明）を取得
+    if (paragraphs.length >= 2) {
+      fortunePreview = paragraphs[0] + '\n\n' + paragraphs[1]
+      // 長すぎる場合は切り詰め（最大200文字）
+      if (fortunePreview.length > 200) {
+        fortunePreview = fortunePreview.substring(0, 197) + '...'
+      }
+    } else if (paragraphs.length >= 1) {
+      fortunePreview = paragraphs[0]
+      if (fortunePreview.length > 200) {
+        fortunePreview = fortunePreview.substring(0, 197) + '...'
+      }
+    }
+  }
+  
+  // 深層心理的特徴の最初の部分（最大100文字）
+  let personalityPreview = ''
+  if (personality) {
+    personalityPreview = personality.length > 100 ? personality.substring(0, 97) + '...' : personality
+  }
+  
+  // 潜在的な才能の最初の部分（最大100文字）
+  let talentsPreview = ''
+  if (talents) {
+    talentsPreview = talents.length > 100 ? talents.substring(0, 97) + '...' : talents
+  }
+  
+  // シェアテキストを構築（提供例の形式に合わせる）
+  let description = ''
+  
+  // 1. 冒頭の挨拶と名前・漢字の説明部分
+  if (fortunePreview) {
+    description += fortunePreview
+  }
+  
+  // 2. 深層心理的特徴（見出し付き）
+  if (personalityPreview) {
+    description += `\n\n深層心理的特徴\n${personalityPreview}`
+  }
+  
+  // 3. 潜在的な才能（見出し付き）
+  if (talentsPreview) {
+    description += `\n\n潜在的な才能\n${talentsPreview}`
+  }
+  
+  // 4. 締めの文言
+  description += `\n\nあなたも、お名前鑑定してみませんか？`
+  
+  return {
+    title: `${name}さんのAI深層言霊鑑定結果`,
+    description: description,
+    url: 'https://seimei.app',
+    hashtags: ['AI姓名判断', '深層言霊鑑定', 'まいにちAI姓名判断', '開運', '運勢']
+  }
+}
