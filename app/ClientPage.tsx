@@ -1192,10 +1192,10 @@ export default function ClientPage() {
       isPremium: currentPlan !== "free",
       premiumLevel: currentPlan === "premium" ? 3 : currentPlan === "basic" ? 1 : 0,
     }
-  }, [currentPlan, sixStar])
+  }, [currentPlan, sixStar]);
 
   return (
-    <>
+    <div>
       {/* トライアルバナー */}
       {isInTrial && <TrialBanner daysRemaining={trialDaysRemaining} />}
 
@@ -2568,6 +2568,6 @@ export default function ClientPage() {
           </div>
         )}
       </main>
-    </>
+    </div>
   )
 }
