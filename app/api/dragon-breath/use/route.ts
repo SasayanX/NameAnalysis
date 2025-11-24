@@ -168,11 +168,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (existing) {
-      // 既存レコードを更新（limit_per_dayも増やす）
+      // 既存レコードを更新（limit_per_dayだけを増やす、countは使用済み回数なので増やさない）
       const { data, error } = await supabase
         .from('ai_fortune_usage')
         .update({
-          count: existing.count + usageCount,
           limit_per_day: (existing.limit_per_day || 1) + usageCount,
           updated_at: new Date().toISOString(),
         })
@@ -213,7 +212,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        count: data.count,
+        count: data.count, // 使用済み回数は変更しない
         limit: data.limit_per_day || (existing.limit_per_day || 1) + usageCount,
         addedCount: usageCount,
         plan: userPlan,
@@ -221,14 +220,16 @@ export async function POST(request: NextRequest) {
         remainingItems: remainingItems || [],
       })
     } else {
-      // 新規レコードを作成（limit_per_dayも設定）
+      // 新規レコードを作成（limit_per_dayだけを設定、countは0）
+      const planLimits = { free: 0, basic: 0, premium: 1 }
+      const baseLimit = planLimits[userPlan as keyof typeof planLimits] || 0
       const { data, error } = await supabase
         .from('ai_fortune_usage')
         .insert({
           user_id: userId,
           usage_date: today,
-          count: usageCount,
-          limit_per_day: usageCount,
+          count: 0, // まだ使用していないので0
+          limit_per_day: baseLimit + usageCount,
         })
         .select()
         .single()
@@ -266,8 +267,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        count: data.count,
-        limit: data.limit_per_day || usageCount,
+        count: data.count, // 使用済み回数（0）
+        limit: data.limit_per_day || baseLimit + usageCount,
         addedCount: usageCount,
         plan: userPlan,
         date: today,

@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
 
     // 今日の日付
     const today = new Date().toISOString().split('T')[0]
+    const planKey = plan as keyof typeof PLAN_LIMITS
+    const baseLimit = PLAN_LIMITS[planKey] ?? 1
 
     // 今日の使用回数を取得
     const { data, error } = await supabase
@@ -55,10 +57,48 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const count = data?.count || 0
-    const planKey = plan as keyof typeof PLAN_LIMITS
-    // データベースに保存されているlimit_per_dayを使用、なければプラン別のデフォルト値を使用
-    const limit = data?.limit_per_day ?? PLAN_LIMITS[planKey] ?? 1
+    // 今日のレコードが存在しない場合、前日のlimit_per_dayを確認して繰り越す
+    if (!data) {
+      // 前日の日付を取得
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+      // 前日のレコードを取得
+      const { data: yesterdayData } = await supabase
+        .from('ai_fortune_usage')
+        .select('limit_per_day')
+        .eq('user_id', userId)
+        .eq('usage_date', yesterdayStr)
+        .maybeSingle()
+
+      // 前日のlimit_per_dayから基本制限を引いた追加分を計算
+      const yesterdayLimit = yesterdayData?.limit_per_day || baseLimit
+      const carryOverBonus = Math.max(0, yesterdayLimit - baseLimit)
+      const limit = baseLimit + carryOverBonus
+
+      // 今日のレコードを作成（繰り越し分を含む）
+      await supabase
+        .from('ai_fortune_usage')
+        .insert({
+          user_id: userId,
+          usage_date: today,
+          count: 0,
+          plan: planKey,
+          limit_per_day: limit,
+        })
+
+      return NextResponse.json({
+        success: true,
+        count: 0,
+        limit,
+        date: today,
+      })
+    }
+
+    const count = data.count || 0
+    // データベースに保存されているlimit_per_dayを使用
+    const limit = data.limit_per_day ?? baseLimit
 
     return NextResponse.json({
       success: true,
@@ -98,7 +138,7 @@ export async function POST(request: NextRequest) {
     // 今日の日付
     const today = new Date().toISOString().split('T')[0]
     const planKey = plan as keyof typeof PLAN_LIMITS
-    const limit = PLAN_LIMITS[planKey] || 1
+    const baseLimit = PLAN_LIMITS[planKey] || 1
 
     // 今日の使用回数を取得または作成
     const { data: existing, error: selectError } = await supabase
@@ -117,12 +157,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (existing) {
-      // 既存レコードを更新
+      // 既存レコードを更新（limit_per_dayは変更しない）
       const { data, error } = await supabase
         .from('ai_fortune_usage')
         .update({ 
           count: existing.count + increment,
-          limit_per_day: limit,
           plan: planKey,
           updated_at: new Date().toISOString(),
         })
@@ -141,11 +180,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         count: data.count,
-        limit: data.limit_per_day || limit,
+        limit: data.limit_per_day || existing.limit_per_day || baseLimit,
         date: today,
       })
     } else {
-      // 新規レコードを作成
+      // 新規レコードを作成（前日のlimit_per_dayを繰り越す）
+      // 前日の日付を取得
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+      // 前日のレコードを取得
+      const { data: yesterdayData } = await supabase
+        .from('ai_fortune_usage')
+        .select('limit_per_day')
+        .eq('user_id', userId)
+        .eq('usage_date', yesterdayStr)
+        .maybeSingle()
+
+      // 前日のlimit_per_dayから基本制限を引いた追加分を計算
+      const yesterdayLimit = yesterdayData?.limit_per_day || baseLimit
+      const carryOverBonus = Math.max(0, yesterdayLimit - baseLimit)
+      const limit = baseLimit + carryOverBonus
+
       const { data, error } = await supabase
         .from('ai_fortune_usage')
         .insert({

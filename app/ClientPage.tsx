@@ -654,6 +654,7 @@ export default function ClientPage() {
 
   // 確認ダイアログの状態
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showPremiumDragonBreathDialog, setShowPremiumDragonBreathDialog] = useState(false)
 
   // AI鑑定の使用回数と龍の息吹アイテムを取得
   useEffect(() => {
@@ -755,42 +756,14 @@ export default function ClientPage() {
     } else {
       // プレミアムプラン: 基本制限1回、龍の息吹で追加可能
       // currentUsage >= currentLimit の場合は、使用回数が制限に達している
-      // ただし、currentUsage < currentLimit の場合はまだ使える
       // 注意: countは使用済み回数、limitは制限回数なので、count < limitの時に使える
       if (currentUsage >= currentLimit) {
-        // 龍の息吹アイテムがあるかチェック
-        if (availableDragonBreathItems.length > 0) {
-          // アイテムを使用（プランはサーバー側でデータベースから取得）
-          const useResponse = await fetch("/api/dragon-breath/use", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0].id }),
-          })
-          const useResult = await useResponse.json()
-
-          if (useResult.success) {
-            // 使用成功したらアイテムリストを更新
-            setAvailableDragonBreathItems(useResult.remainingItems || [])
-            // 龍の息吹は使用回数を増やす（制限を増やすのではなく、使用回数を増やす）
-            // API側でcountとlimit_per_dayが更新されるので、最新の値を取得
-            setAiFortuneUsage(prev => ({ 
-              ...prev, 
-              count: useResult.count || prev.count,
-              limit: useResult.limit || prev.limit
-            }))
-            // 鑑定を続行（制限を超えたので、使用回数チェックをスキップ）
-            // ただし、API側でもチェックするので、ここでは続行
-          } else {
-            setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
-            return
-          }
-        } else {
-          setAiFortune({
-            success: false,
-            error: `AI深層言霊鑑定は1日${aiFortuneUsage.limit}回までです。龍の息吹を購入して回数を回復できます。`,
-          })
-          return
-        }
+        // 制限に達している場合、エラーを返す（モーダルで処理）
+        setAiFortune({
+          success: false,
+          error: `AI深層言霊鑑定は1日${currentLimit}回までです。龍の息吹を使用して回数を増やせます。`,
+        })
+        return
       }
       // currentUsage < currentLimit の場合は、そのまま続行（使用回数チェックはAPI側で行う）
     }
@@ -1697,6 +1670,77 @@ export default function ClientPage() {
                                           </AlertDialogContent>
                                         </AlertDialog>
                                       </div>
+                                      {/* プレミアムプラン用の龍の息吹使用確認モーダル */}
+                                      <AlertDialog open={showPremiumDragonBreathDialog} onOpenChange={setShowPremiumDragonBreathDialog}>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>龍の息吹を使用しますか？</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              {availableDragonBreathItems.length}個所持しています。1個使用しますか？
+                                              <br />
+                                              <span className="text-purple-600 font-semibold">
+                                                龍の息吹で3回AI鑑定が可能になります。
+                                              </span>
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={async () => {
+                                                setShowPremiumDragonBreathDialog(false)
+                                                const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+                                                if (!userId) {
+                                                  setAiFortune({ success: false, error: "ログインが必要です" })
+                                                  return
+                                                }
+
+                                                // 龍の息吹を使用
+                                                try {
+                                                  const useResponse = await fetch("/api/dragon-breath/use", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0].id }),
+                                                  })
+                                                  const useResult = await useResponse.json()
+
+                                                  if (useResult.success) {
+                                                    // 使用成功したらアイテムリストを更新
+                                                    setAvailableDragonBreathItems(useResult.remainingItems || [])
+                                                    // 使用回数を更新（limitが増える）
+                                                    setAiFortuneUsage(prev => ({ 
+                                                      ...prev, 
+                                                      limit: useResult.limit || prev.limit
+                                                    }))
+                                                    
+                                                    // 使用回数を再取得
+                                                    try {
+                                                      const usageResponse = await fetch(`/api/ai-fortune/usage?userId=${userId}&plan=${currentPlan}`)
+                                                      const usageData = await usageResponse.json()
+                                                      if (usageData.success) {
+                                                        setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
+                                                      }
+                                                    } catch (error) {
+                                                      console.error("Failed to fetch latest AI fortune usage:", error)
+                                                    }
+                                                    
+                                                    // 鑑定を続行
+                                                    generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)
+                                                  } else {
+                                                    setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
+                                                  }
+                                                } catch (error: any) {
+                                                  console.error("龍の息吹使用エラー:", error)
+                                                  setAiFortune({ success: false, error: "龍の息吹の使用に失敗しました" })
+                                                }
+                                              }}
+                                              disabled={isLoadingAiFortune}
+                                              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                            >
+                                              {isLoadingAiFortune ? "処理中..." : "使用する"}
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
                                     ) : isLoadingAiFortune ? (
                                       <div className="flex items-center justify-center py-8">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -1862,7 +1906,7 @@ export default function ClientPage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
+                                          onClick={() => setShowPremiumDragonBreathDialog(true)}
                                           disabled={isLoadingAiFortune}
                                           className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-200 dark:border-purple-700 dark:hover:bg-purple-950/40"
                                         >
@@ -1883,7 +1927,14 @@ export default function ClientPage() {
                                           AI深層言霊鑑定を依頼しますか？
                                         </p>
                                         <Button
-                                          onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
+                                          onClick={() => {
+                                            // プレミアムプランで制限に達している場合、モーダルを表示
+                                            if (currentPlan === "premium" && aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length > 0) {
+                                              setShowPremiumDragonBreathDialog(true)
+                                            } else {
+                                              generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)
+                                            }
+                                          }}
                                           disabled={isLoadingAiFortune || (currentPlan === "premium" && aiFortuneUsage.count >= aiFortuneUsage.limit && availableDragonBreathItems.length === 0)}
                                           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
@@ -1897,6 +1948,77 @@ export default function ClientPage() {
                                             )}
                                           </p>
                                         )}
+                                        {/* プレミアムプラン用の龍の息吹使用確認モーダル */}
+                                        <AlertDialog open={showPremiumDragonBreathDialog} onOpenChange={setShowPremiumDragonBreathDialog}>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>龍の息吹を使用しますか？</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                {availableDragonBreathItems.length}個所持しています。1個使用しますか？
+                                                <br />
+                                                <span className="text-purple-600 font-semibold">
+                                                  龍の息吹で3回AI鑑定が可能になります。
+                                                </span>
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={async () => {
+                                                  setShowPremiumDragonBreathDialog(false)
+                                                  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+                                                  if (!userId) {
+                                                    setAiFortune({ success: false, error: "ログインが必要です" })
+                                                    return
+                                                  }
+
+                                                  // 龍の息吹を使用
+                                                  try {
+                                                    const useResponse = await fetch("/api/dragon-breath/use", {
+                                                      method: "POST",
+                                                      headers: { "Content-Type": "application/json" },
+                                                      body: JSON.stringify({ userId, itemId: availableDragonBreathItems[0].id }),
+                                                    })
+                                                    const useResult = await useResponse.json()
+
+                                                    if (useResult.success) {
+                                                      // 使用成功したらアイテムリストを更新
+                                                      setAvailableDragonBreathItems(useResult.remainingItems || [])
+                                                      // 使用回数を更新（limitが増える）
+                                                      setAiFortuneUsage(prev => ({ 
+                                                        ...prev, 
+                                                        limit: useResult.limit || prev.limit
+                                                      }))
+                                                      
+                                                      // 使用回数を再取得
+                                                      try {
+                                                        const usageResponse = await fetch(`/api/ai-fortune/usage?userId=${userId}&plan=${currentPlan}`)
+                                                        const usageData = await usageResponse.json()
+                                                        if (usageData.success) {
+                                                          setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
+                                                        }
+                                                      } catch (error) {
+                                                        console.error("Failed to fetch latest AI fortune usage:", error)
+                                                      }
+                                                      
+                                                      // 鑑定を続行
+                                                      generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)
+                                                    } else {
+                                                      setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
+                                                    }
+                                                  } catch (error: any) {
+                                                    console.error("龍の息吹使用エラー:", error)
+                                                    setAiFortune({ success: false, error: "龍の息吹の使用に失敗しました" })
+                                                  }
+                                                }}
+                                                disabled={isLoadingAiFortune}
+                                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                              >
+                                                {isLoadingAiFortune ? "処理中..." : "使用する"}
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
                                       </div>
                                     ) : isLoadingAiFortune ? (
                                       <div className="flex items-center justify-center py-8">
