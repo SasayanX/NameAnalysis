@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
     }
 
     // メール送信先（管理者）
-    // ⚠️ 重要: Resendの未認証ドメインでは、Resendアカウントのメールアドレス（sasayan.biz@gmail.com）にのみ送信可能
+    // ⚠️ 重要: Resendの未認証ドメインでは、Resendアカウントのメールアドレスにのみ送信可能
     // ドメイン認証が完了していない場合は、CONTACT_EMAILをResendアカウントのメールアドレスに設定してください
     // 現状の運用: ドメイン認証を待たずに運用するため、管理者通知のみ送信を試みます
-    const adminEmail = process.env.CONTACT_EMAIL || 'sasayan.biz@gmail.com'
+    const adminEmail = process.env.CONTACT_EMAIL || 'kanaukiryu@gmail.com'
     
     // ドメイン認証が失敗している場合は、Resendのデフォルトアドレスを使用
     // 独自ドメイン（seimei.app）が認証済みの場合は、RESEND_FROM_EMAIL に設定されたアドレスを使用
