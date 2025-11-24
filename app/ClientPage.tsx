@@ -749,15 +749,32 @@ export default function ClientPage() {
       }
 
       const data = await response.json()
+      
+      // 【重要】成功していない場合（success: false）は使用回数をカウントしない
+      if (!data.success) {
+        console.error('❌ AI鑑定生成失敗:', data)
+        setAiFortune({
+          success: false,
+          error: data.error || 'AI鑑定の生成に失敗しました',
+          details: data.details,
+        })
+        return // 使用回数をカウントせずに終了
+      }
+      
       console.log("✅ AI鑑定生成成功:", data)
       
-      // 成功した場合、使用回数をインクリメント
-      await fetch("/api/ai-fortune/usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, increment: 1, plan: currentPlan }),
-      })
-      setAiFortuneUsage(prev => ({ ...prev, count: prev.count + 1 }))
+      // 成功した場合のみ、使用回数をインクリメント
+      try {
+        await fetch("/api/ai-fortune/usage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, increment: 1, plan: currentPlan }),
+        })
+        setAiFortuneUsage(prev => ({ ...prev, count: prev.count + 1 }))
+      } catch (usageError) {
+        console.error('⚠️ 使用回数の更新に失敗しましたが、AI鑑定結果は表示します:', usageError)
+        // 使用回数の更新に失敗しても、AI鑑定結果は表示する
+      }
       
       // 氏名情報を保存（姓名判断結果が変更されたかチェックするため）
       const targetName = nameAnalysisResult?.name || 

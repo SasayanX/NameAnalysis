@@ -22,7 +22,11 @@ function getGeminiClient(): GoogleGenerativeAI | null {
   return new GoogleGenerativeAI(apiKey)
 }
 
+// Next.js API Routeの最大実行時間を設定（Netlifyで最長26秒）
+export const maxDuration = 26
+
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
   try {
     const body = await request.json()
     const { 
@@ -200,20 +204,34 @@ ${kotodamaText ? `【今日の言霊アドバイス】\n${kotodamaText}\n\n` : '
     let text = ''
     let lastError = null
     
+    // Gemini API呼び出しにタイムアウトを設定（25秒）
+    const GEMINI_TIMEOUT_MS = 25000
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Gemini API呼び出しがタイムアウトしました（25秒）')), GEMINI_TIMEOUT_MS)
+    })
+
     for (const modelName of modelNames) {
       try {
         console.log(`🔄 モデル ${modelName} を試行中...`)
         const model = genAI.getGenerativeModel({ model: modelName })
-        result = await model.generateContent(prompt)
-        response = await result.response
-        text = response.text()
+        
+        // タイムアウト付きでGemini APIを呼び出し
+        const generatePromise = (async () => {
+          result = await model.generateContent(prompt)
+          response = await result.response
+          text = response.text()
+        })()
+        
+        await Promise.race([generatePromise, timeoutPromise])
         console.log(`✅ モデル ${modelName} で成功`)
         break
       } catch (error: any) {
         lastError = error
         console.warn(`⚠️ モデル ${modelName} の使用に失敗:`, error.message)
-        // 404エラーの場合は次のモデルを試す
-        if (error.message?.includes('404') || error.message?.includes('not found')) {
+        // 404エラーまたはタイムアウトエラーの場合は次のモデルを試す
+        if (error.message?.includes('404') || 
+            error.message?.includes('not found') ||
+            error.message?.includes('タイムアウト')) {
           continue
         }
         // その他のエラーは再スロー
@@ -280,11 +298,30 @@ ${kotodamaText ? `【今日の言霊アドバイス】\n${kotodamaText}\n\n` : '
       aiFortune: aiFortune,
     })
   } catch (error: any) {
+    const elapsedTime = Date.now() - startTime
     console.error('[AI Generate Fortune] Error:', {
       message: error.message,
       stack: error.stack,
       error: error,
+      elapsedTime: `${elapsedTime}ms`,
+      errorType: error.name,
     })
+    
+    // タイムアウトエラーの場合
+    if (error.message?.includes('タイムアウト') || elapsedTime > 25000) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'AI鑑定の生成に時間がかかりすぎました。しばらく時間をおいてから再度お試しください。',
+          details: process.env.NODE_ENV === 'development' ? {
+            message: error.message,
+            elapsedTime: `${elapsedTime}ms`,
+          } : undefined,
+        },
+        { status: 504 }
+      )
+    }
+    
     return NextResponse.json(
       {
         success: false,
@@ -292,6 +329,7 @@ ${kotodamaText ? `【今日の言霊アドバイス】\n${kotodamaText}\n\n` : '
         details: process.env.NODE_ENV === 'development' ? {
           message: error.message,
           stack: error.stack,
+          elapsedTime: `${elapsedTime}ms`,
         } : undefined,
       },
       { status: 500 }
