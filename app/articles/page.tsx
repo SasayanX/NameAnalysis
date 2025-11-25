@@ -189,7 +189,7 @@ export default async function ArticlesPage() {
             const IconComponent = article.icon
             return (
               <Link key={index} href={article.href} className="block group">
-                <Card className={`h-full hover:shadow-xl transition-all duration-300 ${article.borderColor} dark:border-gray-700 border-2`}>
+                <Card className={`h-full hover:shadow-xl transition-all duration-300 ${article.borderColor} dark:border-gray-700 dark:bg-gray-800 border-2`}>
                   <CardHeader className={`${article.bgColor} dark:bg-gray-800/50`}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export default async function ArticlesPage() {
 
               return (
                 <Link key={article.id} href={`/articles/${article.slug}`} className="block group">
-                  <Card className="h-full hover:shadow-lg transition-shadow border-purple-200 dark:border-gray-700">
+                  <Card className="h-full hover:shadow-lg transition-shadow border-purple-200 dark:border-gray-700 dark:bg-gray-800">
                     <CardHeader className="pb-3 bg-purple-50 dark:bg-purple-900/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="h-4 w-4 text-purple-600" />
@@ -302,7 +302,7 @@ export default async function ArticlesPage() {
             const IconComponent = article.icon
             return (
               <Link key={index} href={article.href} className="block group">
-                <Card className="h-full hover:shadow-lg transition-shadow">
+                <Card className="h-full hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2 mb-2">
                       <IconComponent className={`h-4 w-4 ${article.color}`} />
@@ -345,14 +345,14 @@ export default async function ArticlesPage() {
       </div>
 
       {/* CTA */}
-      <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      <Card className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700 text-white">
         <CardContent className="p-8 text-center">
           <h3 className="text-2xl font-bold mb-4">あなたの名前を詳しく分析</h3>
           <p className="mb-6 opacity-90">
             記事で学んだ知識を活用して、実際にあなたの名前を姓名判断で分析してみませんか？
           </p>
           <Link href="/">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+            <Button size="lg" className="bg-white dark:bg-gray-100 text-blue-600 dark:text-blue-700 hover:bg-gray-100 dark:hover:bg-gray-200">
               <Star className="h-4 w-4 mr-2" />
               無料で姓名判断を始める
             </Button>

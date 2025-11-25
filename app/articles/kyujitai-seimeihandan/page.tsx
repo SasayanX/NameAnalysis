@@ -123,8 +123,8 @@ export default function KyujitaiArticlePage() {
               <Badge variant="secondary">基礎知識</Badge>
               <Badge variant="destructive">人気記事</Badge>
             </div>
-            <h1 className="text-4xl font-bold mb-4">姓名判断は「旧字体」で占うのが正しい理由</h1>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground mb-6">
+            <h1 className="text-4xl font-bold mb-4 dark:text-gray-100">姓名判断は「旧字体」で占うのが正しい理由</h1>
+            <div className="flex items-center gap-6 text-sm text-muted-foreground dark:text-gray-400 mb-6">
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
                 読了時間: 5分
@@ -145,10 +145,10 @@ export default function KyujitaiArticlePage() {
           </header>
 
           {/* 目次 */}
-          <Card className="mb-8">
+          <Card className="mb-8 dark:bg-gray-800 dark:border-gray-700">
             <CardContent className="p-6">
-              <h2 className="text-lg font-bold mb-4">📋 この記事の内容</h2>
-              <ol className="list-decimal list-inside space-y-2 text-sm">
+              <h2 className="text-lg font-bold mb-4 dark:text-gray-100">📋 この記事の内容</h2>
+              <ol className="list-decimal list-inside space-y-2 text-sm dark:text-gray-300">
                 <li>
                   <Link href="#section1" className="hover:text-primary">
                     姓名判断のルーツは旧字体にあり
@@ -174,10 +174,10 @@ export default function KyujitaiArticlePage() {
           </Card>
 
           {/* 記事本文 */}
-          <article className="prose prose-lg max-w-none mb-12">
-            <div id="section1" className="bg-muted/50 p-6 rounded-lg mb-8">
-              <h2 className="text-2xl font-bold mb-4 text-primary">1. 姓名判断のルーツは旧字体にあり</h2>
-              <p className="text-base leading-relaxed">
+          <article className="prose prose-lg dark:prose-invert max-w-none mb-12">
+            <div id="section1" className="bg-muted/50 dark:bg-gray-800/50 p-6 rounded-lg mb-8 border dark:border-gray-700">
+              <h2 className="text-2xl font-bold mb-4 text-primary dark:text-blue-400">1. 姓名判断のルーツは旧字体にあり</h2>
+              <p className="text-base leading-relaxed dark:text-gray-300">
                 <Link href="/" className="text-primary hover:underline">
                   姓名判断
                 </Link>
@@ -185,11 +185,11 @@ export default function KyujitaiArticlePage() {
               </p>
             </div>
 
-            <div id="section2" className="bg-muted/50 p-6 rounded-lg mb-8">
-              <h2 className="text-2xl font-bold mb-4 text-primary">2. 画数のズレが運勢判断に影響する</h2>
-              <p className="text-base leading-relaxed mb-4">例えば「斉藤」という名字を例に挙げましょう。</p>
-              <div className="bg-background p-4 rounded border-l-4 border-primary mb-4">
-                <ul className="list-disc list-inside space-y-2">
+            <div id="section2" className="bg-muted/50 dark:bg-gray-800/50 p-6 rounded-lg mb-8 border dark:border-gray-700">
+              <h2 className="text-2xl font-bold mb-4 text-primary dark:text-blue-400">2. 画数のズレが運勢判断に影響する</h2>
+              <p className="text-base leading-relaxed mb-4 dark:text-gray-300">例えば「斉藤」という名字を例に挙げましょう。</p>
+              <div className="bg-background dark:bg-gray-700/50 p-4 rounded border-l-4 border-primary dark:border-blue-500 mb-4">
+                <ul className="list-disc list-inside space-y-2 dark:text-gray-300">
                   <li>
                     <strong>旧字体「齊藤」</strong>…「齊」は17画、「藤」は18画
                   </li>
@@ -198,86 +198,86 @@ export default function KyujitaiArticlePage() {
                   </li>
                 </ul>
               </div>
-              <p className="text-base leading-relaxed">
+              <p className="text-base leading-relaxed dark:text-gray-300">
                 このように、旧字体と新字体では画数が大きく異なります。姓名判断は画数のバランスや
-                <Link href="/" className="text-primary hover:underline">
+                <Link href="/" className="text-primary dark:text-blue-400 hover:underline">
                   五格（天格・人格・地格・外格・総格）
                 </Link>
                 で運勢を読み解くため、1画でもズレると全く違う結果になることがあります。つまり、旧字体を使わないと、本来の運命を正しく読み解けなくなってしまうのです。
               </p>
             </div>
 
-            <div id="section3" className="bg-muted/50 p-6 rounded-lg mb-8">
-              <h2 className="text-2xl font-bold mb-4 text-primary">3. 旧字体は「本来の意味」と「エネルギー」を持つ</h2>
-              <p className="text-base leading-relaxed">
+            <div id="section3" className="bg-muted/50 dark:bg-gray-800/50 p-6 rounded-lg mb-8 border dark:border-gray-700">
+              <h2 className="text-2xl font-bold mb-4 text-primary dark:text-blue-400">3. 旧字体は「本来の意味」と「エネルギー」を持つ</h2>
+              <p className="text-base leading-relaxed dark:text-gray-300">
                 漢字は、本来の形にその意味や力が込められていると考えられています。旧字体は長い歴史の中で受け継がれてきた「本来の漢字の姿」です。新字体は戦後の簡略化で生まれたもので、画数も意味合いも異なる場合があります。
-                <Link href="/" className="text-primary hover:underline">
+                <Link href="/" className="text-primary dark:text-blue-400 hover:underline">
                   姓名判断
                 </Link>
                 では「その人が持つ本質や運命」を読み解くため、漢字本来のエネルギーを重視し、旧字体で占うのが正しいとされているのです。
               </p>
             </div>
 
-            <div id="section4" className="bg-muted/50 p-6 rounded-lg mb-8">
-              <h2 className="text-2xl font-bold mb-4 text-primary">4. 多くの専門家や流派が旧字体を採用</h2>
-              <p className="text-base leading-relaxed">
+            <div id="section4" className="bg-muted/50 dark:bg-gray-800/50 p-6 rounded-lg mb-8 border dark:border-gray-700">
+              <h2 className="text-2xl font-bold mb-4 text-primary dark:text-blue-400">4. 多くの専門家や流派が旧字体を採用</h2>
+              <p className="text-base leading-relaxed dark:text-gray-300">
                 実際に有名な姓名判断の流派や専門家は、ほとんどが旧字体での鑑定を採用しています。これは「本来の姓名判断の理論に忠実であること」「より正確な運勢判断ができること」が理由です。当サイトでも、この伝統的な手法を採用し、
-                <Link href="/" className="text-primary hover:underline">
+                <Link href="/" className="text-primary dark:text-blue-400 hover:underline">
                   正確な姓名判断
                 </Link>
                 を提供しています。
               </p>
             </div>
 
-            <div className="bg-primary/10 p-6 rounded-lg mb-8 border-l-4 border-primary">
-              <blockquote className="text-lg font-medium italic">
+            <div className="bg-primary/10 dark:bg-blue-900/30 p-6 rounded-lg mb-8 border-l-4 border-primary dark:border-blue-500">
+              <blockquote className="text-lg font-medium italic dark:text-gray-200">
                 「姓名判断は旧字体で占うのが正しい」
                 <br />
                 それは、歴史的背景・理論的根拠・漢字の本質という3つの理由から、誰もが納得できる事実なのです。
               </blockquote>
             </div>
 
-            <div className="bg-muted/50 p-6 rounded-lg">
-              <h2 className="text-2xl font-bold mb-4 text-primary">まとめ</h2>
-              <ul className="list-disc list-inside space-y-2 text-base">
+            <div className="bg-muted/50 dark:bg-gray-800/50 p-6 rounded-lg border dark:border-gray-700">
+              <h2 className="text-2xl font-bold mb-4 text-primary dark:text-blue-400">まとめ</h2>
+              <ul className="list-disc list-inside space-y-2 text-base dark:text-gray-300">
                 <li>姓名判断の理論は旧字体で作られている</li>
                 <li>画数の違いが運勢判断に大きく影響する</li>
                 <li>旧字体には漢字本来の意味と力が込められている</li>
                 <li>専門家・流派も旧字体を採用</li>
               </ul>
-              <p className="text-base leading-relaxed mt-4">
+              <p className="text-base leading-relaxed mt-4 dark:text-gray-300">
                 だからこそ、「姓名判断は旧字体で占うのが正しい」のです。「そうか！」と納得できた方は、ぜひご自身の名前も旧字体で調べてみてください。きっと新たな発見があるはずです。
               </p>
             </div>
           </article>
 
           {/* 内部リンク強化 */}
-          <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h3 className="text-lg font-bold mb-4">関連する姓名判断の知識</h3>
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg mb-8 border dark:border-gray-700">
+            <h3 className="text-lg font-bold mb-4 dark:text-gray-100">関連する姓名判断の知識</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <Link
                 href="/articles/tengaku-kyousuu-myouji"
-                className="block p-4 bg-white rounded border hover:shadow-md transition-shadow"
+                className="block p-4 bg-white dark:bg-gray-800 rounded border dark:border-gray-700 hover:shadow-md transition-shadow"
               >
-                <h4 className="font-medium text-blue-600 mb-2">天格が吉数にならない苗字の対処法</h4>
-                <p className="text-sm text-gray-600">苗字の画数が凶数でも、他の格数でバランスを取る方法を解説</p>
+                <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">天格が吉数にならない苗字の対処法</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">苗字の画数が凶数でも、他の格数でバランスを取る方法を解説</p>
               </Link>
               <Link
                 href="/articles/gogyo-five-elements"
-                className="block p-4 bg-white rounded border hover:shadow-md transition-shadow"
+                className="block p-4 bg-white dark:bg-gray-800 rounded border dark:border-gray-700 hover:shadow-md transition-shadow"
               >
-                <h4 className="font-medium text-blue-600 mb-2">五行思想と姓名判断の関係</h4>
-                <p className="text-sm text-gray-600">木火土金水の五行が姓名判断にどう影響するかを詳しく解説</p>
+                <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">五行思想と姓名判断の関係</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">木火土金水の五行が姓名判断にどう影響するかを詳しく解説</p>
               </Link>
             </div>
           </div>
 
           {/* CTA */}
-          <Card className="mb-8">
+          <Card className="mb-8 dark:bg-gray-800 dark:border-gray-700">
             <CardContent className="p-8 text-center">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <h3 className="text-2xl font-bold mb-4">あなたの名前を旧字体で鑑定してみませんか？</h3>
-              <p className="text-muted-foreground mb-6">
+              <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary dark:text-blue-400" />
+              <h3 className="text-2xl font-bold mb-4 dark:text-gray-100">あなたの名前を旧字体で鑑定してみませんか？</h3>
+              <p className="text-muted-foreground mb-6 dark:text-gray-400">
                 この記事で学んだ知識を活かして、正確な姓名判断を体験してください
               </p>
               <Button size="lg" asChild>
@@ -288,34 +288,34 @@ export default function KyujitaiArticlePage() {
 
           {/* 関連記事 */}
           <section>
-            <h2 className="text-2xl font-bold mb-6">関連記事</h2>
+            <h2 className="text-2xl font-bold mb-6 dark:text-gray-100">関連記事</h2>
             <div className="grid gap-4 md:grid-cols-2">
-              <Card className="hover:shadow-md transition-shadow">
+              <Card className="hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700">
                 <CardContent className="p-6">
                   <Badge variant="secondary" className="mb-2">
                     理論
                   </Badge>
-                  <h3 className="text-lg font-bold mb-2">
-                    <Link href="/articles/gogyo-five-elements" className="hover:text-primary">
+                  <h3 className="text-lg font-bold mb-2 dark:text-gray-100">
+                    <Link href="/articles/gogyo-five-elements" className="hover:text-primary dark:hover:text-blue-400 dark:text-gray-100">
                       五行思想と姓名判断の深い関係
                     </Link>
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">
                     木火土金水の五行がどのように姓名判断に影響するのか解説
                   </p>
                 </CardContent>
               </Card>
-              <Card className="hover:shadow-md transition-shadow">
+              <Card className="hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700">
                 <CardContent className="p-6">
                   <Badge variant="secondary" className="mb-2">
                     運勢
                   </Badge>
-                  <h3 className="text-lg font-bold mb-2">
-                    <Link href="/articles/rokuseisensei-fortune" className="hover:text-primary">
+                  <h3 className="text-lg font-bold mb-2 dark:text-gray-100">
+                    <Link href="/articles/rokuseisensei-fortune" className="hover:text-primary dark:hover:text-blue-400 dark:text-gray-100">
                       六星占術で読み解く運気の流れ
                     </Link>
                   </h3>
-                  <p className="text-sm text-muted-foreground">生年月日から導き出される運気パターンと活用法をご紹介</p>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">生年月日から導き出される運気パターンと活用法をご紹介</p>
                 </CardContent>
               </Card>
             </div>

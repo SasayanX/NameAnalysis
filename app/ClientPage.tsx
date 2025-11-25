@@ -1436,6 +1436,16 @@ export default function ClientPage() {
                                                   </p>
                                                 ))}
                                               </div>
+                                              
+                                              {/* シェアボタン（メイン鑑定文の下） */}
+                                              <div className="mt-6 pt-6 border-t border-purple-200 dark:border-purple-800">
+                                                <ShareButtons
+                                                  shareContent={generateAiFortuneShareContent(aiFortune)}
+                                                  onShare={(platform) => {
+                                                    console.log(`AI鑑定結果を${platform}にシェアしました`)
+                                                  }}
+                                                />
+                                              </div>
                                             </CardContent>
                                           </Card>
                                         )}
@@ -1509,8 +1519,8 @@ export default function ClientPage() {
                                           )}
                                         </div>
                                         
-                                        {/* シェアボタン */}
-                                        {aiFortune && aiFortune.success && aiFortune.aiFortune && (
+                                        {/* シェアボタン（メイン鑑定文がない場合に表示） */}
+                                        {!aiFortune.aiFortune.fortune && aiFortune && aiFortune.success && aiFortune.aiFortune && (
                                           <div className="mt-6">
                                             <ShareButtons
                                               shareContent={generateAiFortuneShareContent(aiFortune)}
@@ -1677,6 +1687,16 @@ export default function ClientPage() {
                                                   </p>
                                                 ))}
                                               </div>
+                                              
+                                              {/* シェアボタン（メイン鑑定文の下） */}
+                                              <div className="mt-6 pt-6 border-t border-purple-200 dark:border-purple-800">
+                                                <ShareButtons
+                                                  shareContent={generateAiFortuneShareContent(aiFortune)}
+                                                  onShare={(platform) => {
+                                                    console.log(`AI鑑定結果を${platform}にシェアしました`)
+                                                  }}
+                                                />
+                                              </div>
                                             </CardContent>
                                           </Card>
                                         )}
@@ -1791,8 +1811,8 @@ export default function ClientPage() {
                                           </Card>
                                         )}
 
-                                        {/* シェアボタン */}
-                                        {aiFortune && aiFortune.success && aiFortune.aiFortune && (
+                                        {/* シェアボタン（メイン鑑定文がない場合に表示） */}
+                                        {!aiFortune.aiFortune.fortune && aiFortune && aiFortune.success && aiFortune.aiFortune && (
                                           <div className="mt-6">
                                             <ShareButtons
                                               shareContent={generateAiFortuneShareContent(aiFortune)}

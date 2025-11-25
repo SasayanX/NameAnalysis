@@ -127,11 +127,11 @@ export default async function BlogArticlePage({ params }: PageProps) {
         <Badge variant="outline" className="mb-4">
           {article.category}
         </Badge>
-        <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">{article.title}</h1>
-        <p className="text-lg text-muted-foreground mb-6 leading-relaxed">{article.description}</p>
+        <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight dark:text-gray-100">{article.title}</h1>
+        <p className="text-lg text-muted-foreground dark:text-gray-400 mb-6 leading-relaxed">{article.description}</p>
 
         {/* メタ情報 */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground dark:text-gray-400 mb-6">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>{formattedDate}</span>
@@ -194,8 +194,8 @@ export default async function BlogArticlePage({ params }: PageProps) {
       </div>
 
       {/* 記事本文 */}
-      <Card className="shadow-lg">
-        <CardContent className="prose prose-lg prose-slate max-w-none pt-8 pb-12 px-6 md:px-12">
+      <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700">
+        <CardContent className="prose prose-lg prose-slate dark:prose-invert max-w-none pt-8 pb-12 px-6 md:px-12">
           <ReactMarkdown
             components={{
               h2: ({ children }) => (
@@ -242,7 +242,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
 
       {/* 関連リンク */}
       <div className="mt-12">
-        <Card className="shadow-md">
+        <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="pt-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">関連記事</h2>
             <ul className="space-y-3">
