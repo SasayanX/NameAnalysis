@@ -62,43 +62,96 @@ export class GooglePlayBillingDetector {
   }
 
   /**
-   * TWA環境かどうかを判定
+   * TWA環境かどうかを判定（強化版）
    */
   static isTWAEnvironment(): boolean {
     if (typeof window === "undefined") return false
 
+    // 1. Standalone表示モードのチェック（最も信頼性が高い）
     const isStandaloneDisplayMode =
       typeof window !== "undefined" &&
       "matchMedia" in window &&
       window.matchMedia("(display-mode: standalone)").matches
 
+    // 2. User Agentチェック
     if (typeof navigator !== "undefined") {
       const ua = navigator.userAgent?.toLowerCase() ?? ""
-      const isKnownTWAUA = ua.includes("twa") || ua.includes("androidbrowserhelper") || ua.includes("bubblewrap")
-
+      
+      // 2-1. 明確なTWA識別子を含むUA（最高優先度）
+      const isKnownTWAUA = ua.includes("twa") || 
+                          ua.includes("androidbrowserhelper") || 
+                          ua.includes("bubblewrap") ||
+                          ua.includes("trusted-web-activity")
+      
       if (isKnownTWAUA) {
+        console.log("[TWA判定] User Agentで検出:", ua)
         return true
       }
 
-      // Chrome Custom Tabs 等で付与される "customtab" は除外する
+      // 2-2. Chrome Custom Tabs 等で付与される "customtab" は除外
       if (ua.includes("customtab")) {
         return false
       }
 
+      // 2-3. Standalone + Chrome/Safari + android-app referrer
       if (
         isStandaloneDisplayMode &&
         (ua.includes("chrome/") || ua.includes("safari/")) &&
+        typeof document !== "undefined" &&
         document?.referrer?.startsWith("android-app://")
       ) {
+        console.log("[TWA判定] Standalone + Chrome/Safari + android-app referrerで検出")
+        return true
+      }
+
+      // 2-4. Android環境 + Standalone（より広範囲な検出）
+      if (
+        isStandaloneDisplayMode &&
+        (ua.includes("android") || ua.includes("mobile"))
+      ) {
+        // 通常のブラウザ（chrome://flags等）を除外するため、referrerも確認
+        const hasAndroidAppReferrer = typeof document !== "undefined" && 
+                                      document?.referrer?.startsWith("android-app://")
+        // localStorageにTWA環境を示すフラグがあるか確認（以前の検出結果を保持）
+        const hasTWACache = typeof window !== "undefined" && 
+                           localStorage.getItem("isTWAEnvironment") === "true"
+        
+        if (hasAndroidAppReferrer || hasTWACache) {
+          console.log("[TWA判定] Android + Standalone + referrer/cacheで検出")
+          // 検出結果をキャッシュ
+          if (typeof window !== "undefined") {
+            localStorage.setItem("isTWAEnvironment", "true")
+          }
+          return true
+        }
+      }
+    }
+
+    // 3. Document referrerチェック
+    if (typeof document !== "undefined") {
+      const referrer = document.referrer || ""
+      if (referrer.startsWith("android-app://") && isStandaloneDisplayMode) {
+        console.log("[TWA判定] android-app referrer + Standaloneで検出")
+        // 検出結果をキャッシュ
+        if (typeof window !== "undefined") {
+          localStorage.setItem("isTWAEnvironment", "true")
+        }
         return true
       }
     }
 
-    if (typeof document !== "undefined") {
-      const referrer = document.referrer || ""
-      if (referrer.startsWith("android-app://") && isStandaloneDisplayMode) {
+    // 4. localStorageに以前の検出結果がある場合（ログイン後のページ遷移でも維持）
+    if (typeof window !== "undefined") {
+      const cachedTWA = localStorage.getItem("isTWAEnvironment")
+      if (cachedTWA === "true" && isStandaloneDisplayMode) {
+        console.log("[TWA判定] キャッシュされた結果を使用（Standalone + cache）")
         return true
       }
+    }
+
+    // 5. すべての判定に失敗した場合、キャッシュをクリア
+    if (typeof window !== "undefined" && !isStandaloneDisplayMode) {
+      localStorage.removeItem("isTWAEnvironment")
     }
 
     return false

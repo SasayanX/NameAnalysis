@@ -11,6 +11,7 @@ import { SquareCheckoutButton } from "@/components/square-checkout-button"
 import Link from "next/link"
 import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
 import { getGooglePlayProductId } from "@/lib/google-play-product-ids"
+import { useAuth } from "@/components/auth/auth-provider"
 
 export default function PricingPage() {
   const subscription = useSubscription()
@@ -90,6 +91,9 @@ export default function PricingPage() {
       highlight: true,
     },
   }
+
+  // ログイン状態を監視
+  const { user } = useAuth()
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null
@@ -180,6 +184,47 @@ export default function PricingPage() {
       }
     }
   }, []) // 依存配列を空にして、マウント時のみ実行
+
+  // ログイン状態が変わったとき（ログイン時）にTWA判定を再実行
+  useEffect(() => {
+    if (user) {
+      console.log("[Pricing] ログインを検出。TWA判定を再実行します...")
+      // ログイン後のTWA判定を再実行
+      const recheckPlatform = async () => {
+        try {
+          const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+          console.log("[Pricing] ログイン後 TWA環境判定:", isTWA)
+
+          if (isTWA) {
+            setIsTWAContext(true)
+            setIsGooglePlayAvailable(true)
+            
+            // 初期化を試みる
+            try {
+              const available = await GooglePlayBillingDetector.initialize()
+              console.log("[Pricing] ログイン後 Google Play Billing初期化結果:", available)
+              if (available) {
+                setIsGooglePlayAvailable(true)
+              }
+            } catch (initError) {
+              console.warn("[Pricing] ログイン後 Google Play Billing初期化エラー:", initError)
+              // TWA環境であれば、初期化が失敗してもGoogle Play Billingを使用可能とする
+              setIsGooglePlayAvailable(true)
+            }
+          }
+        } catch (error) {
+          console.warn("[Pricing] ログイン後のTWA判定エラー:", error)
+        }
+      }
+
+      // ログイン後に少し待機してから再チェック（localStorage保存が完了するのを待つ）
+      const timeoutId = setTimeout(() => {
+        recheckPlatform()
+      }, 1000) // 1秒待機
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [user])
 
   const handleGooglePlayPurchase = async (planId: "basic" | "premium") => {
     try {

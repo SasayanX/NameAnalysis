@@ -9,6 +9,7 @@ import { Check, Crown, Star, Zap } from "lucide-react"
 import { SubscriptionManager, SUBSCRIPTION_PLANS } from "@/lib/subscription-manager"
 import { GooglePlayBillingDetector } from "@/lib/google-play-billing-detector"
 import { getGooglePlayProductId } from "@/lib/google-play-product-ids"
+import { useAuth } from "@/components/auth/auth-provider"
 
 interface PlanSelectorModalProps {
   isOpen: boolean
@@ -22,24 +23,59 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
   const [subscriptionManager] = React.useState(() => SubscriptionManager.getInstance())
   const [isGooglePlayAvailable, setIsGooglePlayAvailable] = React.useState(false)
   const [isTWAContext, setIsTWAContext] = React.useState(false)
+  const { user } = useAuth()
 
   // プラットフォーム検出：Google Play Billingが利用可能か確認
+  const checkPlatform = React.useCallback(async (context: string = '') => {
+    const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+    console.log(`[PlanSelectorModal] ${context}TWA環境判定:`, isTWA)
+    setIsTWAContext(isTWA)
+    if (isTWA) {
+      // TWA環境：初期化済みか確認
+      const isAvailable = await GooglePlayBillingDetector.initialize()
+      setIsGooglePlayAvailable(isAvailable)
+      console.log(`[PlanSelectorModal] ${context}Google Play Billing初期化結果:`, isAvailable)
+    } else {
+      setIsGooglePlayAvailable(false)
+    }
+  }, [])
+
+  // モーダルが開かれたときにプラットフォームを検出
   React.useEffect(() => {
     if (isOpen) {
-      const checkPlatform = async () => {
-        const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
-        setIsTWAContext(isTWA)
-        if (isTWA) {
-          // TWA環境：初期化済みか確認
-          const isAvailable = await GooglePlayBillingDetector.initialize()
-          setIsGooglePlayAvailable(isAvailable)
-        } else {
-          setIsGooglePlayAvailable(false)
-        }
-      }
-      checkPlatform()
+      checkPlatform('モーダルオープン時: ')
     }
-  }, [isOpen])
+  }, [isOpen, checkPlatform])
+
+  // ログイン状態が変わったとき（ログイン時）にTWA判定を再実行
+  React.useEffect(() => {
+    if (user && isOpen) {
+      console.log("[PlanSelectorModal] ログインを検出。TWA判定を再実行します...")
+      // ログイン後に少し待機してから再チェック
+      const timeoutId = setTimeout(() => {
+        checkPlatform('ログイン後: ')
+      }, 1000) // 1秒待機
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [user, isOpen, checkPlatform])
+
+  // TWA環境検出イベントをリッスン
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleTWAEvent = () => {
+      console.log("[PlanSelectorModal] TWA環境検出イベントを受信")
+      if (isOpen) {
+        checkPlatform('イベント受信後: ')
+      }
+    }
+
+    window.addEventListener("twa-environment-detected", handleTWAEvent)
+    return () => {
+      window.removeEventListener("twa-environment-detected", handleTWAEvent)
+    }
+  }, [isOpen, checkPlatform])
 
   const handlePlanSelect = async (planId: "free" | "basic" | "premium") => {
     if (planId === currentPlan) {

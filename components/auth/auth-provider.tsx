@@ -173,6 +173,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userEmail = session.user.email
         const userId = session.user.id
         if (typeof window !== "undefined") {
+          // TWA環境を判定してキャッシュ（ログイン後も維持）
+          const { GooglePlayBillingDetector } = await import("@/lib/google-play-billing-detector")
+          const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+          if (isTWA) {
+            localStorage.setItem("isTWAEnvironment", "true")
+            console.log("✅ [ログイン時] TWA環境を検出。キャッシュに保存しました")
+            
+            // カスタムイベントを発行して、他のコンポーネントにTWA環境検出を通知
+            window.dispatchEvent(new CustomEvent("twa-environment-detected", {
+              detail: { detected: true }
+            }))
+          }
+
           // メールアドレスをlocalStorageに保存（SubscriptionManagerが使用）
           // TWA環境では保存を確実にするため、リトライロジックを追加
           const saveToLocalStorage = (key: string, value: string, retries = 3): boolean => {

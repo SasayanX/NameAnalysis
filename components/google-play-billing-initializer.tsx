@@ -1,6 +1,6 @@
 /**
  * Google Play Billing初期化コンポーネント
- * アプリ起動時にDigital Goods APIを初期化し、購入状態を確認します
+ * アプリ起動時およびログイン時にDigital Goods APIを初期化し、購入状態を確認します
  */
 "use client"
 
@@ -8,71 +8,111 @@ import { useEffect } from 'react'
 import { GooglePlayBillingDetector } from '@/lib/google-play-billing-detector'
 import { SubscriptionManager } from '@/lib/subscription-manager'
 import { GOOGLE_PLAY_PRODUCT_IDS } from '@/lib/google-play-product-ids'
+import { useAuth } from '@/components/auth/auth-provider'
 
 export function GooglePlayBillingInitializer() {
-  useEffect(() => {
-    const initializeAndCheckPurchases = async () => {
-      try {
-        const subscriptionManager = SubscriptionManager.getInstance()
+  const { user } = useAuth()
 
-        // サーバー側のサブスクリプション状態を同期 (エラーをキャッチしてログに記録するが、処理は続行)
+  // TWA判定と初期化を行う共通関数
+  const initializeAndCheckPurchases = async (context: string = 'initial') => {
+    try {
+      // まずTWA環境を判定（強化された判定ロジックを使用）
+      const isTWA = GooglePlayBillingDetector.isTWAEnvironment()
+      console.log(`[Google Play Billing] ${context}: TWA環境判定結果:`, isTWA)
+
+      if (!isTWA) {
+        console.log(`[Google Play Billing] ${context}: TWA環境ではありません。スキップします。`)
+        return
+      }
+
+      // TWA環境が検出された場合、検出結果をキャッシュ
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isTWAEnvironment", "true")
+      }
+
+      const subscriptionManager = SubscriptionManager.getInstance()
+
+      // サーバー側のサブスクリプション状態を同期（ログイン済みの場合のみ）
+      if (user) {
         try {
           await subscriptionManager.syncSubscriptionFromServer()
+          console.log(`[Google Play Billing] ${context}: サブスクリプション状態を同期しました`)
         } catch (syncError) {
-          console.warn('[Google Play Billing] SubscriptionManager initial sync failed (possibly not logged in):', syncError)
-          // ログインしていない場合でも、Digital Goods APIの初期化は試みる
+          console.warn(`[Google Play Billing] ${context}: SubscriptionManager sync failed:`, syncError)
+          // エラーが発生しても続行
         }
+      } else {
+        console.log(`[Google Play Billing] ${context}: ログインしていないため、同期をスキップします`)
+      }
 
-        // Digital Goods APIを初期化
-        const available = await GooglePlayBillingDetector.initialize()
+      // Digital Goods APIを初期化
+      const available = await GooglePlayBillingDetector.initialize()
+      
+      if (available) {
+        console.log(`[Google Play Billing] ${context}: Digital Goods API初期化成功`)
         
-        if (available) {
-          console.log('[Google Play Billing] Initialized - GPCで商品追加が可能になります')
+        // TWA環境で、購入状態を確認
+        try {
+          const purchases = await GooglePlayBillingDetector.getPurchases()
           
-          // TWA環境で、購入状態を確認
-          try {
-            const purchases = await GooglePlayBillingDetector.getPurchases()
+          if (purchases && purchases.length > 0) {
+            console.log(`[Google Play Billing] ${context}: 購入が見つかりました:`, purchases.length)
             
-            if (purchases && purchases.length > 0) {
-              console.log('[Google Play Billing] Found purchases:', purchases.length)
+            // 有効な購入を確認し、SubscriptionManagerを更新
+            for (const purchase of purchases) {
+              // 商品IDからプランIDを判定
+              const planId = purchase.itemId === GOOGLE_PLAY_PRODUCT_IDS.basic ? 'basic' 
+                           : purchase.itemId === GOOGLE_PLAY_PRODUCT_IDS.premium ? 'premium' 
+                           : null
               
-              // 有効な購入を確認し、SubscriptionManagerを更新
-              for (const purchase of purchases) {
-                // 商品IDからプランIDを判定
-                const planId = purchase.itemId === GOOGLE_PLAY_PRODUCT_IDS.basic ? 'basic' 
-                             : purchase.itemId === GOOGLE_PLAY_PRODUCT_IDS.premium ? 'premium' 
-                             : null
+              if (planId && user) {
+                // 購入レシートを検証してプランを有効化
+                const result = await subscriptionManager.startGooglePlayBillingSubscription(
+                  planId,
+                  purchase.purchaseToken
+                )
                 
-                if (planId) {
-                  // 購入レシートを検証してプランを有効化
-                  const result = await subscriptionManager.startGooglePlayBillingSubscription(
-                    planId,
-                    purchase.purchaseToken
-                  )
-                  
-                  if (result.success) {
-                    console.log(`[Google Play Billing] Activated plan: ${planId}`)
-                  } else {
-                    console.warn(`[Google Play Billing] Failed to activate plan ${planId}:`, result.error)
-                  }
+                if (result.success) {
+                  console.log(`[Google Play Billing] ${context}: プランを有効化しました: ${planId}`)
+                } else {
+                  console.warn(`[Google Play Billing] ${context}: プラン有効化に失敗: ${planId}`, result.error)
                 }
               }
-            } else {
-              console.log('[Google Play Billing] No active purchases found')
             }
-          } catch (error) {
-            console.warn('[Google Play Billing] Failed to check purchases:', error)
+          } else {
+            console.log(`[Google Play Billing] ${context}: アクティブな購入は見つかりませんでした`)
           }
-        } else {
-          console.log('[Google Play Billing] Not available (Web版またはTWA未対応環境)')
+        } catch (error) {
+          console.warn(`[Google Play Billing] ${context}: 購入状態の確認に失敗:`, error)
         }
-      } catch (error) {
-        console.warn('[Google Play Billing] Initialization error:', error)
+      } else {
+        console.log(`[Google Play Billing] ${context}: Digital Goods APIが利用できません`)
       }
+    } catch (error) {
+      console.warn(`[Google Play Billing] ${context}: 初期化エラー:`, error)
     }
+  }
 
-    initializeAndCheckPurchases()
+  // 初回マウント時の初期化
+  useEffect(() => {
+    initializeAndCheckPurchases('初回起動時')
   }, [])
+
+  // ログイン状態が変わったとき（ログイン時）に再初期化
+  useEffect(() => {
+    if (user) {
+      console.log('[Google Play Billing] ログインを検出。TWA判定と初期化を再実行します...')
+      // ログイン後に少し待機してから初期化（localStorage保存が完了するのを待つ）
+      const timeoutId = setTimeout(() => {
+        initializeAndCheckPurchases('ログイン後')
+      }, 1000) // 1秒待機
+
+      return () => clearTimeout(timeoutId)
+    } else {
+      // ログアウト時はTWA環境のキャッシュをクリアしない（環境自体は変わらないため）
+      console.log('[Google Play Billing] ログアウトを検出。TWA環境判定は維持します。')
+    }
+  }, [user])
 
   // UI表示なし（バックグラウンドで初期化のみ）
   return null
