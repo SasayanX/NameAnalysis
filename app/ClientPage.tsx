@@ -54,7 +54,7 @@ import { useCompanyAnalysis } from "@/hooks/use-company-analysis"
 import { useAiFortune } from "@/hooks/use-ai-fortune"
 import { useDragonBreath } from "@/hooks/use-dragon-breath"
 import { useSubscriptionSync } from "@/hooks/use-subscription-sync"
-import { useBGM } from "@/hooks/use-bgm"
+// import { useBGM } from "@/hooks/use-bgm" // 一時的に無効化
 
 // メモ化されたコンポーネント
 const MemoizedVerticalNameDisplay = React.memo(VerticalNameDisplay)
@@ -161,21 +161,21 @@ export default function ClientPage() {
     },
   })
 
-  // BGM管理
-  const bgm = useBGM()
+  // BGM管理（一時的に無効化してエラーを確認）
+  // const bgm = useBGM()
 
-  // AI鑑定結果が表示されたときにBGMを自動再生
-  useEffect(() => {
-    if (aiFortune && aiFortune.success && aiFortune.aiFortune?.fortune) {
-      // 鑑定結果が成功した場合、BGM自動再生を試みる
-      bgm.tryAutoPlay().then((success) => {
-        if (!success) {
-          console.log("[BGM] 自動再生に失敗。ユーザーに手動再生を促します。")
-        }
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiFortune])
+  // // AI鑑定結果が表示されたときにBGMを自動再生
+  // useEffect(() => {
+  //   if (aiFortune && aiFortune.success && aiFortune.aiFortune?.fortune) {
+  //     // 鑑定結果が成功した場合、BGM自動再生を試みる
+  //     bgm.tryAutoPlay().then((success) => {
+  //       if (!success) {
+  //         console.log("[BGM] 自動再生に失敗。ユーザーに手動再生を促します。")
+  //       }
+  //     })
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [aiFortune])
 
   // URLパラメータでプレミアムモードを強制（開発環境・スクリーンショット用）
   // 本番環境では無効化（セキュリティのため）
@@ -1697,7 +1697,8 @@ export default function ClientPage() {
                                                   <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
                                                   AI深層言霊鑑定
                                                 </CardTitle>
-                                                <Button
+                                                {/* BGMコントロールボタン（一時的に無効化） */}
+                                                {/* <Button
                                                   variant="ghost"
                                                   size="sm"
                                                   onClick={bgm.toggle}
@@ -1715,7 +1716,7 @@ export default function ClientPage() {
                                                       <span className="text-xs">BGM</span>
                                                     </>
                                                   )}
-                                                </Button>
+                                                </Button> */}
                                               </div>
                                             </CardHeader>
                                             <CardContent className="border-t border-purple-100 dark:border-purple-900 pt-4">
