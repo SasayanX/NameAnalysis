@@ -174,7 +174,8 @@ export default function ClientPage() {
         }
       })
     }
-  }, [aiFortune?.success, aiFortune?.aiFortune?.fortune])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiFortune])
 
   // URLパラメータでプレミアムモードを強制（開発環境・スクリーンショット用）
   // 本番環境では無効化（セキュリティのため）
