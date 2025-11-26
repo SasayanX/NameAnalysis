@@ -286,16 +286,26 @@ export class GooglePlayBillingDetector {
         console.warn("[Google Play Billing] Continuing despite canMakePayment check failure")
       }
       
-      // 3. PaymentRequest.show()で決済画面を表示
+      // 3. PaymentRequest.show()で決済画面を表示（タイムアウト付き）
       let response: PaymentResponse
       try {
         console.log("[Google Play Billing] Calling request.show()...")
         console.log("[Google Play Billing] PaymentRequest state:", {
           id: request.id,
-          methodData: request.methodData,
-          details: request.details
+          methodData: paymentMethodData,
+          details: paymentDetails
         })
-        response = await request.show()
+        
+        // PaymentRequest.show()にタイムアウトを設定（20秒）
+        const showPromise = request.show()
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            console.error("[Google Play Billing] PaymentRequest.show() timed out after 20 seconds")
+            reject(new Error('決済画面の表示がタイムアウトしました。画面を閉じてもう一度お試しください。'))
+          }, 20000)
+        })
+        
+        response = await Promise.race([showPromise, timeoutPromise])
         console.log("[Google Play Billing] PaymentRequest.show() completed successfully")
       } catch (showError: any) {
         console.error("[Google Play Billing] PaymentRequest.show() failed:", showError)
@@ -309,6 +319,10 @@ export class GooglePlayBillingDetector {
             showError.message?.includes('cancel') || 
             showError.message?.includes('abort')) {
           throw new Error('購入がキャンセルされました')
+        }
+        // タイムアウトの場合
+        if (showError.message?.includes('タイムアウト') || showError.message?.includes('timeout')) {
+          throw showError
         }
         // その他のエラー
         throw new Error(`決済画面の表示に失敗しました: ${showError.message || showError}`)

@@ -298,15 +298,21 @@ export default function TalismanShopPage() {
             console.log('[Talisman Shop] Starting purchase for product:', productId)
             console.log('[Talisman Shop] About to call GooglePlayBillingDetector.purchase()...')
             
-            // 購入処理をタイムアウト付きで実行（30秒）
+            // 購入処理をタイムアウト付きで実行（25秒 = 内部20秒 + バッファ5秒）
             const purchasePromise = GooglePlayBillingDetector.purchase(productId)
             const timeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('購入処理がタイムアウトしました。もう一度お試しください。')), 30000)
+              setTimeout(() => {
+                console.error('[Talisman Shop] Purchase operation timed out after 25 seconds')
+                reject(new Error('購入処理がタイムアウトしました。画面を閉じてもう一度お試しください。'))
+              }, 25000)
             })
             
             console.log('[Talisman Shop] Waiting for purchase to complete...')
+            setPurchaseMessage("決済画面を表示しています。しばらくお待ちください...")
+            
             const purchase = await Promise.race([purchasePromise, timeoutPromise]) as any
             console.log('[Talisman Shop] Purchase completed:', purchase)
+            setPurchaseMessage("購入を確認しています...")
 
             // 購入確認APIを呼び出し
             const response = await fetch("/api/dragon-breath/purchase-google-play", {
