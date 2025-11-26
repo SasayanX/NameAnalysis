@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate-icons": "node scripts/resize-icons.js",
-    "check-stroke-diff": "tsx scripts/check-stroke-data-diff.ts"
+    "check-stroke-diff": "tsx scripts/check-stroke-data-diff.ts",
+    "seed-kotodama": "tsx scripts/seed-kotodama.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -96,6 +97,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.0.3",
+    "dotenv": "^16.4.7",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
     "postcss": "^8.5",

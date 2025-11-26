@@ -37,6 +37,7 @@ import { CompanyNameResult } from "@/components/company-name-result"
 import { TrialBanner } from "@/components/trial-banner"
 import { KanauPointsHeader } from "@/components/kanau-points-header"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { RankingBest10Card } from "@/components/ranking-best10-card"
 import { ShareButtons, generateAiFortuneShareContent } from "@/components/share-buttons"
 import { useSubscription, SubscriptionManager } from "@/lib/subscription-manager"
 import { NumerologyResultComponent } from "@/components/numerology-result"
@@ -2213,6 +2214,9 @@ export default function ClientPage() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* 全国おなまえ格付けランキングベスト10 */}
+              <RankingBest10Card />
             </div>
           </div>
         ) : activeSection === "compatibility" ? (

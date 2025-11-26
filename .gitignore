@@ -47,3 +47,6 @@ build/
 # Generated files
 /public/generated/
 secret/
+serviceAccountKey.json
+mainichi-ai-seimei-service-account.json
+mainichi-ai-seimei-firebase-adminsdk-fbsvc-9c97ba7d7f.json
