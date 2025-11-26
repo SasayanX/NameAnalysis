@@ -43,12 +43,28 @@ export async function POST(request: NextRequest) {
     // テスト署名の判定（開発・テスト用）
     const isTestSignature = signature.startsWith("test-signature-")
 
-    // 署名検証（本番環境でのみ厳格に実行、ただしテスト署名は除外）
-    if (isProduction && signature && !isTestSignature) {
+    // 署名検証（本番環境では必須、ただしテスト署名は除外）
+    if (isProduction && !isTestSignature) {
+      if (!signature) {
+        console.error("署名が存在しません（本番環境では必須）")
+        return NextResponse.json({ error: "Missing signature" }, { status: 401 })
+      }
+      
+      if (!webhookSignatureKey || webhookSignatureKey === "D4d-LlU5XhUPO_MzYI1wcA") {
+        console.error("SQUARE_WEBHOOK_SIGNATURE_KEYが設定されていません")
+        return NextResponse.json({ error: "Webhook signature key not configured" }, { status: 500 })
+      }
+      
       if (!verifyWebhookSignature(body, signature, webhookSignatureKey)) {
-        console.error("署名検証失敗:", { signature, webhookSignatureKey })
+        console.error("署名検証失敗:", { 
+          signatureLength: signature.length,
+          bodyLength: body.length,
+          hasWebhookKey: !!webhookSignatureKey 
+        })
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
       }
+      
+      console.log("✅ 署名検証成功")
     }
 
     // テスト署名の場合はログに記録
@@ -413,14 +429,24 @@ export async function POST(request: NextRequest) {
       environment: isProduction ? "production" : "sandbox",
     })
   } catch (error) {
-    console.error("Webhook処理エラー:", error)
+    console.error("❌ Webhook処理エラー:", error)
+    console.error("エラー詳細:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      type: typeof error,
+    })
+    
+    // Squareに200レスポンスを返す（エラーでもWebhookは受信したことを通知）
+    // これにより、Squareが「配信失敗」と判定しなくなる
     return NextResponse.json(
       {
-        error: "Webhook処理に失敗しました",
+        success: false,
+        message: "Webhook受信完了（処理中にエラー発生）",
+        error: error instanceof Error ? error.message : "Unknown error",
         environment: process.env.NODE_ENV || "development",
-        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 },
+      { status: 200 },
     )
   }
 }
@@ -430,11 +456,12 @@ export async function GET() {
     message: "Square Webhook エンドポイント - GET OK",
     status: "active",
     supportedMethods: ["GET", "POST"],
-    url: "https://nameanalysis216.vercel.app/api/square-webhook",
+    url: "https://seimei.app/api/square-webhook",
     events: ["payment.updated", "subscription.created", "subscription.updated", "invoice.payment_made"],
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
     testMode: "テスト署名（test-signature-*）をサポート",
+    webhookSignatureKeyConfigured: !!process.env.SQUARE_WEBHOOK_SIGNATURE_KEY,
   })
 }
 
