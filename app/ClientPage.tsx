@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { LockIcon, Settings, Baby, Sparkles, Brain, Lightbulb, Target, Star, BookOpen, RefreshCw } from "lucide-react"
+import { LockIcon, Settings, Baby, Sparkles, Brain, Lightbulb, Target, Star, BookOpen, RefreshCw, Volume2, VolumeX } from "lucide-react"
 import Link from "next/link"
 
 // コンポーネントの遅延読み込み
@@ -54,6 +54,7 @@ import { useCompanyAnalysis } from "@/hooks/use-company-analysis"
 import { useAiFortune } from "@/hooks/use-ai-fortune"
 import { useDragonBreath } from "@/hooks/use-dragon-breath"
 import { useSubscriptionSync } from "@/hooks/use-subscription-sync"
+import { useBGM } from "@/hooks/use-bgm"
 
 // メモ化されたコンポーネント
 const MemoizedVerticalNameDisplay = React.memo(VerticalNameDisplay)
@@ -159,6 +160,21 @@ export default function ClientPage() {
       setTrialDaysRemaining(trialDaysRemaining)
     },
   })
+
+  // BGM管理
+  const bgm = useBGM()
+
+  // AI鑑定結果が表示されたときにBGMを自動再生
+  useEffect(() => {
+    if (aiFortune && aiFortune.success && aiFortune.aiFortune?.fortune) {
+      // 鑑定結果が成功した場合、BGM自動再生を試みる
+      bgm.tryAutoPlay().then((success) => {
+        if (!success) {
+          console.log("[BGM] 自動再生に失敗。ユーザーに手動再生を促します。")
+        }
+      })
+    }
+  }, [aiFortune?.success, aiFortune?.aiFortune?.fortune])
 
   // URLパラメータでプレミアムモードを強制（開発環境・スクリーンショット用）
   // 本番環境では無効化（セキュリティのため）
@@ -1675,10 +1691,31 @@ export default function ClientPage() {
                                         {aiFortune.aiFortune.fortune && (
                                           <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50 dark:border-purple-900 dark:from-purple-950/40 dark:to-pink-950/20">
                                             <CardHeader className="pb-3">
-                                              <CardTitle className="flex items-center gap-2 text-purple-800 text-lg dark:text-purple-100">
-                                                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
-                                                AI深層言霊鑑定
-                                              </CardTitle>
+                                              <div className="flex items-center justify-between">
+                                                <CardTitle className="flex items-center gap-2 text-purple-800 text-lg dark:text-purple-100">
+                                                  <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+                                                  AI深層言霊鑑定
+                                                </CardTitle>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={bgm.toggle}
+                                                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                                                  title={bgm.isPlaying ? "BGMを停止" : "BGMを再生"}
+                                                >
+                                                  {bgm.isPlaying ? (
+                                                    <>
+                                                      <VolumeX className="h-4 w-4 mr-1" />
+                                                      <span className="text-xs">停止</span>
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <Volume2 className="h-4 w-4 mr-1" />
+                                                      <span className="text-xs">BGM</span>
+                                                    </>
+                                                  )}
+                                                </Button>
+                                              </div>
                                             </CardHeader>
                                             <CardContent className="border-t border-purple-100 dark:border-purple-900 pt-4">
                                               <div className="text-purple-900 text-base leading-relaxed dark:text-purple-50">
