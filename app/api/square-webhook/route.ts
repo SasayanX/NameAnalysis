@@ -252,12 +252,58 @@ export async function POST(request: NextRequest) {
     // サブスクリプション作成処理
     if (event.type === "subscription.created") {
       const subscription = event.data.object
+      const subscriptionId = subscription.id
+      const planId = subscription.plan_id
+      const status = subscription.status
+      const chargedThroughDate = subscription.charged_through_date
+      const customerId = subscription.customer_id
+      const customerEmail = subscription.customer_email
+      
       console.log("サブスクリプション作成:", {
-        subscriptionId: subscription.id,
-        planId: subscription.plan_id,
-        status: subscription.status,
+        subscriptionId,
+        planId,
+        status,
+        customerId,
+        customerEmail,
+        chargedThroughDate,
         isTest: isTestSignature,
       })
+
+      // プランIDからアプリ内プランIDを取得
+      let appPlan: "basic" | "premium" | null = null
+      if (planId === process.env.SQUARE_SUBSCRIPTION_PLAN_ID_BASIC) {
+        appPlan = "basic"
+      } else if (planId === process.env.SQUARE_SUBSCRIPTION_PLAN_ID_PREMIUM) {
+        appPlan = "premium"
+      }
+
+      // Supabaseのuser_subscriptionsテーブルに作成
+      if (appPlan && supabase) {
+        const expiresAt = chargedThroughDate ? new Date(chargedThroughDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        
+        await upsertUserSubscriptionRecord(supabase, {
+          userId: customerId,
+          customerEmail: customerEmail,
+          plan: appPlan,
+          status: status === "ACTIVE" ? "active" : "pending",
+          paymentMethod: "square",
+          expiresAt: expiresAt,
+          productId: subscriptionId,
+          autoRenewing: true,
+          rawPayload: {
+            eventType: event.type,
+            subscriptionId,
+            status,
+          },
+        })
+
+        console.log("✅ user_subscriptionsにサブスクリプションを作成しました:", {
+          subscriptionId,
+          appPlan,
+          status,
+          expiresAt: expiresAt.toISOString(),
+        })
+      }
 
       return NextResponse.json({
         success: true,
