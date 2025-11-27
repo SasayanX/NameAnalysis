@@ -167,6 +167,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 【新規制限】残り回数が0回の時のみ使用可能
+    if (existing) {
+      const currentCount = existing.count || 0
+      const currentLimit = existing.limit_per_day || 0
+      const remaining = currentLimit - currentCount
+
+      if (remaining > 0) {
+        console.warn('[Dragon Breath Use] 残り回数がある場合は使用できません:', { 
+          userId, 
+          itemId, 
+          currentCount, 
+          currentLimit, 
+          remaining 
+        })
+        // アイテムの使用をロールバック
+        await supabase
+          .from('special_items')
+          .update({ is_used: false, used_at: null })
+          .eq('id', itemId)
+        
+        return NextResponse.json(
+          { 
+            error: '残り回数がある場合は龍の息吹を使用できません',
+            remaining,
+            currentCount,
+            currentLimit,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     if (existing) {
       // 既存レコードを更新（limit_per_dayだけを増やす、countは使用済み回数なので増やさない）
       const { data, error } = await supabase

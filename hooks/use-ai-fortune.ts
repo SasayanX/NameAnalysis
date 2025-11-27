@@ -260,7 +260,15 @@ export function useAiFortune(options: UseAiFortuneOptions) {
         const useResult = await useResponse.json()
 
         if (!useResult.success) {
-          setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
+          // 残り回数がある場合のエラーメッセージを分かりやすく
+          if (useResult.remaining && useResult.remaining > 0) {
+            setAiFortune({ 
+              success: false, 
+              error: `残り${useResult.remaining}回の鑑定が可能です。龍の息吹は残り回数が0回の時のみ使用できます。` 
+            })
+          } else {
+            setAiFortune({ success: false, error: useResult.error || "龍の息吹の使用に失敗しました" })
+          }
           setIsLoadingAiFortune(false)
           return
         }
