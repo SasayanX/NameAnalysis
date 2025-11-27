@@ -20,4 +20,25 @@
   name = "autopilot-execute"
   cron = "0 10 * * *"
 
+# ランキング確定処理 (UTC):
+# 春の陣終了: 5月31日 23:59 JST = 5月31日 14:59 UTC
+# 夏の陣終了: 8月31日 23:59 JST = 8月31日 14:59 UTC
+# 秋の陣終了: 11月30日 23:59 JST = 11月30日 14:59 UTC
+# 冬の陣終了: 2月28日/29日 23:59 JST = 2月28日/29日 14:59 UTC
+[[scheduled.functions]]
+  name = "ranking-finalize-season"
+  cron = "59 14 31 5 *"  # 5月31日 23:59 JST
+
+[[scheduled.functions]]
+  name = "ranking-finalize-season"
+  cron = "59 14 31 8 *"  # 8月31日 23:59 JST
+
+[[scheduled.functions]]
+  name = "ranking-finalize-season"
+  cron = "59 14 30 11 *"  # 11月30日 23:59 JST
+
+[[scheduled.functions]]
+  name = "ranking-finalize-season"
+  cron = "59 14 28,29 2 *"  # 2月28日/29日 23:59 JST
+
 

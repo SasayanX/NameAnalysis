@@ -148,6 +148,82 @@ export async function submitRankingEntry(
 }
 
 /**
+ * 前シーズンのキーを取得
+ * 現在のシーズンの1つ前のシーズンを返す
+ */
+export function getPreviousSeasonKey(date = new Date()): string {
+  const y = date.getFullYear()
+  const m = date.getMonth() + 1
+  
+  if (m >= 3 && m <= 5) {
+    // 現在が春 → 前は冬
+    return `${y}_winter`
+  }
+  if (m >= 6 && m <= 8) {
+    // 現在が夏 → 前は春
+    return `${y}_spring`
+  }
+  if (m >= 9 && m <= 11) {
+    // 現在が秋 → 前は夏
+    return `${y}_summer`
+  }
+  // 現在が冬（12-2月） → 前は秋
+  if (m === 12) {
+    return `${y}_autumn`
+  } else {
+    // 1月または2月 → 前年の秋
+    return `${y - 1}_autumn`
+  }
+}
+
+/**
+ * 順位に応じた報酬ポイントを計算
+ */
+export function calculateRewardPoints(rank: number): number {
+  const rewards: Record<number, number> = {
+    1: 500,
+    2: 300,
+    3: 200,
+    4: 150,
+    5: 120,
+    6: 100,
+    7: 80,
+    8: 60,
+    9: 50,
+    10: 40,
+  }
+  
+  if (rank <= 10) return rewards[rank]
+  if (rank <= 100) {
+    // 11-100位: 30〜10ポイント（線形減衰）
+    return Math.round(30 - ((rank - 11) / 89) * 20)
+  }
+  return 0
+}
+
+/**
+ * 順位に応じた称号を取得
+ */
+export function getRankTitle(rank: number): string {
+  const titles: Record<number, string> = {
+    1: "叶龍王",
+    2: "名魂覇者",
+    3: "名龍将",
+    4: "運命導士",
+    5: "開運師範",
+    6: "光名士",
+    7: "名探士",
+    8: "福名士",
+    9: "響魂者",
+    10: "名の旅人",
+  }
+  
+  if (rank <= 10) return titles[rank]
+  if (rank <= 100) return "叶の挑戦者"
+  return ""
+}
+
+/**
  * 姓名判断結果から自動でランキング登録
  * @param userId ユーザーID
  * @param lastName 姓
