@@ -67,6 +67,9 @@ export function SiteFooter() {
 
           <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
             <div className="flex flex-col items-center gap-2 md:flex-row md:gap-4">
+              <Link href="/legal/terms-of-service" className="text-sm text-muted-foreground hover:underline">
+                利用規約
+              </Link>
               <Link href="/legal" className="text-sm text-muted-foreground hover:underline">
                 特定商取引法に基づく表記
               </Link>
