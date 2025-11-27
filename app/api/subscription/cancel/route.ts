@@ -1,6 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { createClient as createServerClient } from "@/lib/supabase/server"
+
+/**
+ * Supabaseクライアントを取得
+ */
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!supabaseUrl || !supabaseKey) {
+    return null
+  }
+  
+  return createClient(supabaseUrl, supabaseKey)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,27 +42,40 @@ export async function POST(request: NextRequest) {
     if (squareResponse.ok) {
       // Supabaseのuser_subscriptionsテーブルも更新
       try {
-        const supabase = await createServerClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const supabase = getSupabase()
         
-        if (user) {
-          const now = new Date().toISOString()
+        if (supabase) {
+          // リクエストヘッダーからユーザーIDを取得（Supabase Authを使用している場合）
+          const authHeader = request.headers.get("authorization")
+          let userId: string | null = null
           
-          // user_subscriptionsを更新
-          const { error: updateError } = await supabase
-            .from("user_subscriptions")
-            .update({
-              status: "cancelled",
-              expires_at: now, // 即座に無効化
-              updated_at: now,
-            })
-            .eq("user_id", user.id)
-            .eq("square_subscription_id", subscriptionId)
+          if (authHeader?.startsWith("Bearer ")) {
+            const token = authHeader.substring(7)
+            const { data: { user } } = await supabase.auth.getUser(token)
+            userId = user?.id || null
+          }
           
-          if (updateError) {
-            console.error("Supabase update error:", updateError)
+          if (userId) {
+            const now = new Date().toISOString()
+            
+            // user_subscriptionsを更新
+            const { error: updateError } = await supabase
+              .from("user_subscriptions")
+              .update({
+                status: "cancelled",
+                expires_at: now, // 即座に無効化
+                updated_at: now,
+              })
+              .eq("user_id", userId)
+              .eq("square_subscription_id", subscriptionId)
+            
+            if (updateError) {
+              console.error("Supabase update error:", updateError)
+            } else {
+              console.log("✅ Supabaseのuser_subscriptionsを更新しました")
+            }
           } else {
-            console.log("✅ Supabaseのuser_subscriptionsを更新しました")
+            console.warn("⚠️ ユーザーIDが取得できませんでした。Supabase更新をスキップします。")
           }
         }
       } catch (supabaseError) {
