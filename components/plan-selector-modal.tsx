@@ -250,11 +250,16 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
 
                 {plan.id !== "free" && process.env.NODE_ENV !== "development" && (
                   <p className="text-xs text-muted-foreground text-center">
-                    7日間無料トライアル付き
-                    <br />
-                    いつでもキャンセル可能
-                    {(isGooglePlayAvailable || isTWAContext) && (
-                      <span className="block mt-1 text-blue-600">Google Play経由で購入</span>
+                    {(isGooglePlayAvailable || isTWAContext) ? (
+                      // Google Play決済: 無料トライアル表示なし（未設定のため）
+                      "いつでもキャンセル可能"
+                    ) : (
+                      // Square決済: 3日間無料トライアル
+                      <>
+                        3日間無料トライアル付き
+                        <br />
+                        いつでもキャンセル可能
+                      </>
                     )}
                   </p>
                 )}
