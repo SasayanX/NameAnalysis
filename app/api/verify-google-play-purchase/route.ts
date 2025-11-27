@@ -184,6 +184,17 @@ export async function POST(request: NextRequest) {
       token: purchaseToken,
     })
 
+    console.log("[Google Play Billing] Purchase API response status:", purchase.status)
+    console.log("[Google Play Billing] Purchase data exists:", !!purchase.data)
+    if (!purchase.data) {
+      console.error("[Google Play Billing] No purchase data returned from Google Play API")
+      console.error("[Google Play Billing] Request parameters:", {
+        packageName: appPackageName,
+        subscriptionId: productId,
+        tokenPreview: purchaseToken.substring(0, 20) + "...",
+      })
+    }
+
     if (purchase.data) {
       const purchaseData = purchase.data
       
@@ -249,8 +260,24 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    console.error("[Google Play Billing] Purchase verification failed: No valid purchase data")
+    console.error("[Google Play Billing] This could be caused by:")
+    console.error("  1. Invalid purchase token")
+    console.error("  2. Purchase was canceled or refunded")
+    console.error("  3. Incorrect package name")
+    console.error("  4. Service account lacks necessary permissions")
+    
     return NextResponse.json(
-      { success: false, error: "Purchase verification failed" },
+      { 
+        success: false, 
+        error: "Purchase verification failed",
+        details: "No valid purchase data returned from Google Play API. Please check logs for more information.",
+        troubleshooting: {
+          checkPackageName: appPackageName,
+          checkProductId: productId,
+          checkPurchaseToken: purchaseToken.substring(0, 20) + "...",
+        }
+      },
       { status: 400 }
     )
   } catch (error: any) {
