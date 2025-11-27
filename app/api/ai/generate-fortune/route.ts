@@ -10,12 +10,12 @@ import { getKotodamaData } from '@/lib/firestore-client'
 const GEMINI_TIMEOUT_MS = 25000
 const MODEL_NAMES = [
   'gemini-2.5-flash',      // 推奨: 最新の安定版（2025年6月リリース）
-  'gemini-2.5-pro',        // 高品質版（2025年6月17日リリース）
   'gemini-2.0-flash',      // 2.0 Flash
   'gemini-2.0-flash-001',  // 2.0 Flash 安定版（2025年1月リリース）
   'gemini-2.5-flash-lite', // 軽量版（2025年7月リリース）
   'gemini-2.0-flash-lite', // 2.0 Flash 軽量版
   'gemini-2.0-flash-lite-001', // 2.0 Flash-Lite 安定版
+  // 注意: gemini-2.5-pro は高額なため除外（Flashモデルの約17倍）
 ] as const
 
 /**
