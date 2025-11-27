@@ -257,7 +257,32 @@ export async function POST(request: NextRequest) {
       const status = subscription.status
       const chargedThroughDate = subscription.charged_through_date
       const customerId = subscription.customer_id
-      const customerEmail = subscription.customer_email
+      let customerEmail = subscription.customer_email
+      
+      // customerEmailが空の場合、Square APIからカスタマー情報を取得
+      if (!customerEmail && customerId && process.env.SQUARE_ACCESS_TOKEN) {
+        try {
+          const customerResponse = await fetch(
+            `https://connect.squareup.com/v2/customers/${customerId}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+                "Content-Type": "application/json",
+                "Square-Version": "2023-10-18",
+              },
+            }
+          )
+          
+          if (customerResponse.ok) {
+            const customerData = await customerResponse.json()
+            customerEmail = customerData.customer?.email_address || null
+            console.log("✅ Square APIからメールアドレスを取得しました:", customerEmail)
+          }
+        } catch (error) {
+          console.error("Square Customer APIエラー:", error)
+        }
+      }
       
       console.log("サブスクリプション作成:", {
         subscriptionId,
@@ -301,6 +326,7 @@ export async function POST(request: NextRequest) {
           subscriptionId,
           appPlan,
           status,
+          customerEmail,
           expiresAt: expiresAt.toISOString(),
         })
       }
@@ -325,7 +351,32 @@ export async function POST(request: NextRequest) {
       const chargedThroughDate = subscription.charged_through_date // 次回請求日
       
       const subscriptionCustomerId = subscription.customer_id
-      const subscriptionCustomerEmail = subscription.customer_email
+      let subscriptionCustomerEmail = subscription.customer_email
+      
+      // customerEmailが空の場合、Square APIからカスタマー情報を取得
+      if (!subscriptionCustomerEmail && subscriptionCustomerId && process.env.SQUARE_ACCESS_TOKEN) {
+        try {
+          const customerResponse = await fetch(
+            `https://connect.squareup.com/v2/customers/${subscriptionCustomerId}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+                "Content-Type": "application/json",
+                "Square-Version": "2023-10-18",
+              },
+            }
+          )
+          
+          if (customerResponse.ok) {
+            const customerData = await customerResponse.json()
+            subscriptionCustomerEmail = customerData.customer?.email_address || null
+            console.log("✅ Square APIからメールアドレスを取得しました:", subscriptionCustomerEmail)
+          }
+        } catch (error) {
+          console.error("Square Customer APIエラー:", error)
+        }
+      }
 
       console.log("サブスクリプション更新:", {
         subscriptionId,
