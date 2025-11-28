@@ -97,27 +97,41 @@ async function synthesizeSpeechWithApiKey(
 
       clearTimeout(timeoutId)
 
-      // 503エラーや一時的なエラーの場合はリトライ
-      if (response.status === 503 || response.status === 429 || response.status === 500) {
-        if (retryCount < maxRetries) {
-          // 指数バックオフ: 1秒, 2秒, 4秒
-          const delayMs = Math.pow(2, retryCount) * 1000
-          console.warn(
-            `[Text-to-Speech] Retrying after ${response.status} error (attempt ${retryCount + 1}/${maxRetries}) in ${delayMs}ms`
-          )
-          await new Promise(resolve => setTimeout(resolve, delayMs))
-          return synthesizeSpeechWithApiKey(text, languageCode, voiceName, speakingRate, pitch, retryCount + 1, maxRetries)
-        } else {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(
-            `HTTP ${response.status}: ${response.statusText}. Max retries (${maxRetries}) exceeded. ${errorData.error?.message || ''}`
-          )
-        }
-      }
-
+      // レスポンスの詳細をログに記録
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`)
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData.error || errorData,
+          url: url.replace(apiKey, 'API_KEY_REDACTED'),
+        }
+        
+        console.error(`[Text-to-Speech API Key] HTTP ${response.status} error:`, JSON.stringify(errorDetails, null, 2))
+        
+        // 503エラーや一時的なエラーの場合はリトライ
+        if (response.status === 503 || response.status === 429 || response.status === 500) {
+          if (retryCount < maxRetries) {
+            // 指数バックオフ: 1秒, 2秒, 4秒
+            const delayMs = Math.pow(2, retryCount) * 1000
+            console.warn(
+              `[Text-to-Speech] Retrying after ${response.status} error (attempt ${retryCount + 1}/${maxRetries}) in ${delayMs}ms`
+            )
+            await new Promise(resolve => setTimeout(resolve, delayMs))
+            return synthesizeSpeechWithApiKey(text, languageCode, voiceName, speakingRate, pitch, retryCount + 1, maxRetries)
+          } else {
+            throw new Error(
+              `HTTP ${response.status}: ${response.statusText}. Max retries (${maxRetries}) exceeded. ` +
+              `Error: ${errorData.error?.message || errorData.message || JSON.stringify(errorData)}`
+            )
+          }
+        }
+
+        // 認証エラー（403）や無効なリクエスト（400）の場合はリトライしない
+        throw new Error(
+          `HTTP ${response.status}: ${response.statusText}. ` +
+          `Error: ${errorData.error?.message || errorData.message || JSON.stringify(errorData)}`
+        )
       }
 
       const data = await response.json()
@@ -209,6 +223,7 @@ export async function POST(request: NextRequest) {
       apiKeyLength: apiKey?.length || 0,
       apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'N/A',
       nodeEnv: process.env.NODE_ENV,
+      allEnvKeys: Object.keys(process.env).filter(key => key.includes('TTS') || key.includes('GOOGLE_CLOUD')).join(', '),
     })
 
     if (apiKey) {
@@ -224,10 +239,14 @@ export async function POST(request: NextRequest) {
           audioContent = result.audioContent
         }
       } catch (error: any) {
-        console.error('[Text-to-Speech] API Key method failed:', error.message)
-        // 本番環境でもエラー詳細を返す（デバッグ用）
-        if (!isDevelopment && error.message) {
-          console.error('[Text-to-Speech] Full error:', error)
+        console.error('[Text-to-Speech] API Key method failed:', {
+          message: error.message,
+          stack: error.stack,
+          status: error.message?.match(/HTTP (\d+)/)?.[1],
+        })
+        // 403エラー（認証エラー）の場合は、APIキーの問題である可能性が高い
+        if (error.message?.includes('403') || error.message?.includes('PERMISSION_DENIED')) {
+          console.error('[Text-to-Speech] Authentication error - check API key permissions')
         }
       }
     }
@@ -236,17 +255,33 @@ export async function POST(request: NextRequest) {
     if (!audioContent) {
       const client = getTextToSpeechClient()
       if (!client) {
-        const debugInfo = isDevelopment ? {
+        // より詳細なデバッグ情報を収集
+        const envKeys = Object.keys(process.env)
+        const relatedEnvKeys = envKeys.filter(key => 
+          key.includes('TTS') || 
+          key.includes('GOOGLE_CLOUD') || 
+          key.includes('GOOGLE_PLAY') || 
+          key.includes('FIREBASE')
+        )
+        
+        const debugInfo = {
           apiKeyExists: !!apiKey,
           apiKeyLength: apiKey?.length || 0,
-          message: 'GOOGLE_CLOUD_TTS_API_KEY またはサービスアカウントキーを設定してください',
-        } : {
-          apiKeyExists: !!apiKey,
-          apiKeyLength: apiKey?.length || 0,
-          message: '環境変数が正しく設定されていない可能性があります。Netlify Dashboardで環境変数を確認してください。',
+          apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'N/A',
+          nodeEnv: process.env.NODE_ENV,
+          relatedEnvKeys: relatedEnvKeys,
+          message: isDevelopment 
+            ? 'GOOGLE_CLOUD_TTS_API_KEY またはサービスアカウントキーを設定してください'
+            : '環境変数が正しく設定されていない可能性があります。Netlify Dashboardで環境変数を確認し、再デプロイしてください。',
+          troubleshooting: [
+            'Netlify Dashboard > Site settings > Environment variables で GOOGLE_CLOUD_TTS_API_KEY を確認',
+            '環境変数のスコープに Production が含まれているか確認',
+            '環境変数を追加/変更した後、必ず再デプロイを実行（Deploys > Trigger deploy > Deploy site）',
+            'デバッグエンドポイントにアクセスして状態を確認: /api/debug/tts-env-check',
+          ],
         }
 
-        console.error('[Text-to-Speech] Service not configured:', debugInfo)
+        console.error('[Text-to-Speech] Service not configured:', JSON.stringify(debugInfo, null, 2))
         
         return NextResponse.json(
           { 
