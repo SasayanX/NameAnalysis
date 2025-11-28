@@ -78,21 +78,60 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
           return
         }
 
-        // API呼び出し
-        const response = await fetch("/api/text-to-speech", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: cleanText,
-            languageCode: lang,
-            speakingRate: rate,
-            pitch: pitch,
-          }),
-        })
+        // API呼び出し（リトライ付き）
+        let response: Response | null = null
+        let lastError: Error | null = null
+        const maxRetries = 3
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.error || `HTTP ${response.status}`)
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            response = await fetch("/api/text-to-speech", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text: cleanText,
+                languageCode: lang,
+                speakingRate: rate,
+                pitch: pitch,
+              }),
+            })
+
+            // 503, 429, 500エラーの場合はリトライ
+            if (response.status === 503 || response.status === 429 || response.status === 500) {
+              if (attempt < maxRetries - 1) {
+                const delayMs = Math.pow(2, attempt) * 1000 // 1秒, 2秒, 4秒
+                console.warn(
+                  `[Text-to-Speech] Retrying after ${response.status} error (attempt ${attempt + 1}/${maxRetries}) in ${delayMs}ms`
+                )
+                await new Promise((resolve) => setTimeout(resolve, delayMs))
+                continue
+              }
+            }
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}))
+              throw new Error(errorData.error || `HTTP ${response.status}`)
+            }
+
+            break // 成功したらループを抜ける
+          } catch (error: any) {
+            lastError = error
+            // ネットワークエラーやタイムアウトの場合はリトライ
+            if (attempt < maxRetries - 1 && (error.message?.includes("fetch") || error.name === "TypeError")) {
+              const delayMs = Math.pow(2, attempt) * 1000
+              console.warn(
+                `[Text-to-Speech] Retrying after network error (attempt ${attempt + 1}/${maxRetries}) in ${delayMs}ms:`,
+                error.message
+              )
+              await new Promise((resolve) => setTimeout(resolve, delayMs))
+              continue
+            }
+            throw error
+          }
+        }
+
+        if (!response || !response.ok) {
+          throw lastError || new Error("リクエストに失敗しました")
         }
 
         const data = await response.json()
