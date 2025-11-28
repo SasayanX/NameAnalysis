@@ -179,9 +179,9 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
       case "free":
         return "bg-gray-500 text-white"
       case "basic":
-        return "bg-[#C4B5FD] text-[#4C1D95] dark:bg-[#6D28D9] dark:text-[#E9D5FF]"
+        return "bg-blue-500 text-white"
       case "premium":
-        return "bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]"
+        return "bg-purple-600 text-white"
       default:
         return "bg-gray-500 text-white"
     }

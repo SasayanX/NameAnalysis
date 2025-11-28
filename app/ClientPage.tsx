@@ -1169,7 +1169,7 @@ export default function ClientPage() {
                                       <div className="flex items-center gap-1">
                                         {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
                                         <Sparkles className="h-4 w-4 text-purple-600" />
-                                        <span className="text-xs px-2 py-1 rounded bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]">Premium</span>
+                                        <span className="text-xs px-2 py-1 rounded bg-purple-600 text-white">Premium</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1186,7 +1186,7 @@ export default function ClientPage() {
                                       <div className="flex items-center gap-1">
                                         {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
                                         <Sparkles className="h-4 w-4 text-purple-600" />
-                                        <span className="text-xs px-2 py-1 rounded bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]">Premium</span>
+                                        <span className="text-xs px-2 py-1 rounded bg-purple-600 text-white">Premium</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1202,7 +1202,7 @@ export default function ClientPage() {
                                       </div>
                                       <div className="flex items-center gap-1">
                                         {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
-                                        <span className="text-xs px-2 py-1 rounded bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]">Premium</span>
+                                        <span className="text-xs px-2 py-1 rounded bg-purple-600 text-white">Premium</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1218,7 +1218,7 @@ export default function ClientPage() {
                                       </div>
                                       <div className="flex items-center gap-1">
                                         {currentPlan === "free" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
-                                        <span className="text-xs px-2 py-1 rounded bg-[#C4B5FD] text-[#4C1D95] dark:bg-[#6D28D9] dark:text-[#E9D5FF]">Basic</span>
+                                        <span className="text-xs px-2 py-1 rounded bg-blue-500 text-white">Basic</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1235,7 +1235,7 @@ export default function ClientPage() {
                                       <div className="flex items-center gap-1">
                                         {currentPlan !== "premium" && <LockIcon className="h-4 w-4 text-muted-foreground" />}
                                         <Sparkles className="h-4 w-4 text-pink-600" />
-                                        <span className="text-xs px-2 py-1 rounded bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]">Premium</span>
+                                        <span className="text-xs px-2 py-1 rounded bg-purple-600 text-white">Premium</span>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1991,23 +1991,23 @@ export default function ClientPage() {
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>総合分析</strong>: 六星占術・五行分析を含む高度な分析</span>
-                                    <Badge variant="secondary" className="text-xs shrink-0 bg-[#C4B5FD] text-[#4C1D95] dark:bg-[#6D28D9] dark:text-[#E9D5FF]">Basic</Badge>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-500 text-white">Basic</Badge>
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>相性診断</strong>: パートナーとの相性を診断</span>
-                                    <Badge variant="secondary" className="text-xs shrink-0 bg-[#C4B5FD] text-[#4C1D95] dark:bg-[#6D28D9] dark:text-[#E9D5FF]">Basic</Badge>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-500 text-white">Basic</Badge>
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>赤ちゃん名付け</strong>: 最適な名前候補をご提案</span>
-                                    <Badge variant="secondary" className="text-xs shrink-0 bg-[#C4B5FD] text-[#4C1D95] dark:bg-[#6D28D9] dark:text-[#E9D5FF]">Basic</Badge>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-blue-500 text-white">Basic</Badge>
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>おなまえ格付けランク表示</strong>: 名前の格付けとランクを表示</span>
-                                    <Badge variant="secondary" className="text-xs shrink-0 bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]">Premium</Badge>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-purple-600 text-white">Premium</Badge>
                                   </li>
                                   <li className="flex items-start gap-2">
                                     <span className="flex-1">✓ <strong>AI深層言霊鑑定</strong>: AIによる深層心理分析と運命鑑定</span>
-                                    <Badge variant="secondary" className="text-xs shrink-0 bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]">Premium</Badge>
+                                    <Badge variant="secondary" className="text-xs shrink-0 bg-purple-600 text-white">Premium</Badge>
                                   </li>
                                 </ul>
                               </div>
@@ -2060,7 +2060,7 @@ export default function ClientPage() {
                           <div className="p-3 bg-white/50 rounded-lg dark:bg-yellow-900/20 dark:border dark:border-yellow-800/50">
                             <div className="flex items-center justify-between mb-1">
                               <h4 className="font-semibold text-sm dark:text-yellow-100">📊 ランキング機能</h4>
-                              <Badge variant="secondary" className="text-xs bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]">Premium</Badge>
+                              <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Premium</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground dark:text-yellow-200">
                               名前の格付けをランキングに登録して、季節ごとの順位を競いましょう。

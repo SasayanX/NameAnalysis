@@ -19,15 +19,15 @@ export default function PricingPage() {
   // 年額プランは無効化：常に月額のみ
   const billingCycle: "monthly" = "monthly"
 
-  // 現在のプランバッジの色を取得（「このアプリについて」の配色に統一）
+  // 現在のプランバッジの色を取得
   const getCurrentPlanBadgeColor = (planId: string) => {
     switch (planId) {
       case "free":
         return "bg-gray-500 text-white border-gray-600"
       case "basic":
-        return "bg-[#C4B5FD] text-[#4C1D95] border-[#6D28D9] dark:bg-[#6D28D9] dark:text-[#E9D5FF] dark:border-[#8B5CF6]"
+        return "bg-blue-500 text-white border-blue-600"
       case "premium":
-        return "bg-[#FCD34D] text-[#78350F] border-[#F59E0B] dark:bg-[#F59E0B] dark:text-[#FEF3C7] dark:border-[#FBBF24]"
+        return "bg-purple-600 text-white border-purple-700"
       default:
         return "bg-gray-500 text-white border-gray-600"
     }
