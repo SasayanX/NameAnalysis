@@ -1741,16 +1741,26 @@ export default function ClientPage() {
                                         {/* メイン鑑定文（fortune）がある場合は最初に表示 */}
                                         {aiFortune.aiFortune.fortune && (
                                           <Card className="border-purple-200 shadow-md bg-gradient-to-br from-purple-50 to-pink-50 dark:border-purple-900 dark:from-purple-950/40 dark:to-pink-950/20">
-                                            <CardHeader className="pb-3">
-                                              <div className="flex items-center justify-between">
-                                                <CardTitle className="flex items-center gap-2 text-purple-800 text-lg dark:text-purple-100">
+                                            <CardHeader className="pb-3 space-y-0">
+                                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                                                <CardTitle className="flex items-center gap-2 text-purple-800 text-lg dark:text-purple-100 flex-shrink-0">
                                                   <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
                                                   AI深層言霊鑑定
                                                 </CardTitle>
                                                 {/* 読み上げボタン */}
                                                 {textToSpeech.isSupported && (
-                                                  <div className="flex items-center gap-2">
-                                                    {textToSpeech.isSpeaking ? (
+                                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                                    {textToSpeech.isLoading ? (
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled
+                                                        className="text-purple-600 dark:text-purple-300"
+                                                      >
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-1"></div>
+                                                        <span className="text-xs">読み込み中</span>
+                                                      </Button>
+                                                    ) : textToSpeech.isSpeaking ? (
                                                       <>
                                                         {textToSpeech.isPaused ? (
                                                           <Button
@@ -1761,7 +1771,7 @@ export default function ClientPage() {
                                                             title="読み上げを再開"
                                                           >
                                                             <Volume2 className="h-4 w-4 mr-1" />
-                                                            <span className="text-xs">再開</span>
+                                                            <span className="text-xs hidden sm:inline">再開</span>
                                                           </Button>
                                                         ) : (
                                                           <Button
@@ -1772,7 +1782,7 @@ export default function ClientPage() {
                                                             title="読み上げを一時停止"
                                                           >
                                                             <VolumeX className="h-4 w-4 mr-1" />
-                                                            <span className="text-xs">一時停止</span>
+                                                            <span className="text-xs hidden sm:inline">一時停止</span>
                                                           </Button>
                                                         )}
                                                         <Button
@@ -1782,7 +1792,8 @@ export default function ClientPage() {
                                                           className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/50"
                                                           title="読み上げを停止"
                                                         >
-                                                          <span className="text-xs">停止</span>
+                                                          <span className="text-xs hidden sm:inline">停止</span>
+                                                          <span className="text-xs sm:hidden">×</span>
                                                         </Button>
                                                       </>
                                                     ) : (
@@ -1794,7 +1805,8 @@ export default function ClientPage() {
                                                         title="AI深層鑑定結果を読み上げ"
                                                       >
                                                         <Volume2 className="h-4 w-4 mr-1" />
-                                                        <span className="text-xs">読み上げ</span>
+                                                        <span className="text-xs hidden sm:inline">読み上げ</span>
+                                                        <span className="text-xs sm:hidden">音声</span>
                                                       </Button>
                                                     )}
                                                   </div>
