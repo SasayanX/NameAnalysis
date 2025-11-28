@@ -54,6 +54,7 @@ import { useCompanyAnalysis } from "@/hooks/use-company-analysis"
 import { useAiFortune } from "@/hooks/use-ai-fortune"
 import { useDragonBreath } from "@/hooks/use-dragon-breath"
 import { useSubscriptionSync } from "@/hooks/use-subscription-sync"
+import { useTextToSpeech } from "@/hooks/use-text-to-speech"
 // import { useBGM } from "@/hooks/use-bgm" // 一時的に無効化
 
 // メモ化されたコンポーネント
@@ -594,6 +595,14 @@ export default function ClientPage() {
     premium: 3,
   } as const
 
+  // テキスト読み上げ機能
+  const textToSpeech = useTextToSpeech({
+    lang: "ja-JP",
+    rate: 1.0,
+    pitch: 1.0,
+    volume: 1.0,
+  })
+
   // AI鑑定（useAiFortuneフックを使用）
   const {
     aiFortune,
@@ -618,6 +627,8 @@ export default function ClientPage() {
       if (aiFortune) {
         resetAiFortune()
       }
+      // 読み上げも停止
+      textToSpeech.stop()
       return
     }
 
@@ -642,9 +653,48 @@ export default function ClientPage() {
         currentName: currentName,
       })
       resetAiFortune()
+      // 読み上げも停止
+      textToSpeech.stop()
     }
-  }, [results, aiFortune, resetAiFortune])
+  }, [results, aiFortune, resetAiFortune, textToSpeech])
 
+  // AI深層鑑定結果を読み上げる関数
+  const speakAiFortuneResult = useCallback(() => {
+    if (!aiFortune?.aiFortune) return
+
+    const parts: string[] = []
+
+    // メイン鑑定文（fortune）
+    if (aiFortune.aiFortune.fortune) {
+      parts.push(aiFortune.aiFortune.fortune)
+    }
+
+    // 深層心理的特徴
+    if (aiFortune.aiFortune.personality) {
+      parts.push(`深層心理的特徴。${aiFortune.aiFortune.personality}`)
+    }
+
+    // 潜在的な才能・適性
+    if (aiFortune.aiFortune.talents) {
+      parts.push(`潜在的な才能・適性。${aiFortune.aiFortune.talents}`)
+    }
+
+    // 人生における課題と解決策
+    if (aiFortune.aiFortune.challenges) {
+      parts.push(`人生における課題と解決策。${aiFortune.aiFortune.challenges}`)
+    }
+
+    // 具体的なアドバイス
+    if (aiFortune.aiFortune.advice) {
+      parts.push(`具体的なアドバイス。${aiFortune.aiFortune.advice}`)
+    }
+
+    // 全てのテキストを結合して読み上げ
+    const fullText = parts.join(" ")
+    if (fullText) {
+      textToSpeech.speak(fullText)
+    }
+  }, [aiFortune, textToSpeech])
 
   const handlePdfExport = useCallback(
     (contentId: string, fileName: string) => {
@@ -1697,26 +1747,58 @@ export default function ClientPage() {
                                                   <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-300" />
                                                   AI深層言霊鑑定
                                                 </CardTitle>
-                                                {/* BGMコントロールボタン（一時的に無効化） */}
-                                                {/* <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={bgm.toggle}
-                                                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/50"
-                                                  title={bgm.isPlaying ? "BGMを停止" : "BGMを再生"}
-                                                >
-                                                  {bgm.isPlaying ? (
-                                                    <>
-                                                      <VolumeX className="h-4 w-4 mr-1" />
-                                                      <span className="text-xs">停止</span>
-                                                    </>
-                                                  ) : (
-                                                    <>
-                                                      <Volume2 className="h-4 w-4 mr-1" />
-                                                      <span className="text-xs">BGM</span>
-                                                    </>
-                                                  )}
-                                                </Button> */}
+                                                {/* 読み上げボタン */}
+                                                {textToSpeech.isSupported && (
+                                                  <div className="flex items-center gap-2">
+                                                    {textToSpeech.isSpeaking ? (
+                                                      <>
+                                                        {textToSpeech.isPaused ? (
+                                                          <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={textToSpeech.resume}
+                                                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                                                            title="読み上げを再開"
+                                                          >
+                                                            <Volume2 className="h-4 w-4 mr-1" />
+                                                            <span className="text-xs">再開</span>
+                                                          </Button>
+                                                        ) : (
+                                                          <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={textToSpeech.pause}
+                                                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                                                            title="読み上げを一時停止"
+                                                          >
+                                                            <VolumeX className="h-4 w-4 mr-1" />
+                                                            <span className="text-xs">一時停止</span>
+                                                          </Button>
+                                                        )}
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="sm"
+                                                          onClick={textToSpeech.stop}
+                                                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                                                          title="読み上げを停止"
+                                                        >
+                                                          <span className="text-xs">停止</span>
+                                                        </Button>
+                                                      </>
+                                                    ) : (
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={speakAiFortuneResult}
+                                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                                                        title="AI深層鑑定結果を読み上げ"
+                                                      >
+                                                        <Volume2 className="h-4 w-4 mr-1" />
+                                                        <span className="text-xs">読み上げ</span>
+                                                      </Button>
+                                                    )}
+                                                  </div>
+                                                )}
                                               </div>
                                             </CardHeader>
                                             <CardContent className="border-t border-purple-100 dark:border-purple-900 pt-4">
