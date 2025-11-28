@@ -174,6 +174,19 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
     }
   }
 
+  const getCurrentPlanBadgeColor = (planId: string) => {
+    switch (planId) {
+      case "free":
+        return "bg-gray-500 text-white"
+      case "basic":
+        return "bg-[#C4B5FD] text-[#4C1D95] dark:bg-[#6D28D9] dark:text-[#E9D5FF]"
+      case "premium":
+        return "bg-[#FCD34D] text-[#78350F] dark:bg-[#F59E0B] dark:text-[#FEF3C7]"
+      default:
+        return "bg-gray-500 text-white"
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -211,7 +224,7 @@ export function PlanSelectorModal({ isOpen, onClose, currentPlan = "free", onPla
                   <span className="text-sm font-normal text-muted-foreground">/月</span>
                 </div>
                 {currentPlan === plan.id && (
-                  <Badge variant="secondary" className="mt-2">
+                  <Badge className={`mt-2 ${getCurrentPlanBadgeColor(plan.id)}`}>
                     現在のプラン
                   </Badge>
                 )}

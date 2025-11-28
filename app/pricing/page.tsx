@@ -18,6 +18,20 @@ export default function PricingPage() {
   const currentPlan = subscription.getCurrentPlan()
   // 年額プランは無効化：常に月額のみ
   const billingCycle: "monthly" = "monthly"
+
+  // 現在のプランバッジの色を取得（「このアプリについて」の配色に統一）
+  const getCurrentPlanBadgeColor = (planId: string) => {
+    switch (planId) {
+      case "free":
+        return "bg-gray-500 text-white border-gray-600"
+      case "basic":
+        return "bg-[#C4B5FD] text-[#4C1D95] border-[#6D28D9] dark:bg-[#6D28D9] dark:text-[#E9D5FF] dark:border-[#8B5CF6]"
+      case "premium":
+        return "bg-[#FCD34D] text-[#78350F] border-[#F59E0B] dark:bg-[#F59E0B] dark:text-[#FEF3C7] dark:border-[#FBBF24]"
+      default:
+        return "bg-gray-500 text-white border-gray-600"
+    }
+  }
   // 初期状態でTWA環境を判定（SSRを避けるため）
   const [isGooglePlayAvailable, setIsGooglePlayAvailable] = useState(() => {
     if (typeof window === "undefined") return false
@@ -292,7 +306,7 @@ export default function PricingPage() {
 
           {/* 現在のプラン（ヘッダーと連動） */}
           <div className="mt-4 flex justify-center">
-            <span className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 border border-gray-300">
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium border ${getCurrentPlanBadgeColor(currentPlan.id)}`}>
               現在のプラン: {currentPlan.name}
             </span>
           </div>
