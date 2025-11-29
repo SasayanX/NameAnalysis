@@ -9,11 +9,17 @@ Google Cloud Text-to-Speech APIは、**APIキー方式をサポートしてい�
 HTTP 401: API keys are not supported by this API. Expected OAuth2 access token or other authentication credentials that assert a principal.
 ```
 
+## ⚠️ 重要: Netlifyの4KB制限について
+
+Netlifyの環境変数の合計サイズは**4KB制限**があります。サービスアカウントキーのJSONを環境変数に直接設定すると、この制限を超える可能性があります。
+
 ## 解決方法: サービスアカウントキーを使用
 
-Netlify環境では、**サービスアカウントキーのJSON文字列を環境変数に設定**します。
+Netlify環境では、**ファイルパス方式**を使用することを推奨します（環境変数のサイズを削減するため）。
 
-### 手順
+### 方法1: ファイルパス方式（推奨・4KB制限を回避）
+
+#### 手順
 
 1. **Google Cloud Consoleでサービスアカウントキーを作成**
 
@@ -22,20 +28,49 @@ Netlify環境では、**サービスアカウントキーのJSON文字列を環�
    - サービスアカウントを選択（または新規作成）
    - 「Keys」タブ → 「Add Key」→ 「Create new key」
    - キータイプ: **JSON** を選択
-   - ダウンロードしたJSONファイルを開く
+   - ダウンロードしたJSONファイルを保存
 
-2. **Netlify Dashboardで環境変数を設定**
+2. **プロジェクトに配置**
+
+   - ダウンロードしたJSONファイルを `functions/config/google-cloud-tts-service-account.json` に配置
+   - **注意**: プライベートリポジトリの場合のみGitにコミットしてください
+   - 公開リポジトリの場合は、**絶対にコミットしないでください**
+
+3. **Netlify Dashboardで環境変数を設定**
 
    - Netlify Dashboard → Site settings → Environment variables
    - 新しい環境変数を追加:
-     - **Key**: `GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_JSON`
-     - **Value**: ダウンロードしたJSONファイルの内容を**そのまま貼り付け**
+     - **Key**: `GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_PATH`
+     - **Value**: `functions/config/google-cloud-tts-service-account.json`
      - **Scopes**: Production, Deploy Previews, Branch Deploys（必要に応じて）
+   - **重要**: `GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_JSON` が設定されている場合は**削除**してください（4KB制限の原因になります）
 
-3. **デプロイ**
+4. **Gitにコミット（プライベートリポジトリの場合のみ）**
+
+   ```bash
+   # .gitignoreから除外する必要がある場合
+   git add -f functions/config/google-cloud-tts-service-account.json
+   git commit -m "Add Google Cloud TTS service account key"
+   git push
+   ```
+
+5. **デプロイ**
 
    - 環境変数を設定した後、**再デプロイが必要**です
    - Deploys → Trigger deploy → Deploy site
+
+### 方法2: JSON文字列方式（非推奨・4KB制限に注意）
+
+環境変数に直接JSONを設定する方法も動作しますが、4KB制限を超える可能性があります。
+
+1. **サービスアカウントキーをダウンロード**（上記と同じ）
+
+2. **Netlify Dashboardで環境変数を設定**
+
+   - **Key**: `GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_JSON`
+   - **Value**: ダウンロードしたJSONファイルの内容を**そのまま貼り付け**
+   
+   ⚠️ **注意**: この方法は、他の環境変数と合わせて4KB制限を超えない場合のみ使用してください。
 
 ### 環境変数の例
 
