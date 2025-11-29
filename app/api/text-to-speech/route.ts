@@ -148,12 +148,22 @@ async function synthesizeSpeechWithApiKey(
 
       // レスポンスの詳細をログに記録
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+        let errorData: any = {}
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          // JSONパースに失敗した場合、テキストとして取得
+          const text = await response.text().catch(() => '')
+          errorData = { message: text || `HTTP ${response.status}: ${response.statusText}` }
+        }
+        
         const errorDetails = {
           status: response.status,
           statusText: response.statusText,
           error: errorData.error || errorData,
-          url: url.replace(apiKey, 'API_KEY_REDACTED'),
+          errorMessage: errorData.error?.message || errorData.message,
+          errorCode: errorData.error?.code || errorData.code,
+          fullError: errorData,
         }
         
         console.error(`[Text-to-Speech API Key] HTTP ${response.status} error:`, JSON.stringify(errorDetails, null, 2))
@@ -169,18 +179,23 @@ async function synthesizeSpeechWithApiKey(
             await new Promise(resolve => setTimeout(resolve, delayMs))
             return synthesizeSpeechWithApiKey(text, languageCode, voiceName, speakingRate, pitch, retryCount + 1, maxRetries)
           } else {
-            throw new Error(
-              `HTTP ${response.status}: ${response.statusText}. Max retries (${maxRetries}) exceeded. ` +
-              `Error: ${errorData.error?.message || errorData.message || JSON.stringify(errorData)}`
-            )
+            // 詳細なエラー情報を含めてスロー
+            const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${response.statusText}`
+            const error = new Error(
+              `HTTP ${response.status}: ${errorMessage}. Max retries (${maxRetries}) exceeded.`
+            ) as any
+            error.status = response.status
+            error.errorData = errorData
+            throw error
           }
         }
 
         // 認証エラー（403）や無効なリクエスト（400）の場合はリトライしない
-        throw new Error(
-          `HTTP ${response.status}: ${response.statusText}. ` +
-          `Error: ${errorData.error?.message || errorData.message || JSON.stringify(errorData)}`
-        )
+        const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        const error = new Error(`HTTP ${response.status}: ${errorMessage}`) as any
+        error.status = response.status
+        error.errorData = errorData
+        throw error
       }
 
       const data = await response.json()
@@ -292,19 +307,27 @@ export async function POST(request: NextRequest) {
         console.error('[Text-to-Speech] API Key method failed:', {
           message: error.message,
           stack: error.stack,
-          status: error.message?.match(/HTTP (\d+)/)?.[1],
+          status: error.status || error.message?.match(/HTTP (\d+)/)?.[1],
+          errorData: error.errorData,
         })
         
+        // 500エラーなどの一時的なエラーの場合は、エラーをそのまま返す
+        // （サービスアカウント方式にフォールバックしても同じエラーになる可能性が高い）
+        if (error.status === 500 || error.message?.includes('500')) {
+          console.error('[Text-to-Speech] 500 error from API key method - not retrying with service account')
+          throw error
+        }
+        
         // 403エラー（認証エラー）や503エラー（サービス未設定）の場合は、サービスアカウント方式にフォールバック
-        const isAuthError = error.message?.includes('403') || error.message?.includes('PERMISSION_DENIED')
-        const isServiceError = error.message?.includes('503') || error.message?.includes('SERVICE_NOT_CONFIGURED')
+        const isAuthError = error.status === 403 || error.message?.includes('403') || error.message?.includes('PERMISSION_DENIED')
+        const isServiceError = error.status === 503 || error.message?.includes('503') || error.message?.includes('SERVICE_NOT_CONFIGURED')
         
         if (isAuthError) {
           console.error('[Text-to-Speech] Authentication error - falling back to service account method')
         } else if (isServiceError) {
           console.error('[Text-to-Speech] Service not configured for API key - falling back to service account method')
         } else {
-          // その他のエラー（ネットワークエラーなど）もサービスアカウント方式を試行
+          // その他のエラー（400, 404など）もサービスアカウント方式を試行
           console.warn('[Text-to-Speech] API key method failed - falling back to service account method')
         }
         
@@ -514,16 +537,20 @@ export async function POST(request: NextRequest) {
       audioEncoding: 'MP3',
     })
   } catch (error: any) {
-    console.error('[Text-to-Speech] Unexpected error:', {
+    const errorStatus = error.status || 500
+    const errorDetails = {
       message: error.message,
-      stack: error.stack,
       name: error.name,
-      code: (error as any).code,
-      status: (error as any).status,
-    })
+      code: error.code,
+      status: errorStatus,
+      errorData: error.errorData,
+    }
+    
+    console.error('[Text-to-Speech] Unexpected error:', errorDetails)
     
     const errorMessage = error.message || '音声生成に失敗しました'
     
+    // エラーの詳細情報を返す（本番環境でも基本的な情報は返す）
     return NextResponse.json(
       {
         success: false,
@@ -531,11 +558,13 @@ export async function POST(request: NextRequest) {
         details: {
           message: error.message,
           name: error.name,
-          code: (error as any).code,
+          code: error.code,
+          status: errorStatus,
+          errorData: error.errorData,
           ...(isDevelopment ? { stack: error.stack } : {}),
         },
       },
-      { status: 500 }
+      { status: errorStatus }
     )
   }
 }
