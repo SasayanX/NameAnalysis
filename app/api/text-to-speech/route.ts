@@ -73,18 +73,26 @@ function getTextToSpeechClient(): TextToSpeechClient | null {
     if (resolvedKeyPath) {
       // 絶対パスまたはプロジェクトルートからの相対パスで解決
       const path = require('path')
+      const fs = require('fs')
       const resolvedPath = path.isAbsolute(resolvedKeyPath) 
         ? resolvedKeyPath 
         : path.resolve(process.cwd(), resolvedKeyPath)
-      clientConfig.keyFilename = resolvedPath
       
-      if (isDevelopment) {
-        console.log(`[Text-to-Speech] Using service account key from: ${resolvedPath}`)
+      // ファイルの存在を確認
+      if (!fs.existsSync(resolvedPath)) {
+        console.warn(`[Text-to-Speech] Service account key file not found: ${resolvedPath}`)
+        return null
       }
+      
+      clientConfig.keyFilename = resolvedPath
+      console.log(`[Text-to-Speech] Using service account key from: ${resolvedPath}`)
     } else if (resolvedKeyJson) {
-      clientConfig.credentials = JSON.parse(resolvedKeyJson)
-      if (isDevelopment) {
+      try {
+        clientConfig.credentials = JSON.parse(resolvedKeyJson)
         console.log('[Text-to-Speech] Using service account key from JSON environment variable')
+      } catch (parseError: any) {
+        console.error('[Text-to-Speech] Failed to parse service account key JSON:', parseError.message)
+        return null
       }
     }
 
@@ -282,14 +290,7 @@ export async function POST(request: NextRequest) {
 
     // APIキー方式を優先して試行
     const apiKey = process.env.GOOGLE_CLOUD_TTS_API_KEY
-    console.log('[Text-to-Speech] Environment check:', {
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey?.length || 0,
-      apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'N/A',
-      nodeEnv: process.env.NODE_ENV,
-      allEnvKeys: Object.keys(process.env).filter(key => key.includes('TTS') || key.includes('GOOGLE_CLOUD')).join(', '),
-    })
-
+    
     if (apiKey) {
       try {
         const result = await synthesizeSpeechWithApiKey(
@@ -304,39 +305,19 @@ export async function POST(request: NextRequest) {
           console.log('[Text-to-Speech] Successfully generated audio using API key method')
         }
       } catch (error: any) {
+        // APIキー方式が失敗した場合は、エラーをそのまま返す
+        // （Netlify環境ではサービスアカウントキーファイルが存在しないため、フォールバックしない）
         console.error('[Text-to-Speech] API Key method failed:', {
           message: error.message,
-          stack: error.stack,
           status: error.status || error.message?.match(/HTTP (\d+)/)?.[1],
           errorData: error.errorData,
         })
-        
-        // 500エラーなどの一時的なエラーの場合は、エラーをそのまま返す
-        // （サービスアカウント方式にフォールバックしても同じエラーになる可能性が高い）
-        if (error.status === 500 || error.message?.includes('500')) {
-          console.error('[Text-to-Speech] 500 error from API key method - not retrying with service account')
-          throw error
-        }
-        
-        // 403エラー（認証エラー）や503エラー（サービス未設定）の場合は、サービスアカウント方式にフォールバック
-        const isAuthError = error.status === 403 || error.message?.includes('403') || error.message?.includes('PERMISSION_DENIED')
-        const isServiceError = error.status === 503 || error.message?.includes('503') || error.message?.includes('SERVICE_NOT_CONFIGURED')
-        
-        if (isAuthError) {
-          console.error('[Text-to-Speech] Authentication error - falling back to service account method')
-        } else if (isServiceError) {
-          console.error('[Text-to-Speech] Service not configured for API key - falling back to service account method')
-        } else {
-          // その他のエラー（400, 404など）もサービスアカウント方式を試行
-          console.warn('[Text-to-Speech] API key method failed - falling back to service account method')
-        }
-        
-        // audioContentがnullのままなので、サービスアカウント方式にフォールバックされる
+        throw error
       }
     }
 
-    // サービスアカウント方式を試行（APIキー方式が失敗した場合、またはAPIキーが設定されていない場合）
-    if (!audioContent) {
+    // APIキーが設定されていない場合のみ、サービスアカウント方式を試行
+    if (!audioContent && !apiKey) {
       const client = getTextToSpeechClient()
       if (!client) {
         // より詳細なデバッグ情報を収集
