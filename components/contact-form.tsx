@@ -45,10 +45,20 @@ export default function ContactForm() {
         body: JSON.stringify(formData),
       })
 
-      const result = await response.json()
+      // レスポンスがJSONでない場合の処理
+      let result
+      try {
+        result = await response.json()
+      } catch (jsonError) {
+        const text = await response.text()
+        console.error('お問い合わせAPI: JSON解析エラー', { status: response.status, text })
+        throw new Error(`サーバーエラーが発生しました（ステータス: ${response.status}）。しばらく時間をおいて再度お試しください。`)
+      }
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'お問い合わせの送信に失敗しました')
+        const errorMessage = result.error || result.message || 'お問い合わせの送信に失敗しました'
+        console.error('お問い合わせAPI: エラーレスポンス', { status: response.status, result })
+        throw new Error(errorMessage)
       }
 
       setSubmitted(true)
@@ -63,7 +73,19 @@ export default function ContactForm() {
       })
     } catch (error: any) {
       console.error('お問い合わせ送信エラー:', error)
-      setError(error.message || 'お問い合わせの送信に失敗しました。しばらく時間をおいて再度お試しください。')
+      
+      // ネットワークエラーの場合
+      if (error.message?.includes('fetch') || error.message?.includes('Network')) {
+        setError('ネットワークエラーが発生しました。インターネット接続を確認して、しばらく時間をおいて再度お試しください。')
+      } 
+      // タイムアウトエラーの場合
+      else if (error.message?.includes('timeout') || error.name === 'AbortError') {
+        setError('リクエストがタイムアウトしました。しばらく時間をおいて再度お試しください。')
+      }
+      // その他のエラー
+      else {
+        setError(error.message || 'お問い合わせの送信に失敗しました。しばらく時間をおいて再度お試しください。')
+      }
     } finally {
       setIsSubmitting(false)
     }
