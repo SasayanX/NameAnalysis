@@ -109,8 +109,29 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
             }
 
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}))
-              throw new Error(errorData.error || `HTTP ${response.status}`)
+              let errorData: any = {}
+              try {
+                errorData = await response.json()
+              } catch (parseError) {
+                const text = await response.text().catch(() => '')
+                errorData = { error: text || `HTTP ${response.status}: ${response.statusText}` }
+              }
+              
+              // 詳細なエラー情報をログに出力
+              console.error('[Text-to-Speech] API Error Response:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorData.error,
+                details: errorData.details,
+                fullResponse: errorData,
+              })
+              
+              // 詳細なエラーメッセージを作成
+              const errorMessage = errorData.details?.message || 
+                                 errorData.error || 
+                                 `HTTP ${response.status}: ${response.statusText}`
+              
+              throw new Error(errorMessage)
             }
 
             break // 成功したらループを抜ける
