@@ -40,16 +40,24 @@ function getTextToSpeechClient(): TextToSpeechClient | null {
           if (jsonFiles.length > 0) {
             // 最初に見つかったJSONファイルを使用
             const foundKeyPath = path.join(functionsConfigPath, jsonFiles[0])
-            resolvedKeyPath = foundKeyPath
-            if (isDevelopment) {
+            // ファイルが存在するか確認
+            if (fs.existsSync(foundKeyPath)) {
+              resolvedKeyPath = foundKeyPath
               console.log(`[Text-to-Speech] Found service account key in functions/config: ${jsonFiles[0]}`)
+            } else {
+              console.warn(`[Text-to-Speech] Service account key file not found: ${foundKeyPath}`)
             }
+          } else {
+            console.warn('[Text-to-Speech] No JSON files found in functions/config directory')
+          }
+        } else {
+          // 本番環境では、functions/configが存在しない可能性がある
+          if (!isDevelopment) {
+            console.warn('[Text-to-Speech] functions/config directory not found. Use environment variables for service account key in production.')
           }
         }
       } catch (fsError: any) {
-        if (isDevelopment) {
-          console.warn('[Text-to-Speech] Could not search functions/config:', fsError.message)
-        }
+        console.warn('[Text-to-Speech] Could not search functions/config:', fsError.message)
       }
     }
 
@@ -412,6 +420,15 @@ export async function POST(request: NextRequest) {
         } catch (error: any) {
           lastError = error
           
+          // エラーの詳細をログに記録
+          console.error(`[Text-to-Speech Service Account] Error (attempt ${attempt + 1}/${maxRetries}):`, {
+            message: error.message,
+            code: error.code,
+            status: error.status,
+            details: error.details,
+            name: error.name,
+          })
+          
           // 一時的なエラー（503, 429, 500, UNAVAILABLE, DEADLINE_EXCEEDED）の場合はリトライ
           const isRetryableError = 
             error.code === 14 || // DEADLINE_EXCEEDED
@@ -435,16 +452,39 @@ export async function POST(request: NextRequest) {
             continue
           }
           
-          throw error
+          // リトライ不可能なエラー（認証エラーなど）の場合は即座にスロー
+          if (error.code === 7 || // PERMISSION_DENIED
+              error.code === 16 || // UNAUTHENTICATED
+              error.message?.includes('PERMISSION_DENIED') ||
+              error.message?.includes('UNAUTHENTICATED') ||
+              error.message?.includes('403')) {
+            console.error('[Text-to-Speech Service Account] Authentication error, not retrying:', error.message)
+            throw error
+          }
+          
+          // 最終試行の場合はエラーをスロー
+          if (attempt >= maxRetries - 1) {
+            console.error('[Text-to-Speech Service Account] Max retries exceeded, throwing error')
+            throw error
+          }
         }
       }
 
       if (!response || !response.audioContent) {
+        const errorDetails = lastError ? {
+          message: lastError.message,
+          code: (lastError as any).code,
+          status: (lastError as any).status,
+          details: (lastError as any).details,
+        } : { message: '音声データが生成されませんでした' }
+        
+        console.error('[Text-to-Speech] Service account method failed:', errorDetails)
+        
         return NextResponse.json(
           { 
             success: false, 
             error: '音声データの生成に失敗しました',
-            details: lastError ? { message: lastError.message, code: (lastError as any).code } : undefined
+            details: errorDetails
           },
           { status: 500 }
         )
@@ -452,6 +492,17 @@ export async function POST(request: NextRequest) {
 
       audioContent = response.audioContent as Uint8Array
       console.log('[Text-to-Speech] Successfully generated audio using service account method')
+    }
+
+    if (!audioContent) {
+      console.error('[Text-to-Speech] No audio content generated after all attempts')
+      return NextResponse.json(
+        {
+          success: false,
+          error: '音声データの生成に失敗しました（すべての方法が失敗しました）',
+        },
+        { status: 500 }
+      )
     }
 
     // Base64エンコードされた音声データを返す
@@ -463,7 +514,13 @@ export async function POST(request: NextRequest) {
       audioEncoding: 'MP3',
     })
   } catch (error: any) {
-    console.error('[Text-to-Speech] Error:', error)
+    console.error('[Text-to-Speech] Unexpected error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: (error as any).code,
+      status: (error as any).status,
+    })
     
     const errorMessage = error.message || '音声生成に失敗しました'
     
@@ -471,10 +528,12 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: errorMessage,
-        details: isDevelopment ? {
+        details: {
           message: error.message,
-          stack: error.stack,
-        } : undefined,
+          name: error.name,
+          code: (error as any).code,
+          ...(isDevelopment ? { stack: error.stack } : {}),
+        },
       },
       { status: 500 }
     )
