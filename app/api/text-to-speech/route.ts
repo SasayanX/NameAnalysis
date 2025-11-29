@@ -430,12 +430,14 @@ export async function POST(request: NextRequest) {
             setTimeout(() => reject(new Error('Request timeout (30s)')), 30000)
           )
           
-          const [result] = await Promise.race([
-            client.synthesizeSpeech(requestConfig),
+          const synthesizePromise = client.synthesizeSpeech(requestConfig)
+          const result = await Promise.race([
+            synthesizePromise,
             timeoutPromise
-          ]) as [any, any]
+          ]) as any
 
-          response = result
+          // synthesizeSpeechは配列を返すので、最初の要素を取得
+          response = Array.isArray(result) ? result[0] : result
           
           if (!response.audioContent) {
             throw new Error('音声データが含まれていません')
