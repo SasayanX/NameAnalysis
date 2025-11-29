@@ -338,6 +338,7 @@ export async function POST(request: NextRequest) {
     // Google Cloud Text-to-Speech APIはAPIキー方式をサポートしていないため、
     // サービスアカウントキー方式のみを使用
     // 注意: APIキー方式は401エラーが返されるため、使用しない
+    if (!audioContent) {
       const client = getTextToSpeechClient()
       if (!client) {
         // より詳細なデバッグ情報を収集
@@ -371,18 +372,18 @@ export async function POST(request: NextRequest) {
         }
         
         const debugInfo = {
-          apiKeyExists: !!apiKey,
-          apiKeyLength: apiKey?.length || 0,
-          apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'N/A',
+          serviceAccountKeyExists: false,
+          serviceAccountKeyJsonExists: !!process.env.GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_JSON,
+          serviceAccountKeyPathExists: !!process.env.GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_PATH,
           nodeEnv: process.env.NODE_ENV,
           relatedEnvKeys: relatedEnvKeys,
           functionsConfig: functionsConfigStatus,
           message: isDevelopment 
-            ? 'GOOGLE_CLOUD_TTS_API_KEY またはサービスアカウントキーを設定してください'
+            ? 'GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_JSON またはサービスアカウントキーを設定してください'
             : '環境変数が正しく設定されていない可能性があります。Netlify Dashboardで環境変数を確認し、再デプロイしてください。',
           troubleshooting: [
-            'functions/config ディレクトリにサービスアカウントキー（.json）を配置してください',
-            'Netlify Dashboard > Site settings > Environment variables で GOOGLE_CLOUD_TTS_API_KEY を確認',
+            'Netlify Dashboard > Site settings > Environment variables で GOOGLE_CLOUD_TTS_SERVICE_ACCOUNT_KEY_JSON を設定',
+            'サービスアカウントキーのJSONファイルの内容をそのまま環境変数に貼り付けてください',
             '環境変数のスコープに Production が含まれているか確認',
             '環境変数を追加/変更した後、必ず再デプロイを実行（Deploys > Trigger deploy > Deploy site）',
             'デバッグエンドポイントにアクセスして状態を確認: /api/debug/tts-env-check',
