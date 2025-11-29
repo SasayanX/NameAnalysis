@@ -138,6 +138,15 @@ async function getSubscriptionStatus(request: NextRequest) {
       return NextResponse.json({ success: true, subscription: null })
     }
 
+    // 🚨 一時的な対処：特定ユーザーを無料プランに強制
+    if (userId === '15bfa2d1-bfac-41a6-b149-ddd494758b47' || customerEmail === 'sasayanfx@gmail.com') {
+      console.log("[Subscription Status] ⚠️ 強制的に無料プラン（テストユーザー）:", {
+        userId,
+        customerEmail: customerEmail ? `${customerEmail.substring(0, 3)}***` : undefined,
+      })
+      return NextResponse.json({ success: true, subscription: null })
+    }
+
     console.log("[Subscription Status] Found subscription:", {
       id: data.id,
       plan: data.plan,

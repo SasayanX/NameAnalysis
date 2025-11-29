@@ -36,7 +36,11 @@ export function useAiFortune(options: UseAiFortuneOptions) {
 
   const [aiFortune, setAiFortune] = useState<AiFortuneResult | null>(null)
   const [isLoadingAiFortune, setIsLoadingAiFortune] = useState(false)
-  const [aiFortuneUsage, setAiFortuneUsage] = useState<AiFortuneUsage>({ count: 0, limit: 1 })
+  // プレミアムプランの場合は初期値limit=1、それ以外は0
+  const [aiFortuneUsage, setAiFortuneUsage] = useState<AiFortuneUsage>({ 
+    count: 0, 
+    limit: currentPlan === 'premium' ? 1 : 0 
+  })
 
   // AI鑑定使用回数を取得
   useEffect(() => {
@@ -78,6 +82,7 @@ export function useAiFortune(options: UseAiFortuneOptions) {
           categories: nameAnalysisResult?.categories?.length || 0,
           gogyoResult: !!gogyoResult,
           birthdate,
+          userId,
         })
 
         const response = await fetch("/api/ai/generate-fortune", {
@@ -166,36 +171,86 @@ export function useAiFortune(options: UseAiFortuneOptions) {
   // AI鑑定を依頼する関数（使用回数チェックあり）
   const generateAiFortune = useCallback(
     async (nameAnalysisResult: any, gogyoResult?: any, birthdate?: string) => {
-      const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+      console.log("🔵 generateAiFortune called:", {
+        hasNameAnalysisResult: !!nameAnalysisResult,
+        hasGogyoResult: !!gogyoResult,
+        birthdate,
+      })
+      
+      // userIdを取得、存在しない場合は生成（開発環境対応）
+      let userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+      
+      if (!userId && typeof window !== "undefined") {
+        // 開発環境では、userIdが存在しない場合に自動生成
+        userId = `dev-user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        localStorage.setItem("userId", userId)
+        console.log("⚠️ userId not found, generated new userId:", userId)
+      }
+      
+      console.log("🔵 userId check:", { userId, hasUserId: !!userId })
+      
       if (!userId) {
-        setAiFortune({ success: false, error: "ログインが必要です" })
+        console.error("❌ generateAiFortune: userId not found and could not generate")
+        setAiFortune({ success: false, error: "ユーザーIDの取得に失敗しました" })
         return
       }
 
       // 【重要】最新の使用回数を取得（姓名判断を繰り返す場合に備えて）
       let currentUsage = aiFortuneUsage.count
       let currentLimit = aiFortuneUsage.limit
+      let usageCheckFailed = false
+      
       try {
         const usageResponse = await fetch(`/api/ai-fortune/usage?userId=${userId}&plan=${currentPlan}`)
-        const usageData = await usageResponse.json()
-        if (usageData.success) {
-          currentUsage = usageData.count
-          currentLimit = usageData.limit
-          setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
-          console.log("🔍 AI鑑定使用回数チェック:", {
-            currentUsage,
-            currentLimit,
-            canUse: currentUsage < currentLimit,
+        if (!usageResponse.ok) {
+          const errorText = await usageResponse.text()
+          console.error("❌ AI鑑定使用回数取得エラー:", {
+            status: usageResponse.status,
+            statusText: usageResponse.statusText,
+            error: errorText,
           })
+          usageCheckFailed = true
+        } else {
+          const usageData = await usageResponse.json()
+          if (usageData.success) {
+            currentUsage = usageData.count
+            currentLimit = usageData.limit
+            setAiFortuneUsage({ count: usageData.count, limit: usageData.limit })
+            console.log("🔍 AI鑑定使用回数チェック:", {
+              currentUsage,
+              currentLimit,
+              canUse: currentUsage < currentLimit,
+              remaining: currentLimit - currentUsage,
+            })
+          } else {
+            console.error("❌ AI鑑定使用回数取得失敗:", usageData)
+            usageCheckFailed = true
+          }
         }
-      } catch (error) {
-        console.error("Failed to fetch latest AI fortune usage:", error)
-        // エラー時は既存の状態を使用
+      } catch (error: any) {
+        console.error("❌ Failed to fetch latest AI fortune usage:", error)
+        usageCheckFailed = true
       }
+      
+      // 使用回数チェックに失敗した場合は、既存の状態を使用して続行
+      // （データベース接続エラーの場合でも、フロントエンドの状態で判定）
 
       // 使用回数チェック：使用可能回数（limit - count）が0以上の場合のみ鑑定可能
       const remainingCount = currentLimit - currentUsage
+      console.log("🔵 Usage check:", {
+        currentUsage,
+        currentLimit,
+        remainingCount,
+        canProceed: remainingCount > 0,
+        usageCheckFailed,
+      })
+      
       if (remainingCount <= 0) {
+        console.warn("⚠️ generateAiFortune: Usage limit reached", {
+          currentUsage,
+          currentLimit,
+          remainingCount,
+        })
         // 使用回数が0の場合
         if (currentPlan === "premium") {
           // プレミアムプラン：龍の息吹があれば使用を促す

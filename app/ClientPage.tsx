@@ -1676,12 +1676,27 @@ export default function ClientPage() {
                                         </p>
                                         {/* 使用回数が0の場合、ボタンを無効化 */}
                                         <Button
-                                          onClick={() => generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)}
+                                          onClick={() => {
+                                            console.log("🟢 AI深層鑑定ボタンがクリックされました:", {
+                                              isLoadingAiFortune,
+                                              aiFortuneUsage,
+                                              remainingCount: aiFortuneUsage.limit - aiFortuneUsage.count,
+                                              hasResults: !!results,
+                                              hasGogyoResult: !!advancedResults?.gogyoResult,
+                                            })
+                                            generateAiFortune(results, advancedResults.gogyoResult, birthdate || undefined)
+                                          }}
                                           disabled={isLoadingAiFortune || (aiFortuneUsage.limit - aiFortuneUsage.count <= 0)}
                                           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                           <Sparkles className="h-4 w-4 mr-2" /> {isLoadingAiFortune ? "ただいま鑑定中です..." : "AI深層言霊鑑定を依頼"}
                                         </Button>
+                                        {/* デバッグ情報 */}
+                                        {process.env.NODE_ENV === 'development' && (
+                                          <div className="mt-2 text-xs text-gray-500">
+                                            [Debug] isLoading: {String(isLoadingAiFortune)}, Usage: {aiFortuneUsage.count}/{aiFortuneUsage.limit}, Remaining: {aiFortuneUsage.limit - aiFortuneUsage.count}, Disabled: {String(isLoadingAiFortune || (aiFortuneUsage.limit - aiFortuneUsage.count <= 0))}
+                                          </div>
+                                        )}
                                         {currentPlan === "premium" && (
                                           <div className="mt-4 space-y-2">
                                             <p className="text-xs text-muted-foreground dark:text-gray-400">

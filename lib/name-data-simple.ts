@@ -54,6 +54,7 @@ export const strokeCountData: Record<string, number> = {
   徳: 15, // 徳: 15画（旧字体の德と同じ画数に合わせる）
   槻: 15,
   ョ: 3,
+  圧: 17, // 圧: 17画
 }
 
 // 「々」は繰り返し文字として7画で処理

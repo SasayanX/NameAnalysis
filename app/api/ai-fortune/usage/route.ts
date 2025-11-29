@@ -30,6 +30,20 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseServerClient()
     if (!supabase) {
+      // 開発環境では、データベース接続エラーの場合でもデフォルト値を返す
+      const isDevelopment = process.env.NODE_ENV === 'development'
+      if (isDevelopment) {
+        console.warn('⚠️ 開発環境: Supabase接続エラーのため、デフォルト値を返します')
+        const planKey = plan as keyof typeof PLAN_LIMITS
+        const baseLimit = PLAN_LIMITS[planKey] ?? 1
+        return NextResponse.json({
+          success: true,
+          count: 0, // デフォルトで0回（未使用）
+          limit: baseLimit,
+          date: new Date().toISOString().split('T')[0],
+          warning: 'データベース接続エラーのため、デフォルト値を返しています',
+        })
+      }
       return NextResponse.json(
         { error: 'データベース接続エラー' },
         { status: 500 }
