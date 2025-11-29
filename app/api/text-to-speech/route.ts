@@ -165,45 +165,82 @@ async function synthesizeSpeechWithApiKey(
           errorData = { message: text || `HTTP ${response.status}: ${response.statusText}` }
         }
         
-        const errorDetails = {
+        // エラーの詳細情報を構造化
+        const errorCode = errorData.error?.code || errorData.code || ''
+        const errorMessage = errorData.error?.message || errorData.message || ''
+        const errorDetails = errorData.error?.details || errorData.details || []
+        
+        const errorInfo = {
           status: response.status,
           statusText: response.statusText,
-          error: errorData.error || errorData,
-          errorMessage: errorData.error?.message || errorData.message,
-          errorCode: errorData.error?.code || errorData.code,
+          errorCode,
+          errorMessage,
+          errorDetails,
           fullError: errorData,
         }
         
-        console.error(`[Text-to-Speech API Key] HTTP ${response.status} error:`, JSON.stringify(errorDetails, null, 2))
+        console.error(`[Text-to-Speech API Key] HTTP ${response.status} error:`, JSON.stringify(errorInfo, null, 2))
         
-        // 503エラーや一時的なエラーの場合はリトライ
-        if (response.status === 503 || response.status === 429 || response.status === 500) {
-          if (retryCount < maxRetries) {
-            // 指数バックオフ: 1秒, 2秒, 4秒
-            const delayMs = Math.pow(2, retryCount) * 1000
-            console.warn(
-              `[Text-to-Speech] Retrying after ${response.status} error (attempt ${retryCount + 1}/${maxRetries}) in ${delayMs}ms`
-            )
-            await new Promise(resolve => setTimeout(resolve, delayMs))
-            return synthesizeSpeechWithApiKey(text, languageCode, voiceName, speakingRate, pitch, retryCount + 1, maxRetries)
-          } else {
-            // 詳細なエラー情報を含めてスロー
-            const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${response.statusText}`
-            const error = new Error(
-              `HTTP ${response.status}: ${errorMessage}. Max retries (${maxRetries}) exceeded.`
-            ) as any
-            error.status = response.status
-            error.errorData = errorData
-            throw error
-          }
+        // リトライ可能なエラーを判定
+        // 500 (INTERNAL), 503 (UNAVAILABLE), 429 (RESOURCE_EXHAUSTED) はリトライ可能
+        const isRetryableError = 
+          response.status === 500 || // INTERNAL
+          response.status === 503 || // UNAVAILABLE
+          response.status === 429 || // RESOURCE_EXHAUSTED (クォータ超過)
+          errorCode === 'INTERNAL' ||
+          errorCode === 'UNAVAILABLE' ||
+          errorCode === 'RESOURCE_EXHAUSTED' ||
+          errorMessage?.includes('INTERNAL') ||
+          errorMessage?.includes('UNAVAILABLE') ||
+          errorMessage?.includes('quota') ||
+          errorMessage?.includes('rate limit')
+        
+        // リトライ不可能なエラー（設定や認証の問題）
+        const isNonRetryableError = 
+          response.status === 400 || // 無効なリクエスト
+          response.status === 401 || // 認証エラー
+          response.status === 403 || // 権限エラー
+          errorCode === 'INVALID_ARGUMENT' ||
+          errorCode === 'PERMISSION_DENIED' ||
+          errorCode === 'UNAUTHENTICATED' ||
+          errorMessage?.includes('PERMISSION_DENIED') ||
+          errorMessage?.includes('UNAUTHENTICATED') ||
+          errorMessage?.includes('INVALID_ARGUMENT')
+        
+        if (isRetryableError && retryCount < maxRetries) {
+          // 指数バックオフ: 0.5s, 1s, 2s, 4s
+          const delayMs = Math.min(Math.pow(2, retryCount) * 500, 4000)
+          console.warn(
+            `[Text-to-Speech] Retrying after ${response.status}/${errorCode} error (attempt ${retryCount + 1}/${maxRetries}) in ${delayMs}ms`
+          )
+          await new Promise(resolve => setTimeout(resolve, delayMs))
+          return synthesizeSpeechWithApiKey(text, languageCode, voiceName, speakingRate, pitch, retryCount + 1, maxRetries)
+        } else if (isNonRetryableError) {
+          // リトライ不可能なエラーは即座にスロー
+          const error = new Error(
+            `HTTP ${response.status}/${errorCode}: ${errorMessage || response.statusText}. This error is not retryable.`
+          ) as any
+          error.status = response.status
+          error.errorCode = errorCode
+          error.errorData = errorData
+          throw error
+        } else if (retryCount >= maxRetries) {
+          // リトライ回数上限に達した
+          const error = new Error(
+            `HTTP ${response.status}/${errorCode}: ${errorMessage || response.statusText}. Max retries (${maxRetries}) exceeded.`
+          ) as any
+          error.status = response.status
+          error.errorCode = errorCode
+          error.errorData = errorData
+          throw error
+        } else {
+          // その他のエラー
+          const error = new Error(`HTTP ${response.status}/${errorCode}: ${errorMessage || response.statusText}`) as any
+          error.status = response.status
+          error.errorCode = errorCode
+          error.errorData = errorData
+          throw error
         }
-
-        // 認証エラー（403）や無効なリクエスト（400）の場合はリトライしない
-        const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${response.statusText}`
-        const error = new Error(`HTTP ${response.status}: ${errorMessage}`) as any
-        error.status = response.status
-        error.errorData = errorData
-        throw error
       }
 
       const data = await response.json()
@@ -265,12 +302,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // テキストの長さチェック（5000文字制限）
+    // テキストの長さチェック（Google Cloud TTSの制限: 5000文字）
+    // 長文は内部エラーを誘発しやすいため、より短い単位に分割することを推奨
     if (text.length > 5000) {
       return NextResponse.json(
-        { success: false, error: 'テキストが長すぎます（最大5000文字）' },
+        { 
+          success: false, 
+          error: 'テキストが長すぎます（最大5000文字）',
+          suggestion: '長いテキストは文単位で分割して複数回リクエストしてください',
+        },
         { status: 400 }
       )
+    }
+    
+    // 警告: 長文は500エラーを誘発しやすい（3000文字以上で警告）
+    if (text.length > 3000) {
+      console.warn(`[Text-to-Speech] Long text detected (${text.length} chars). Consider splitting into smaller chunks to avoid 500 errors.`)
     }
 
     // テキストをクリーンアップ
@@ -288,36 +335,9 @@ export async function POST(request: NextRequest) {
 
     let audioContent: Uint8Array | null = null
 
-    // APIキー方式を優先して試行
-    const apiKey = process.env.GOOGLE_CLOUD_TTS_API_KEY
-    
-    if (apiKey) {
-      try {
-        const result = await synthesizeSpeechWithApiKey(
-          cleanText,
-          languageCode,
-          voiceName,
-          speakingRate,
-          pitch
-        )
-        if (result) {
-          audioContent = result.audioContent
-          console.log('[Text-to-Speech] Successfully generated audio using API key method')
-        }
-      } catch (error: any) {
-        // APIキー方式が失敗した場合は、エラーをそのまま返す
-        // （Netlify環境ではサービスアカウントキーファイルが存在しないため、フォールバックしない）
-        console.error('[Text-to-Speech] API Key method failed:', {
-          message: error.message,
-          status: error.status || error.message?.match(/HTTP (\d+)/)?.[1],
-          errorData: error.errorData,
-        })
-        throw error
-      }
-    }
-
-    // APIキーが設定されていない場合のみ、サービスアカウント方式を試行
-    if (!audioContent && !apiKey) {
+    // Google Cloud Text-to-Speech APIはAPIキー方式をサポートしていないため、
+    // サービスアカウントキー方式のみを使用
+    // 注意: APIキー方式は401エラーが返されるため、使用しない
       const client = getTextToSpeechClient()
       if (!client) {
         // より詳細なデバッグ情報を収集
